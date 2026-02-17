@@ -338,25 +338,27 @@ export class SetupComponent implements OnInit {
     this.error = null;
 
     try {
-      let logoUrl = this.logoPreview;
-
+      let logoUrl: string | null = null;
       if (this.logoFile) {
-        // Upload du logo (simplifié - dans un vrai projet, utiliser un service d'upload)
         const formData = new FormData();
         formData.append('file', this.logoFile);
-        // Ici, vous devriez appeler votre endpoint d'upload
-        // logoUrl = await this.uploadLogo(formData);
+        const uploaded = await this.http.post<BusinessDto>(
+          `${this.apiConfig.getBusinessesUrl()}/${this.businessId}/logo`,
+          formData
+        ).toPromise();
+        logoUrl = uploaded?.logoUrl ?? null;
       }
 
       await this.http.patch(`${this.apiConfig.getBusinessesUrl()}/${this.businessId}/step`, {
         step: 5,
-        logoUrl: logoUrl || null
+        logoUrl
       }).toPromise();
 
       this.currentStep = 6;
-      this.loading = false;
     } catch (err: any) {
       this.handleError(err);
+    } finally {
+      this.loading = false;
     }
   }
 
