@@ -1,3 +1,9 @@
 .sidebar {
-  @apply w-64 glass-effect-strong border-r border-white/20 flex flex-col fixed left-0 top-0 h-full z-40;
+  @apply w-64 glass-effect-strong border-r border-white/20 flex flex-col fixed left-0 top-0 h-full;
+}
+
+@media (min-width: 1024px) {
+  .sidebar {
+    transform: none;
+  }
 }

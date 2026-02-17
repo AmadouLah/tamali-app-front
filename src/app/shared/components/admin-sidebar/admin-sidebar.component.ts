@@ -21,6 +21,8 @@ export class AdminSidebarComponent implements OnInit {
 
   @Input() menuItems: MenuItem[] = [];
   @Input() activeMenu: string = 'dashboard';
+  @Input() mobileOpen = false;
+  @Output() mobileOpenChange = new EventEmitter<boolean>();
   @Output() menuClick = new EventEmitter<string>();
 
   ngOnInit(): void {
@@ -28,14 +30,20 @@ export class AdminSidebarComponent implements OnInit {
   }
 
   private updateActiveMenuFromRoute(): void {
-    const currentRoute = this.router.url;
-    if (currentRoute.includes('add-business-owner')) {
+    const route = this.router.url;
+    if (route.includes('add-business-owner')) {
       this.activeMenu = 'ajouter propriétaire';
-    } else if (currentRoute.includes('business-sectors')) {
+    } else if (route.includes('business-sectors')) {
       this.activeMenu = 'secteurs d\'activité';
-    } else if (currentRoute.includes('account')) {
+    } else if (route.includes('business/company')) {
+      this.activeMenu = 'mon entreprise';
+    } else if (route.includes('business/account')) {
+      this.activeMenu = 'paramètres';
+    } else if (route.includes('admin/account')) {
       this.activeMenu = 'mon compte';
-    } else if (currentRoute.includes('admin')) {
+    } else if (route.includes('admin')) {
+      this.activeMenu = 'dashboard';
+    } else if (route.includes('business')) {
       this.activeMenu = 'dashboard';
     }
   }
@@ -44,6 +52,10 @@ export class AdminSidebarComponent implements OnInit {
     const menuKey = item.label.toLowerCase();
     this.activeMenu = menuKey;
     this.menuClick.emit(menuKey);
+    this.mobileOpenChange.emit(false);
   }
 
+  closeMobile(): void {
+    this.mobileOpenChange.emit(false);
+  }
 }

@@ -53,6 +53,7 @@ export class AdminDashboardComponent implements OnInit {
   activeMenu: string = 'dashboard';
   searchQuery: string = '';
   period: string = 'weekly';
+  sidebarOpen = false;
 
   menuItems: MenuItem[] = [
     { label: 'Dashboard', icon: 'grid', route: '/dashboard/admin' },

@@ -9,6 +9,9 @@ import { BusinessSectorsComponent } from './pages/dashboard/admin/business-secto
 import { AccountComponent } from './pages/dashboard/admin/account/account.component';
 import { ChangePasswordComponent } from './pages/auth/change-password/change-password.component';
 import { SetupComponent } from './pages/business/setup/setup.component';
+import { BusinessDashboardComponent } from './pages/dashboard/business/business-dashboard.component';
+import { BusinessAccountComponent } from './pages/dashboard/business/account/business-account.component';
+import { BusinessCompanyComponent } from './pages/dashboard/business/company/business-company.component';
 
 export const routes: Routes = [
   {
@@ -34,6 +37,18 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     component: DashboardComponent
+  },
+  {
+    path: 'dashboard/business',
+    component: BusinessDashboardComponent
+  },
+  {
+    path: 'dashboard/business/account',
+    component: BusinessAccountComponent
+  },
+  {
+    path: 'dashboard/business/company',
+    component: BusinessCompanyComponent
   },
   {
     path: 'dashboard/admin',

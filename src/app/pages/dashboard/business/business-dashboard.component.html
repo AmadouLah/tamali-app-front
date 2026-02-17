@@ -1,0 +1,106 @@
+<div class="business-dashboard-container min-h-screen relative overflow-x-hidden" data-theme="liquidGlace">
+  <div class="liquid-gradient fixed inset-0 -z-10"></div>
+  <div class="fixed inset-0 -z-10 bg-gradient-to-br from-slate-900/90 via-purple-900/80 to-slate-900/90"></div>
+  <div class="geometric-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
+
+  <app-admin-sidebar
+    [menuItems]="menuItems"
+    [activeMenu]="activeMenu"
+    [mobileOpen]="sidebarOpen"
+    (mobileOpenChange)="sidebarOpen = $event"
+    (menuClick)="setActiveMenu($event)"
+  ></app-admin-sidebar>
+
+  <div class="dashboard-main">
+    <header class="glass-effect-strong border-b border-white/20 dashboard-header sticky top-0 z-30">
+      <button
+        type="button"
+        class="lg:hidden shrink-0 p-2 rounded-lg glass-effect-subtle border border-white/20 text-white hover:bg-white/10 transition-colors"
+        (click)="sidebarOpen = !sidebarOpen"
+        aria-label="Ouvrir le menu"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </button>
+      <div class="flex-1 min-w-0 flex justify-center md:justify-start">
+        <div class="relative w-full max-w-md">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <input
+            type="text"
+            placeholder="Rechercher..."
+            [(ngModel)]="searchQuery"
+            class="w-full pl-10 pr-4 py-2.5 glass-effect-subtle border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+          />
+        </div>
+      </div>
+      <div class="flex items-center gap-2 md:gap-3 pl-2 md:pl-4 border-l border-white/20 shrink-0">
+        <div class="text-right">
+          <div class="text-sm font-semibold text-white truncate max-w-[100px] md:max-w-none">{{ getDisplayName() }}</div>
+          <div class="text-xs text-gray-300 hidden sm:block">{{ business?.name || 'Propriétaire' }}</div>
+        </div>
+        <app-user-avatar [user]="user"></app-user-avatar>
+      </div>
+    </header>
+
+    <main class="dashboard-content">
+      @if (loading) {
+        <div class="text-center py-16 text-gray-400">Chargement...</div>
+      } @else {
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
+          @for (card of kpiCards; track card.title) {
+            <app-glass-card variant="default" class="p-6">
+              <h3 class="text-sm font-medium text-gray-300 mb-4">{{ card.title }}</h3>
+              <div class="text-3xl font-bold text-white mb-2">{{ card.value }}</div>
+              <div class="flex items-center gap-2 text-sm mb-4" [class.text-green-400]="card.change > 0" [class.text-red-400]="card.change < 0">
+                <span>{{ card.change > 0 ? '+' : '' }}{{ card.change }}%</span>
+                <span class="text-gray-400">{{ card.changeLabel }}</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full" [class]="card.progressColor" [style.width.%]="card.progress"></div>
+                </div>
+              </div>
+            </app-glass-card>
+          }
+        </div>
+
+        <app-glass-card variant="strong">
+          <div class="p-6">
+            <div class="flex justify-between items-center mb-6">
+              <h2 class="text-2xl font-bold text-white">Ventes récentes</h2>
+              <button (click)="loadSales()" [disabled]="loading" class="btn btn-sm btn-primary rounded-full px-4 disabled:opacity-50">
+                Actualiser
+              </button>
+            </div>
+
+            @if (sales.length === 0) {
+              <div class="text-center py-12">
+                <p class="text-gray-400 mb-4">Aucune vente enregistrée pour le moment.</p>
+                <p class="text-sm text-gray-500">L'enregistrement des ventes sera disponible dans une prochaine mise à jour.</p>
+              </div>
+            } @else {
+              <div class="space-y-4">
+                @for (sale of sales; track sale.id) {
+                  <div class="glass-effect-subtle p-5 rounded-lg border border-white/10 flex justify-between items-center">
+                    <div>
+                      <p class="font-semibold text-white">Vente #{{ sale.id.substring(0, 8) }}</p>
+                      <p class="text-gray-400 text-sm">{{ formatDate(sale.saleDate) }}</p>
+                    </div>
+                    <span class="text-lg font-bold text-white">{{ formatMoney(sale.totalAmount) }}</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </app-glass-card>
+      }
+    </main>
+  </div>
+</div>

@@ -43,6 +43,7 @@ export class BusinessSectorsComponent implements OnInit {
   form!: FormGroup;
   editForm!: FormGroup;
   editingId: string | null = null;
+  sidebarOpen = false;
   loading = false;
   error: string | null = null;
   success: string | null = null;

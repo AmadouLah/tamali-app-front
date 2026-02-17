@@ -27,6 +27,7 @@ export class AccountComponent implements OnInit {
   showDisableConfirm = false;
   showDeleteConfirm = false;
   activeMenu: string = 'mon compte';
+  sidebarOpen = false;
 
   menuItems: MenuItem[] = [
     { label: 'Dashboard', icon: 'grid', route: '/dashboard/admin' },

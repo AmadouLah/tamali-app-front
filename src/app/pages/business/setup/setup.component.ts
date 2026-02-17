@@ -402,10 +402,12 @@ export class SetupComponent implements OnInit {
         receiptTemplateId: this.selectedTemplate.id
       }).toPromise();
 
-      // Rediriger vers le dashboard
+      this.authService.updateUserBusinessId(this.businessId);
       this.router.navigate(['/dashboard']);
     } catch (err: any) {
       this.handleError(err);
+    } finally {
+      this.loading = false;
     }
   }
 

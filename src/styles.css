@@ -57,6 +57,23 @@
     box-shadow: 0 0 30px rgba(139, 92, 246, 0.6), 0 0 60px rgba(139, 92, 246, 0.4), 0 0 90px rgba(139, 92, 246, 0.2);
     transition: box-shadow 0.3s ease;
   }
+
+  .dashboard-main {
+    @apply flex-1 flex flex-col min-w-0;
+  }
+  @media (min-width: 1024px) {
+    .dashboard-main {
+      margin-left: 16rem;
+    }
+  }
+
+  .dashboard-header {
+    @apply flex flex-nowrap items-center justify-between gap-3 px-4 md:px-6 py-4 min-h-[3.5rem];
+  }
+
+  .dashboard-content {
+    @apply flex-1 p-4 md:p-6 overflow-y-auto;
+  }
   
   .btn-primary {
     @apply bg-gradient-to-r from-blue-500 via-purple-600 to-pink-500;
@@ -86,6 +103,18 @@
   .btn-ghost {
     @apply bg-transparent border-none text-white;
     @apply hover:bg-white/10;
+  }
+
+  /* Selects : fond sombre et texte clair pour lisibilité (setup, mon entreprise, etc.) */
+  select,
+  select.input-field,
+  select.glass-effect-subtle {
+    background-color: #334155 !important;
+    color: #e2e8f0 !important;
+  }
+  select option {
+    background-color: #334155;
+    color: #e2e8f0;
   }
 }
 

@@ -46,6 +46,7 @@ export class AddBusinessOwnerComponent implements OnInit {
   success: string | null = null;
   showCreateModal = false;
   activeMenu: string = 'ajouter propriétaire';
+  sidebarOpen = false;
 
   menuItems: MenuItem[] = [
     { label: 'Dashboard', icon: 'grid', route: '/dashboard/admin' },

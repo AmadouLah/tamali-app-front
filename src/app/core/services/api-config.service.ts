@@ -34,4 +34,8 @@ export class ApiConfigService {
   getServiceRequestsUrl(): string {
     return `${this.baseUrl}/service-requests`;
   }
+
+  getSalesUrl(businessId: string): string {
+    return `${this.baseUrl}/businesses/${businessId}/sales`;
+  }
 }

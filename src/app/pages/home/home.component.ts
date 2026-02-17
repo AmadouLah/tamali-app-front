@@ -18,6 +18,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   isAuthenticated = false;
   user: UserDto | null = null;
   showUserMenu = false;
+  currentYear = new Date().getFullYear();
 
   features = [
     {

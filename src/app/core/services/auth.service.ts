@@ -111,6 +111,49 @@ export class AuthService {
   }
 
   /**
+   * Met à jour le nom et prénom de l'utilisateur (API + session).
+   */
+  updateUserProfile(firstname: string, lastname: string): Observable<UserDto> {
+    const user = this.getUser();
+    if (!user?.id) throw new Error('Utilisateur non connecté');
+    return this.http.patch<UserDto>(`${this.apiConfig.getUsersUrl()}/${user.id}`, { firstname, lastname }).pipe(
+      tap(updated => this.setUser(updated))
+    );
+  }
+
+  /**
+   * Libellé affiché pour un utilisateur (nom + prénom ou email, jamais "null null").
+   */
+  getDisplayName(user: UserDto | null): string {
+    if (!user) return '';
+    const first = (user.firstname ?? '').trim();
+    const last = (user.lastname ?? '').trim();
+    const full = `${first} ${last}`.trim();
+    return full || user.email || '';
+  }
+
+  /**
+   * Initiales (première lettre prénom + première lettre nom). Null si aucune.
+   */
+  getInitials(user: UserDto | null): string | null {
+    if (!user) return null;
+    const first = (user.firstname ?? '').trim().charAt(0).toUpperCase();
+    const last = (user.lastname ?? '').trim().charAt(0).toUpperCase();
+    const initials = (first + last).trim();
+    return initials || null;
+  }
+
+  /**
+   * Met à jour le businessId de l'utilisateur en session (après configuration complète).
+   */
+  updateUserBusinessId(businessId: string): void {
+    const user = this.getUser();
+    if (user) {
+      this.setUser({ ...user, businessId });
+    }
+  }
+
+  /**
    * Vérifie si un utilisateur BUSINESS_OWNER doit être redirigé vers le setup.
    * Retourne true si l'utilisateur est un BUSINESS_OWNER sans entreprise.
    */
