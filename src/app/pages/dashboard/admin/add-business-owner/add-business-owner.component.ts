@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
+import { ApiConfigService } from '../../../../core/services/api-config.service';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 
 interface CreateBusinessOwnerRequest {
@@ -20,12 +21,12 @@ export class AddBusinessOwnerComponent implements OnInit {
   private readonly http = inject(HttpClient);
   readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
+  private readonly apiConfig = inject(ApiConfigService);
 
   form!: FormGroup;
   loading = false;
   error: string | null = null;
   success = false;
-  private readonly apiUrl = 'http://localhost:9999/api';
 
   ngOnInit(): void {
     this.initForm();
@@ -51,7 +52,7 @@ export class AddBusinessOwnerComponent implements OnInit {
       email: this.form.value.email.trim()
     };
 
-    this.http.post(`${this.apiUrl}/users/business-owner`, request).subscribe({
+    this.http.post(`${this.apiConfig.getUsersUrl()}/business-owner`, request).subscribe({
       next: () => {
         this.success = true;
         this.loading = false;

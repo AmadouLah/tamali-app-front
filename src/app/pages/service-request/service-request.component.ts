@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { ApiConfigService } from '../../core/services/api-config.service';
 import { GlassCardComponent } from '../../shared/components/glass-card/glass-card.component';
 
 @Component({
@@ -15,12 +16,12 @@ import { GlassCardComponent } from '../../shared/components/glass-card/glass-car
 export class ServiceRequestComponent {
   private readonly http = inject(HttpClient);
   private readonly fb = inject(FormBuilder);
+  private readonly apiConfig = inject(ApiConfigService);
 
   serviceRequestForm: FormGroup;
   loading = false;
   success = false;
   error: string | null = null;
-  private readonly apiUrl = 'http://localhost:9999/api/service-requests';
 
   constructor() {
     this.serviceRequestForm = this.fb.group({
@@ -38,7 +39,7 @@ export class ServiceRequestComponent {
     this.error = null;
     this.success = false;
 
-    this.http.post(this.apiUrl, this.serviceRequestForm.value).subscribe({
+    this.http.post(this.apiConfig.getServiceRequestsUrl(), this.serviceRequestForm.value).subscribe({
       next: () => {
         this.success = true;
         this.loading = false;

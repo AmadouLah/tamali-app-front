@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService, UserDto } from '../../../core/services/auth.service';
+import { ApiConfigService } from '../../../core/services/api-config.service';
 import { GlassCardComponent } from '../../../shared/components/glass-card/glass-card.component';
 
 export interface ServiceRequestDto {
@@ -49,12 +50,12 @@ export class AdminDashboardComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly apiConfig = inject(ApiConfigService);
 
   user: UserDto | null = null;
   serviceRequests: ServiceRequestDto[] = [];
   loading = false;
   error: string | null = null;
-  private readonly apiUrl = 'http://localhost:9999/api/service-requests';
 
   activeMenu: string = 'dashboard';
   searchQuery: string = '';
@@ -146,7 +147,7 @@ export class AdminDashboardComponent implements OnInit {
   loadServiceRequests(): void {
     this.loading = true;
     this.error = null;
-    this.http.get<ServiceRequestDto[]>(this.apiUrl).subscribe({
+    this.http.get<ServiceRequestDto[]>(this.apiConfig.getServiceRequestsUrl()).subscribe({
       next: (requests) => {
         this.serviceRequests = requests;
         this.loading = false;
@@ -159,7 +160,7 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   markAsProcessed(id: string): void {
-    this.http.patch<ServiceRequestDto>(`${this.apiUrl}/${id}/process`, {}).subscribe({
+    this.http.patch<ServiceRequestDto>(`${this.apiConfig.getServiceRequestsUrl()}/${id}/process`, {}).subscribe({
       next: () => {
         this.loadServiceRequests();
       },

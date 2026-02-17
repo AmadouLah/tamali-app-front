@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { ApiConfigService } from './api-config.service';
 
 export interface CheckEmailRequest {
   email: string;
@@ -53,24 +54,24 @@ export interface AuthResponse {
 })
 export class AuthService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:9999/api/auth';
+  private readonly apiConfig = inject(ApiConfigService);
   private readonly tokenKey = 'auth_token';
   private readonly userKey = 'auth_user';
 
   checkEmail(email: string): Observable<EmailCheckResponse> {
-    return this.http.post<EmailCheckResponse>(`${this.apiUrl}/check-email`, { email });
+    return this.http.post<EmailCheckResponse>(`${this.apiConfig.getAuthUrl()}/check-email`, { email });
   }
 
   loginWithPassword(request: PasswordLoginRequest): Observable<UserDto> {
-    return this.http.post<UserDto>(`${this.apiUrl}/login-password`, request);
+    return this.http.post<UserDto>(`${this.apiConfig.getAuthUrl()}/login-password`, request);
   }
 
   requestLoginCode(email: string): Observable<UserDto> {
-    return this.http.post<UserDto>(`${this.apiUrl}/request-code`, { email });
+    return this.http.post<UserDto>(`${this.apiConfig.getAuthUrl()}/request-code`, { email });
   }
 
   confirmLogin(request: ConfirmLoginRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/confirm-login`, request).pipe(
+    return this.http.post<AuthResponse>(`${this.apiConfig.getAuthUrl()}/confirm-login`, request).pipe(
       tap(response => {
         this.setToken(response.token);
         this.setUser(response.user);
@@ -79,7 +80,7 @@ export class AuthService {
   }
 
   directLogin(email: string, password: string): Observable<AuthResponse | UserDto> {
-    return this.http.post<AuthResponse | UserDto>(`${this.apiUrl}/direct-login`, { email, password }).pipe(
+    return this.http.post<AuthResponse | UserDto>(`${this.apiConfig.getAuthUrl()}/direct-login`, { email, password }).pipe(
       tap(response => {
         // Si c'est un AuthResponse, sauvegarder le token et l'utilisateur
         if ('token' in response) {
@@ -91,7 +92,7 @@ export class AuthService {
   }
 
   changeTemporaryPassword(userId: string, currentPassword: string, newPassword: string): Observable<UserDto> {
-    return this.http.post<UserDto>(`http://localhost:8080/api/users/${userId}/change-temporary-password`, {
+    return this.http.post<UserDto>(`${this.apiConfig.getUsersUrl()}/${userId}/change-temporary-password`, {
       currentPassword,
       newPassword
     });

@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
+import { ApiConfigService } from '../../../../core/services/api-config.service';
 
 interface BusinessSectorDto {
   id: string;
@@ -35,8 +36,7 @@ export class BusinessSectorsComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly http = inject(HttpClient);
   readonly router = inject(Router);
-
-  private readonly apiUrl = 'http://localhost:8080/api';
+  private readonly apiConfig = inject(ApiConfigService);
 
   sectors: BusinessSectorDto[] = [];
   form!: FormGroup;
@@ -69,7 +69,7 @@ export class BusinessSectorsComponent implements OnInit {
 
   loadSectors(): void {
     this.loading = true;
-    this.http.get<BusinessSectorDto[]>(`${this.apiUrl}/business-sectors`).subscribe({
+    this.http.get<BusinessSectorDto[]>(this.apiConfig.getBusinessSectorsUrl()).subscribe({
       next: (data) => {
         this.sectors = data;
         this.loading = false;
@@ -96,7 +96,7 @@ export class BusinessSectorsComponent implements OnInit {
       description: this.form.value.description?.trim() || undefined
     };
 
-    this.http.post<BusinessSectorDto>(`${this.apiUrl}/business-sectors`, request).subscribe({
+    this.http.post<BusinessSectorDto>(this.apiConfig.getBusinessSectorsUrl(), request).subscribe({
       next: () => {
         this.success = 'Secteur d\'activité créé avec succès';
         this.form.reset();
@@ -139,7 +139,7 @@ export class BusinessSectorsComponent implements OnInit {
       active: this.editForm.value.active
     };
 
-    this.http.patch<BusinessSectorDto>(`${this.apiUrl}/business-sectors/${sectorId}`, request).subscribe({
+    this.http.patch<BusinessSectorDto>(`${this.apiConfig.getBusinessSectorsUrl()}/${sectorId}`, request).subscribe({
       next: () => {
         this.success = 'Secteur d\'activité mis à jour avec succès';
         this.editingId = null;
@@ -160,7 +160,7 @@ export class BusinessSectorsComponent implements OnInit {
     this.loading = true;
     this.error = null;
 
-    this.http.delete(`${this.apiUrl}/business-sectors/${sectorId}`).subscribe({
+    this.http.delete(`${this.apiConfig.getBusinessSectorsUrl()}/${sectorId}`).subscribe({
       next: () => {
         this.success = 'Secteur d\'activité supprimé avec succès';
         this.loadSectors();

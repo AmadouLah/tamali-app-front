@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
+import { ApiConfigService } from '../../../core/services/api-config.service';
 import { GlassCardComponent } from '../../../shared/components/glass-card/glass-card.component';
 
 interface ChangeTemporaryPasswordRequest {
@@ -24,8 +25,7 @@ export class ChangePasswordComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
-
-  private readonly apiUrl = 'http://localhost:8080/api';
+  private readonly apiConfig = inject(ApiConfigService);
 
   form!: FormGroup;
   loading = false;
@@ -74,7 +74,7 @@ export class ChangePasswordComponent implements OnInit {
       newPassword: this.form.value.newPassword
     };
 
-    this.http.post(`${this.apiUrl}/users/${this.userId}/change-temporary-password`, request).subscribe({
+    this.http.post(`${this.apiConfig.getUsersUrl()}/${this.userId}/change-temporary-password`, request).subscribe({
       next: () => {
         // Après changement de mot de passe, rediriger vers le wizard de création d'entreprise
         this.router.navigate(['/business/setup'], { queryParams: { userId: this.userId } });

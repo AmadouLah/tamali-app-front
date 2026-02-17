@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AuthService } from '../../../core/services/auth.service';
+import { ApiConfigService } from '../../../core/services/api-config.service';
 import { GlassCardComponent } from '../../../shared/components/glass-card/glass-card.component';
 
 interface BusinessSectorDto {
@@ -56,8 +57,7 @@ export class SetupComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
   private readonly sanitizer = inject(DomSanitizer);
-
-  private readonly apiUrl = 'http://localhost:8080/api';
+  private readonly apiConfig = inject(ApiConfigService);
 
   currentStep = 1;
   totalSteps = 6;
@@ -132,7 +132,7 @@ export class SetupComponent implements OnInit {
 
   private loadUserBusiness(): void {
     if (!this.userId) return;
-    this.http.get<any>(`${this.apiUrl}/users/${this.userId}`).subscribe({
+    this.http.get<any>(`${this.apiConfig.getUsersUrl()}/${this.userId}`).subscribe({
       next: (user) => {
         if (user.businessId) {
           this.businessId = user.businessId;
@@ -147,7 +147,7 @@ export class SetupComponent implements OnInit {
 
   private loadBusiness(): void {
     if (!this.businessId) return;
-    this.http.get<BusinessDto>(`${this.apiUrl}/businesses/${this.businessId}`).subscribe({
+    this.http.get<BusinessDto>(`${this.apiConfig.getBusinessesUrl()}/${this.businessId}`).subscribe({
       next: (business) => {
         // Pré-remplir les formulaires avec les données existantes
         if (business.name) {
@@ -189,7 +189,7 @@ export class SetupComponent implements OnInit {
   }
 
   private loadSectors(): void {
-    this.http.get<BusinessSectorDto[]>(`${this.apiUrl}/business-sectors/active`).subscribe({
+    this.http.get<BusinessSectorDto[]>(`${this.apiConfig.getBusinessSectorsUrl()}/active`).subscribe({
       next: (data) => {
         this.sectors = data;
       },
@@ -198,7 +198,7 @@ export class SetupComponent implements OnInit {
   }
 
   private loadTemplates(): void {
-    this.http.get<ReceiptTemplateDto[]>(`${this.apiUrl}/receipt-templates`).subscribe({
+    this.http.get<ReceiptTemplateDto[]>(this.apiConfig.getReceiptTemplatesUrl()).subscribe({
       next: (data) => {
         this.templates = data;
         // Sélectionner le template par défaut si disponible
@@ -224,20 +224,20 @@ export class SetupComponent implements OnInit {
     try {
       if (!this.businessId) {
         // Créer l'entreprise et la lier à l'utilisateur
-        const createResponse = await this.http.post<BusinessDto>(`${this.apiUrl}/businesses`, {
+        const createResponse = await this.http.post<BusinessDto>(this.apiConfig.getBusinessesUrl(), {
           name: this.step1Form.value.name,
           email: this.authService.getUser()?.email
         }).toPromise();
         this.businessId = createResponse!.id;
         
         // Mettre à jour l'utilisateur pour lier l'entreprise
-        await this.http.patch(`${this.apiUrl}/users/${this.userId}`, {
+        await this.http.patch(`${this.apiConfig.getUsersUrl()}/${this.userId}`, {
           businessId: this.businessId
         }).toPromise();
       }
 
       // Mettre à jour l'étape 1
-      await this.http.patch(`${this.apiUrl}/businesses/${this.businessId}/step`, {
+      await this.http.patch(`${this.apiConfig.getBusinessesUrl()}/${this.businessId}/step`, {
         step: 1,
         name: this.step1Form.value.name,
         sectorId: this.step1Form.value.sectorId
@@ -260,7 +260,7 @@ export class SetupComponent implements OnInit {
     this.error = null;
 
     try {
-      await this.http.patch(`${this.apiUrl}/businesses/${this.businessId}/step`, {
+      await this.http.patch(`${this.apiConfig.getBusinessesUrl()}/${this.businessId}/step`, {
         step: 2,
         address: this.step2Form.value.address,
         phone: this.step2Form.value.phone,
@@ -281,7 +281,7 @@ export class SetupComponent implements OnInit {
     this.error = null;
 
     try {
-      await this.http.patch(`${this.apiUrl}/businesses/${this.businessId}/step`, {
+      await this.http.patch(`${this.apiConfig.getBusinessesUrl()}/${this.businessId}/step`, {
         step: 3,
         commerceRegisterNumber: this.step3Form.value.commerceRegisterNumber || null,
         identificationNumber: this.step3Form.value.identificationNumber || null
@@ -304,7 +304,7 @@ export class SetupComponent implements OnInit {
     this.error = null;
 
     try {
-      await this.http.patch(`${this.apiUrl}/businesses/${this.businessId}/step`, {
+      await this.http.patch(`${this.apiConfig.getBusinessesUrl()}/${this.businessId}/step`, {
         step: 4,
         legalStatus: this.step4Form.value.legalStatus,
         bankAccountNumber: this.step4Form.value.bankAccountNumber || null,
@@ -348,7 +348,7 @@ export class SetupComponent implements OnInit {
         // logoUrl = await this.uploadLogo(formData);
       }
 
-      await this.http.patch(`${this.apiUrl}/businesses/${this.businessId}/step`, {
+      await this.http.patch(`${this.apiConfig.getBusinessesUrl()}/${this.businessId}/step`, {
         step: 5,
         logoUrl: logoUrl || null
       }).toPromise();
@@ -395,7 +395,7 @@ export class SetupComponent implements OnInit {
     this.error = null;
 
     try {
-      await this.http.patch(`${this.apiUrl}/businesses/${this.businessId}/step`, {
+      await this.http.patch(`${this.apiConfig.getBusinessesUrl()}/${this.businessId}/step`, {
         step: 6,
         receiptTemplateId: this.selectedTemplate.id
       }).toPromise();

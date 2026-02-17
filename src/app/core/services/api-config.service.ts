@@ -1,0 +1,37 @@
+import { Injectable, inject } from '@angular/core';
+import { environment } from '../../../environments/environment';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class ApiConfigService {
+  private readonly baseUrl = environment.apiUrl;
+
+  getApiUrl(): string {
+    return this.baseUrl;
+  }
+
+  getAuthUrl(): string {
+    return `${this.baseUrl}/auth`;
+  }
+
+  getUsersUrl(): string {
+    return `${this.baseUrl}/users`;
+  }
+
+  getBusinessesUrl(): string {
+    return `${this.baseUrl}/businesses`;
+  }
+
+  getBusinessSectorsUrl(): string {
+    return `${this.baseUrl}/business-sectors`;
+  }
+
+  getReceiptTemplatesUrl(): string {
+    return `${this.baseUrl}/receipt-templates`;
+  }
+
+  getServiceRequestsUrl(): string {
+    return `${this.baseUrl}/service-requests`;
+  }
+}
