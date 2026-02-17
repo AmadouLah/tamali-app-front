@@ -6,6 +6,7 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService, UserDto } from '../../../core/services/auth.service';
 import { ApiConfigService } from '../../../core/services/api-config.service';
 import { GlassCardComponent } from '../../../shared/components/glass-card/glass-card.component';
+import { AdminSidebarComponent, MenuItem } from '../../../shared/components/admin-sidebar/admin-sidebar.component';
 
 export interface ServiceRequestDto {
   id: string;
@@ -13,14 +14,6 @@ export interface ServiceRequestDto {
   objective: string;
   processed: boolean;
   createdAt: string;
-}
-
-interface MenuItem {
-  label: string;
-  icon: string;
-  route?: string;
-  badge?: number;
-  active?: boolean;
 }
 
 interface KpiCard {
@@ -42,7 +35,7 @@ interface ChartData {
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, GlassCardComponent],
+  imports: [CommonModule, FormsModule, RouterModule, GlassCardComponent, AdminSidebarComponent],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.css'
 })
@@ -62,9 +55,10 @@ export class AdminDashboardComponent implements OnInit {
   period: string = 'weekly';
 
   menuItems: MenuItem[] = [
-    { label: 'Dashboard', icon: 'grid', route: '/dashboard/admin', active: true },
+    { label: 'Dashboard', icon: 'grid', route: '/dashboard/admin' },
     { label: 'Ajouter Propriétaire', icon: 'user-plus', route: '/dashboard/admin/add-business-owner' },
     { label: 'Secteurs d\'activité', icon: 'briefcase', route: '/dashboard/admin/business-sectors' },
+    { label: 'Mon Compte', icon: 'user', route: '/dashboard/admin/account' },
     { label: 'Performance', icon: 'chart-up' },
     { label: 'Statistics', icon: 'bar-chart' },
     { label: 'Analytics', icon: 'line-chart' },
@@ -139,6 +133,8 @@ export class AdminDashboardComponent implements OnInit {
       this.activeMenu = 'ajouter propriétaire';
     } else if (currentRoute.includes('business-sectors')) {
       this.activeMenu = 'secteurs d\'activité';
+    } else if (currentRoute.includes('account')) {
+      this.activeMenu = 'mon compte';
     } else if (currentRoute.includes('admin')) {
       this.activeMenu = 'dashboard';
     }

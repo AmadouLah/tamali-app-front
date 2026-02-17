@@ -6,6 +6,9 @@ import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { AdminDashboardComponent } from './pages/dashboard/admin/admin-dashboard.component';
 import { AddBusinessOwnerComponent } from './pages/dashboard/admin/add-business-owner/add-business-owner.component';
 import { BusinessSectorsComponent } from './pages/dashboard/admin/business-sectors/business-sectors.component';
+import { AccountComponent } from './pages/dashboard/admin/account/account.component';
+import { ChangePasswordComponent } from './pages/auth/change-password/change-password.component';
+import { SetupComponent } from './pages/business/setup/setup.component';
 
 export const routes: Routes = [
   {
@@ -18,11 +21,11 @@ export const routes: Routes = [
   },
   {
     path: 'auth/change-password',
-    loadComponent: () => import('./pages/auth/change-password/change-password.component').then(m => m.ChangePasswordComponent)
+    component: ChangePasswordComponent
   },
   {
     path: 'business/setup',
-    loadComponent: () => import('./pages/business/setup/setup.component').then(m => m.SetupComponent)
+    component: SetupComponent
   },
   {
     path: 'service-request',
@@ -43,5 +46,9 @@ export const routes: Routes = [
   {
     path: 'dashboard/admin/business-sectors',
     component: BusinessSectorsComponent
+  },
+  {
+    path: 'dashboard/admin/account',
+    component: AccountComponent
   }
 ];

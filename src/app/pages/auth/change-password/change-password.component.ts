@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { finalize } from 'rxjs/operators';
 import { AuthService } from '../../../core/services/auth.service';
 import { ApiConfigService } from '../../../core/services/api-config.service';
 import { GlassCardComponent } from '../../../shared/components/glass-card/glass-card.component';
@@ -74,10 +75,50 @@ export class ChangePasswordComponent implements OnInit {
       newPassword: this.form.value.newPassword
     };
 
-    this.http.post(`${this.apiConfig.getUsersUrl()}/${this.userId}/change-temporary-password`, request).subscribe({
-      next: () => {
-        // Après changement de mot de passe, rediriger vers le wizard de création d'entreprise
-        this.router.navigate(['/business/setup'], { queryParams: { userId: this.userId } });
+    this.authService.changeTemporaryPassword(
+      this.userId!,
+      request.currentPassword,
+      request.newPassword
+    ).pipe(
+      finalize(() => {
+        this.loading = false;
+      })
+    ).subscribe({
+      next: (updatedUser) => {
+        // Vérifier que l'utilisateur a bien été retourné avec toutes les informations
+        if (!updatedUser || !updatedUser.id) {
+          this.error = 'Erreur lors de la mise à jour. Veuillez réessayer.';
+          return;
+        }
+
+        // Vérifier que les rôles sont présents
+        if (!updatedUser.roles || updatedUser.roles.length === 0) {
+          this.error = 'Erreur : informations utilisateur incomplètes. Veuillez réessayer.';
+          return;
+        }
+
+        // Utiliser la méthode centralisée pour déterminer la redirection
+        const shouldRedirect = this.authService.shouldRedirectToSetup(updatedUser);
+        
+        // Navigation immédiate avec window.location si nécessaire pour forcer la navigation
+        if (shouldRedirect) {
+          // Rediriger vers le setup pour créer l'entreprise
+          this.router.navigate(['/business/setup'], { 
+            queryParams: { userId: updatedUser.id },
+            replaceUrl: true 
+          }).catch(() => {
+            // En cas d'échec, utiliser window.location comme fallback
+            window.location.href = `/business/setup?userId=${updatedUser.id}`;
+          });
+        } else {
+          // Rediriger vers le dashboard
+          this.router.navigate(['/dashboard'], { 
+            replaceUrl: true 
+          }).catch(() => {
+            // En cas d'échec, utiliser window.location comme fallback
+            window.location.href = '/dashboard';
+          });
+        }
       },
       error: (err) => {
         this.handleError(err);
@@ -108,7 +149,7 @@ export class ChangePasswordComponent implements OnInit {
   }
 
   private handleError(error: any): void {
-    this.loading = false;
+    // Le loading est déjà géré par finalize, pas besoin de le remettre à false ici
     if (error.error?.message) {
       this.error = error.error.message;
     } else if (error.message) {

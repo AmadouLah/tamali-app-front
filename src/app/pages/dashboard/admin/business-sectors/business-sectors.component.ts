@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { ApiConfigService } from '../../../../core/services/api-config.service';
+import { AdminSidebarComponent, MenuItem } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
 
 interface BusinessSectorDto {
   id: string;
@@ -28,7 +29,7 @@ interface BusinessSectorUpdateRequest {
 @Component({
   selector: 'app-business-sectors',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, GlassCardComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, GlassCardComponent, AdminSidebarComponent],
   templateUrl: './business-sectors.component.html',
   styleUrl: './business-sectors.component.css'
 })
@@ -45,6 +46,20 @@ export class BusinessSectorsComponent implements OnInit {
   loading = false;
   error: string | null = null;
   success: string | null = null;
+  activeMenu: string = 'secteurs d\'activité';
+
+  menuItems: MenuItem[] = [
+    { label: 'Dashboard', icon: 'grid', route: '/dashboard/admin' },
+    { label: 'Ajouter Propriétaire', icon: 'user-plus', route: '/dashboard/admin/add-business-owner' },
+    { label: 'Secteurs d\'activité', icon: 'briefcase', route: '/dashboard/admin/business-sectors' },
+    { label: 'Mon Compte', icon: 'user', route: '/dashboard/admin/account' },
+    { label: 'Performance', icon: 'chart-up' },
+    { label: 'Statistics', icon: 'bar-chart' },
+    { label: 'Analytics', icon: 'line-chart' },
+    { label: 'Payments', icon: 'credit-card', badge: 3 },
+    { label: 'Help', icon: 'help-circle' },
+    { label: 'Settings', icon: 'settings' }
+  ];
 
   ngOnInit(): void {
     this.initForm();

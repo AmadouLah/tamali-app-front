@@ -335,11 +335,11 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               @for (template of templates; track template.id) {
                 <div
-                  [class.border-purple-500]="selectedTemplate?.id === template.id"
-                  [class.bg-purple-500/20]="selectedTemplate?.id === template.id"
+                  [ngClass]="{
+                    'border-purple-500 bg-purple-500/20': selectedTemplate?.id === template.id
+                  }"
                   (click)="selectTemplate(template)"
-                  class="p-4 border border-white/20 rounded-lg cursor-pointer hover:bg-white/10 transition-all"
-                >
+                  class="p-4 border border-white/20 rounded-lg cursor-pointer hover:bg-white/10 transition-all">
                   <h3 class="text-lg font-semibold text-white mb-2">{{ template.name }}</h3>
                   @if (template.isDefault) {
                     <span class="text-xs text-purple-400">Par défaut</span>

@@ -382,7 +382,7 @@ export class SetupComponent implements OnInit {
       ${html}
     `;
 
-    this.previewHtml = this.sanitizer.sanitize(1, fullHtml) as string;
+    this.previewHtml = this.sanitizer.bypassSecurityTrustHtml(fullHtml);
   }
 
   async onStep6Submit(): Promise<void> {

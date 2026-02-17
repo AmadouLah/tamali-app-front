@@ -37,7 +37,15 @@ export class DashboardComponent implements OnInit {
         this.router.navigate(['/dashboard/admin']);
         break;
       case 'BUSINESS_OWNER':
-        this.router.navigate(['/dashboard/business']);
+        // Utiliser la méthode centralisée pour déterminer la redirection
+        if (this.authService.shouldRedirectToSetup(user)) {
+          this.router.navigate(['/business/setup'], { 
+            queryParams: { userId: user.id }
+          });
+        } else {
+          // Sinon, rediriger vers le dashboard business (à créer si nécessaire)
+          this.router.navigate(['/dashboard/business']);
+        }
         break;
       default:
         this.router.navigate(['/auth/login']);

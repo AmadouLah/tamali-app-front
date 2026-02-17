@@ -94,7 +94,15 @@ export class LoginComponent implements OnDestroy {
         
         // Sinon, si c'est un AuthResponse, l'utilisateur est connecté
         if ('token' in response) {
-          this.router.navigate(['/dashboard']);
+          const user = response.user;
+          // Utiliser la méthode centralisée pour déterminer la redirection
+          if (this.authService.shouldRedirectToSetup(user)) {
+            this.router.navigate(['/business/setup'], {
+              queryParams: { userId: user.id }
+            });
+          } else {
+            this.router.navigate(['/dashboard']);
+          }
           return;
         }
 
@@ -153,8 +161,16 @@ export class LoginComponent implements OnDestroy {
       userId: this.userId!,
       code: this.codeForm.value.code
     }).subscribe({
-      next: () => {
-        this.router.navigate(['/']);
+      next: (response) => {
+        const user = response.user;
+        // Utiliser la méthode centralisée pour déterminer la redirection
+        if (this.authService.shouldRedirectToSetup(user)) {
+          this.router.navigate(['/business/setup'], {
+            queryParams: { userId: user.id }
+          });
+        } else {
+          this.router.navigate(['/dashboard']);
+        }
       },
       error: (err) => {
         this.error = err.error?.message || 'Code invalide ou expiré.';

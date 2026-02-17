@@ -1,25 +1,29 @@
-<div class="admin-dashboard-container">
-  <!-- Background animations -->
-  <div class="liquid-gradient fixed inset-0 -z-10 bg-gradient-to-br from-slate-900/90 via-purple-900/80 to-slate-900/90"></div>
-  <div class="geometric-shapes fixed inset-0 -z-10"></div>
+<div class="admin-dashboard-container min-h-screen relative overflow-x-hidden" data-theme="liquidGlace">
+  <!-- Background gradient animé avec formes géométriques -->
+  <div class="liquid-gradient fixed inset-0 -z-10"></div>
+  <div class="fixed inset-0 -z-10 bg-gradient-to-br from-slate-900/90 via-purple-900/80 to-slate-900/90"></div>
+  
+  <!-- Formes géométriques flottantes -->
+  <div class="geometric-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
 
-  <div class="min-h-screen p-6">
+  <!-- Sidebar -->
+  <app-admin-sidebar [menuItems]="menuItems" [activeMenu]="activeMenu" (menuClick)="activeMenu = $event"></app-admin-sidebar>
+
+  <!-- Main Content -->
+  <div class="flex-1 ml-64 flex flex-col">
     <!-- Header -->
-    <div class="mb-6 flex items-center justify-between">
-      <div>
-        <h1 class="text-3xl font-bold text-white mb-2">Gestion des secteurs d'activité</h1>
-        <p class="text-gray-300">Créez et gérez les secteurs d'activité disponibles pour les entreprises</p>
-      </div>
-      <button
-        type="button"
-        (click)="router.navigate(['/dashboard/admin'])"
-        class="px-4 py-2 glass-effect-subtle border border-white/20 rounded-lg text-white hover:bg-white/10 transition-all"
-      >
-        ← Retour
-      </button>
-    </div>
+    <header class="glass-effect-strong border-b border-white/20 px-6 py-4 sticky top-0 z-30">
+      <h1 class="text-2xl font-bold text-white">Gestion des secteurs d'activité</h1>
+      <p class="text-gray-300 text-sm mt-1">Créez et gérez les secteurs d'activité disponibles pour les entreprises</p>
+    </header>
 
-    <!-- Messages -->
+    <!-- Content -->
+    <main class="flex-1 p-6 overflow-y-auto">
+      <!-- Messages -->
     @if (success) {
       <app-glass-card variant="strong" class="mb-6 p-4 bg-green-500/20 border-green-500/50">
         <p class="text-green-300">{{ success }}</p>
@@ -175,5 +179,6 @@
         }
       </app-glass-card>
     </div>
+    </main>
   </div>
 </div>

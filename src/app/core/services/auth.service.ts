@@ -95,7 +95,38 @@ export class AuthService {
     return this.http.post<UserDto>(`${this.apiConfig.getUsersUrl()}/${userId}/change-temporary-password`, {
       currentPassword,
       newPassword
-    });
+    }).pipe(
+      tap(updatedUser => {
+        // Mettre à jour l'utilisateur dans le localStorage après changement de mot de passe
+        // Utiliser directement les données retournées par le backend pour s'assurer d'avoir toutes les informations à jour
+        if (updatedUser && updatedUser.id) {
+          const updatedUserData = {
+            ...updatedUser,
+            mustChangePassword: false
+          };
+          this.setUser(updatedUserData);
+        }
+      })
+    );
+  }
+
+  /**
+   * Vérifie si un utilisateur BUSINESS_OWNER doit être redirigé vers le setup.
+   * Retourne true si l'utilisateur est un BUSINESS_OWNER sans entreprise.
+   */
+  shouldRedirectToSetup(user: UserDto | null): boolean {
+    if (!user) return false;
+    
+    // Vérifier si l'utilisateur a des rôles
+    if (!user.roles || user.roles.length === 0) return false;
+    
+    // Vérifier si l'utilisateur est un BUSINESS_OWNER
+    const isBusinessOwner = user.roles.some(role => role.type === 'BUSINESS_OWNER');
+    
+    // Vérifier si l'utilisateur n'a pas d'entreprise
+    const hasNoBusiness = !user.businessId || user.businessId === '';
+    
+    return isBusinessOwner && hasNoBusiness;
   }
 
   getToken(): string | null {
