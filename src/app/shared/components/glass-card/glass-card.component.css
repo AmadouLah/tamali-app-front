@@ -1,0 +1,44 @@
+.glass-card {
+  @apply rounded-3xl p-6 transition-all duration-500;
+  @apply shadow-xl;
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.glass-card:hover::before {
+  left: 100%;
+}
+
+.glass-card.default {
+  @apply glass-effect;
+}
+
+.glass-card.strong {
+  @apply glass-effect-strong;
+}
+
+.glass-card.subtle {
+  @apply glass-effect-subtle;
+}
+
+.glass-card.hover-effect {
+  @apply cursor-pointer;
+}
+
+.glass-card.hover-effect:hover {
+  @apply scale-[1.03] glow-effect-hover;
+  transform: translateY(-6px);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border-color: rgba(255, 255, 255, 0.35);
+}

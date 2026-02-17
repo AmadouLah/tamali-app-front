@@ -1,0 +1,179 @@
+import { Component, inject, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
+import { AuthService } from '../../../core/services/auth.service';
+import { GlassCardComponent } from '../../../shared/components/glass-card/glass-card.component';
+
+@Component({
+  selector: 'app-login',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, GlassCardComponent],
+  templateUrl: './login.component.html',
+  styleUrl: './login.component.css'
+})
+export class LoginComponent implements OnDestroy {
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly fb = inject(FormBuilder);
+
+  loginForm: FormGroup;
+  passwordForm: FormGroup;
+  codeForm: FormGroup;
+  step: 'email' | 'password' | 'code' = 'email';
+  loading = false;
+  error: string | null = null;
+  userId: string | null = null;
+  userEmail: string | null = null;
+  resendCooldown = 0;
+  resendAttempts = 0;
+  maxResendAttempts = 3;
+  private resendTimer: any = null;
+
+  constructor() {
+    this.loginForm = this.fb.group({
+      email: ['', [Validators.required, Validators.email]]
+    });
+
+    this.passwordForm = this.fb.group({
+      password: ['', [Validators.required]]
+    });
+
+    this.codeForm = this.fb.group({
+      code: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]]
+    });
+
+    // La vérification automatique est gérée dans onCodeInput pour éviter les doubles appels
+  }
+
+  onSubmitEmail(): void {
+    if (this.loginForm.invalid) {
+      return;
+    }
+
+    this.loading = true;
+    this.error = null;
+
+    this.authService.checkEmail(this.loginForm.value.email).subscribe({
+      next: (response) => {
+        if (response.exists && response.userId) {
+          this.userId = response.userId;
+          this.step = 'password';
+        } else {
+          this.error = 'Aucun compte trouvé avec cet email.';
+        }
+        this.loading = false;
+      },
+      error: (err) => {
+        this.error = err.error?.message || 'Erreur lors de la vérification de l\'email.';
+        this.loading = false;
+      }
+    });
+  }
+
+  onSubmitPassword(): void {
+    if (this.passwordForm.invalid || !this.userId) {
+      return;
+    }
+
+    this.loading = true;
+    this.error = null;
+
+    this.authService.loginWithPassword({
+      userId: this.userId!,
+      password: this.passwordForm.value.password
+    }).subscribe({
+      next: (user) => {
+        this.userEmail = user.email;
+        this.step = 'code';
+        this.resendAttempts = 0;
+        this.startResendCooldown();
+        this.loading = false;
+      },
+      error: (err) => {
+        this.error = err.error?.message || 'Mot de passe incorrect.';
+        this.loading = false;
+      }
+    });
+  }
+
+  verifyCode(): void {
+    if (this.codeForm.invalid || !this.userId || this.loading) {
+      return;
+    }
+
+    this.loading = true;
+    this.error = null;
+
+    this.authService.confirmLogin({
+      userId: this.userId!,
+      code: this.codeForm.value.code
+    }).subscribe({
+      next: () => {
+        this.router.navigate(['/']);
+      },
+      error: (err) => {
+        this.error = err.error?.message || 'Code invalide ou expiré.';
+        this.codeForm.patchValue({ code: '' });
+        this.loading = false;
+      }
+    });
+  }
+
+  resendCode(): void {
+    if (this.resendCooldown > 0 || this.resendAttempts >= this.maxResendAttempts || !this.userEmail) {
+      return;
+    }
+
+    this.loading = true;
+    this.error = null;
+
+    this.authService.requestLoginCode(this.userEmail).subscribe({
+      next: () => {
+        this.resendAttempts++;
+        this.startResendCooldown();
+        this.loading = false;
+      },
+      error: (err) => {
+        this.error = err.error?.message || 'Erreur lors de l\'envoi du code.';
+        this.loading = false;
+      }
+    });
+  }
+
+  startResendCooldown(): void {
+    this.resendCooldown = 30;
+    if (this.resendTimer) {
+      clearInterval(this.resendTimer);
+    }
+    this.resendTimer = setInterval(() => {
+      this.resendCooldown--;
+      if (this.resendCooldown <= 0) {
+        clearInterval(this.resendTimer);
+        this.resendTimer = null;
+      }
+    }, 1000);
+  }
+
+  onCodeInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const value = input.value.replace(/\D/g, '');
+    this.codeForm.patchValue({ code: value }, { emitEvent: false });
+    // Déclencher manuellement la vérification si 6 chiffres
+    if (value.length === 6) {
+      setTimeout(() => this.verifyCode(), 100);
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.resendTimer) {
+      clearInterval(this.resendTimer);
+    }
+  }
+
+  backToEmail(): void {
+    this.step = 'email';
+    this.passwordForm.reset();
+    this.error = null;
+  }
+}

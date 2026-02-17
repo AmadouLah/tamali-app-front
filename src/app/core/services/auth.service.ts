@@ -1,0 +1,105 @@
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
+
+export interface CheckEmailRequest {
+  email: string;
+}
+
+export interface EmailCheckResponse {
+  exists: boolean;
+  userId: string | null;
+  email: string;
+}
+
+export interface PasswordLoginRequest {
+  userId: string;
+  password: string;
+}
+
+export interface RequestCodeRequest {
+  email: string;
+}
+
+export interface ConfirmLoginRequest {
+  userId: string;
+  code: string;
+}
+
+export interface RoleDto {
+  id: string;
+  type: 'SUPER_ADMIN' | 'BUSINESS_OWNER';
+}
+
+export interface UserDto {
+  id: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  enabled: boolean;
+  businessId?: string;
+  roles?: RoleDto[];
+}
+
+export interface AuthResponse {
+  token: string;
+  user: UserDto;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthService {
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = 'http://localhost:9999/api/auth';
+  private readonly tokenKey = 'auth_token';
+  private readonly userKey = 'auth_user';
+
+  checkEmail(email: string): Observable<EmailCheckResponse> {
+    return this.http.post<EmailCheckResponse>(`${this.apiUrl}/check-email`, { email });
+  }
+
+  loginWithPassword(request: PasswordLoginRequest): Observable<UserDto> {
+    return this.http.post<UserDto>(`${this.apiUrl}/login-password`, request);
+  }
+
+  requestLoginCode(email: string): Observable<UserDto> {
+    return this.http.post<UserDto>(`${this.apiUrl}/request-code`, { email });
+  }
+
+  confirmLogin(request: ConfirmLoginRequest): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/confirm-login`, request).pipe(
+      tap(response => {
+        this.setToken(response.token);
+        this.setUser(response.user);
+      })
+    );
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem(this.tokenKey);
+  }
+
+  getUser(): UserDto | null {
+    const userStr = localStorage.getItem(this.userKey);
+    return userStr ? JSON.parse(userStr) : null;
+  }
+
+  isAuthenticated(): boolean {
+    return !!this.getToken();
+  }
+
+  logout(): void {
+    localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(this.userKey);
+  }
+
+  private setToken(token: string): void {
+    localStorage.setItem(this.tokenKey, token);
+  }
+
+  private setUser(user: UserDto): void {
+    localStorage.setItem(this.userKey, JSON.stringify(user));
+  }
+}

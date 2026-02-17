@@ -1,0 +1,14 @@
+.offline-indicator {
+  @apply fixed top-0 left-0 right-0 z-50;
+  @apply bg-red-900/20 backdrop-blur-xl;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
