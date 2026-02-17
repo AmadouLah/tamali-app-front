@@ -34,12 +34,13 @@ export interface RoleDto {
 
 export interface UserDto {
   id: string;
-  firstname: string;
-  lastname: string;
+  firstname?: string;
+  lastname?: string;
   email: string;
   enabled: boolean;
   businessId?: string;
   roles?: RoleDto[];
+  mustChangePassword?: boolean;
 }
 
 export interface AuthResponse {
@@ -75,6 +76,25 @@ export class AuthService {
         this.setUser(response.user);
       })
     );
+  }
+
+  directLogin(email: string, password: string): Observable<AuthResponse | UserDto> {
+    return this.http.post<AuthResponse | UserDto>(`${this.apiUrl}/direct-login`, { email, password }).pipe(
+      tap(response => {
+        // Si c'est un AuthResponse, sauvegarder le token et l'utilisateur
+        if ('token' in response) {
+          this.setToken(response.token);
+          this.setUser(response.user);
+        }
+      })
+    );
+  }
+
+  changeTemporaryPassword(userId: string, currentPassword: string, newPassword: string): Observable<UserDto> {
+    return this.http.post<UserDto>(`http://localhost:8080/api/users/${userId}/change-temporary-password`, {
+      currentPassword,
+      newPassword
+    });
   }
 
   getToken(): string | null {

@@ -1,0 +1,382 @@
+<div class="setup-container">
+  <!-- Background animations -->
+  <div class="liquid-gradient fixed inset-0 -z-10 bg-gradient-to-br from-slate-900/90 via-purple-900/80 to-slate-900/90"></div>
+  <div class="geometric-shapes fixed inset-0 -z-10"></div>
+
+  <div class="min-h-screen p-6">
+    <div class="max-w-4xl mx-auto">
+      <!-- Progress bar -->
+      <div class="mb-8">
+        <div class="flex items-center justify-between mb-2">
+          @for (step of [1,2,3,4,5,6]; track step) {
+            <div class="flex-1 flex items-center">
+              <div [class]="step <= currentStep ? 'bg-purple-600' : 'bg-gray-600'" 
+                   class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                {{ step }}
+              </div>
+              @if (step < 6) {
+                <div [class]="step < currentStep ? 'bg-purple-600' : 'bg-gray-600'" 
+                     class="flex-1 h-1 mx-2"></div>
+              }
+            </div>
+          }
+        </div>
+        <div class="text-center text-gray-300 text-sm">
+          Étape {{ currentStep }} sur {{ totalSteps }}
+        </div>
+      </div>
+
+      <!-- Messages -->
+      @if (error) {
+        <app-glass-card variant="strong" class="mb-6 p-4 bg-red-500/20 border-red-500/50">
+          <p class="text-red-300">{{ error }}</p>
+        </app-glass-card>
+      }
+
+      <!-- Step 1: Nom et secteur -->
+      @if (currentStep === 1) {
+        <app-glass-card variant="strong" class="p-8">
+          <h2 class="text-2xl font-bold text-white mb-6">Étape 1 : Informations de base</h2>
+          <form [formGroup]="step1Form" (ngSubmit)="onStep1Submit()">
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                  Nom de l'entreprise <span class="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  formControlName="name"
+                  [class.border-red-500]="isFieldInvalid(step1Form, 'name')"
+                  class="w-full px-4 py-3 glass-effect-subtle border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  placeholder="Nom de votre entreprise"
+                />
+                @if (isFieldInvalid(step1Form, 'name')) {
+                  <p class="mt-1 text-sm text-red-400">{{ getFieldError(step1Form, 'name') }}</p>
+                }
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                  Secteur d'activité <span class="text-red-400">*</span>
+                </label>
+                <select
+                  formControlName="sectorId"
+                  [class.border-red-500]="isFieldInvalid(step1Form, 'sectorId')"
+                  class="w-full px-4 py-3 glass-effect-subtle border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                >
+                  <option value="">Sélectionnez un secteur</option>
+                  @for (sector of sectors; track sector.id) {
+                    <option [value]="sector.id">{{ sector.name }}</option>
+                  }
+                </select>
+                @if (isFieldInvalid(step1Form, 'sectorId')) {
+                  <p class="mt-1 text-sm text-red-400">{{ getFieldError(step1Form, 'sectorId') }}</p>
+                }
+              </div>
+
+              <div class="flex justify-end gap-4 mt-6">
+                <button
+                  type="submit"
+                  [disabled]="step1Form.invalid || loading"
+                  class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all disabled:opacity-50"
+                >
+                  @if (loading) { Enregistrement... } @else { Suivant }
+                </button>
+              </div>
+            </div>
+          </form>
+        </app-glass-card>
+      }
+
+      <!-- Step 2: Adresse, téléphone, pays -->
+      @if (currentStep === 2) {
+        <app-glass-card variant="strong" class="p-8">
+          <h2 class="text-2xl font-bold text-white mb-6">Étape 2 : Coordonnées</h2>
+          <form [formGroup]="step2Form" (ngSubmit)="onStep2Submit()">
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                  Adresse <span class="text-red-400">*</span>
+                </label>
+                <textarea
+                  formControlName="address"
+                  rows="3"
+                  [class.border-red-500]="isFieldInvalid(step2Form, 'address')"
+                  class="w-full px-4 py-3 glass-effect-subtle border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  placeholder="Adresse complète de l'entreprise"
+                ></textarea>
+                @if (isFieldInvalid(step2Form, 'address')) {
+                  <p class="mt-1 text-sm text-red-400">{{ getFieldError(step2Form, 'address') }}</p>
+                }
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                  Téléphone <span class="text-red-400">*</span>
+                </label>
+                <input
+                  type="tel"
+                  formControlName="phone"
+                  [class.border-red-500]="isFieldInvalid(step2Form, 'phone')"
+                  class="w-full px-4 py-3 glass-effect-subtle border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  placeholder="+223 XX XX XX XX"
+                />
+                @if (isFieldInvalid(step2Form, 'phone')) {
+                  <p class="mt-1 text-sm text-red-400">{{ getFieldError(step2Form, 'phone') }}</p>
+                }
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                  Pays <span class="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  formControlName="country"
+                  [class.border-red-500]="isFieldInvalid(step2Form, 'country')"
+                  class="w-full px-4 py-3 glass-effect-subtle border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  placeholder="Pays"
+                />
+                @if (isFieldInvalid(step2Form, 'country')) {
+                  <p class="mt-1 text-sm text-red-400">{{ getFieldError(step2Form, 'country') }}</p>
+                }
+              </div>
+
+              <div class="flex justify-between gap-4 mt-6">
+                <button
+                  type="button"
+                  (click)="previousStep()"
+                  class="px-6 py-3 glass-effect-subtle border border-white/20 text-white rounded-lg hover:bg-white/10 transition-all"
+                >
+                  Précédent
+                </button>
+                <button
+                  type="submit"
+                  [disabled]="step2Form.invalid || loading"
+                  class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all disabled:opacity-50"
+                >
+                  @if (loading) { Enregistrement... } @else { Suivant }
+                </button>
+              </div>
+            </div>
+          </form>
+        </app-glass-card>
+      }
+
+      <!-- Step 3: Registre de commerce -->
+      @if (currentStep === 3) {
+        <app-glass-card variant="strong" class="p-8">
+          <h2 class="text-2xl font-bold text-white mb-6">Étape 3 : Informations légales (optionnel)</h2>
+          <form [formGroup]="step3Form" (ngSubmit)="onStep3Submit()">
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                  N° de registre de commerce
+                </label>
+                <input
+                  type="text"
+                  formControlName="commerceRegisterNumber"
+                  class="w-full px-4 py-3 glass-effect-subtle border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  placeholder="Numéro de registre de commerce"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                  Numéro d'identification
+                </label>
+                <input
+                  type="text"
+                  formControlName="identificationNumber"
+                  class="w-full px-4 py-3 glass-effect-subtle border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  placeholder="Numéro d'identification"
+                />
+              </div>
+
+              <div class="flex justify-between gap-4 mt-6">
+                <button
+                  type="button"
+                  (click)="previousStep()"
+                  class="px-6 py-3 glass-effect-subtle border border-white/20 text-white rounded-lg hover:bg-white/10 transition-all"
+                >
+                  Précédent
+                </button>
+                <button
+                  type="submit"
+                  [disabled]="loading"
+                  class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all disabled:opacity-50"
+                >
+                  @if (loading) { Enregistrement... } @else { Suivant }
+                </button>
+              </div>
+            </div>
+          </form>
+        </app-glass-card>
+      }
+
+      <!-- Step 4: Statut juridique -->
+      @if (currentStep === 4) {
+        <app-glass-card variant="strong" class="p-8">
+          <h2 class="text-2xl font-bold text-white mb-6">Étape 4 : Statut juridique</h2>
+          <form [formGroup]="step4Form" (ngSubmit)="onStep4Submit()">
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                  Statut juridique <span class="text-red-400">*</span>
+                </label>
+                <select
+                  formControlName="legalStatus"
+                  [class.border-red-500]="isFieldInvalid(step4Form, 'legalStatus')"
+                  class="w-full px-4 py-3 glass-effect-subtle border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                >
+                  <option value="">Sélectionnez un statut</option>
+                  @for (status of legalStatuses; track status.value) {
+                    <option [value]="status.value">{{ status.label }}</option>
+                  }
+                </select>
+                @if (isFieldInvalid(step4Form, 'legalStatus')) {
+                  <p class="mt-1 text-sm text-red-400">{{ getFieldError(step4Form, 'legalStatus') }}</p>
+                }
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                  Numéro de compte bancaire
+                </label>
+                <input
+                  type="text"
+                  formControlName="bankAccountNumber"
+                  class="w-full px-4 py-3 glass-effect-subtle border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  placeholder="Numéro de compte bancaire"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                  Site web
+                </label>
+                <input
+                  type="url"
+                  formControlName="websiteUrl"
+                  class="w-full px-4 py-3 glass-effect-subtle border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  placeholder="https://www.exemple.com"
+                />
+              </div>
+
+              <div class="flex justify-between gap-4 mt-6">
+                <button
+                  type="button"
+                  (click)="previousStep()"
+                  class="px-6 py-3 glass-effect-subtle border border-white/20 text-white rounded-lg hover:bg-white/10 transition-all"
+                >
+                  Précédent
+                </button>
+                <button
+                  type="submit"
+                  [disabled]="step4Form.invalid || loading"
+                  class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all disabled:opacity-50"
+                >
+                  @if (loading) { Enregistrement... } @else { Suivant }
+                </button>
+              </div>
+            </div>
+          </form>
+        </app-glass-card>
+      }
+
+      <!-- Step 5: Logo -->
+      @if (currentStep === 5) {
+        <app-glass-card variant="strong" class="p-8">
+          <h2 class="text-2xl font-bold text-white mb-6">Étape 5 : Logo de l'entreprise (optionnel)</h2>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                Logo de l'entreprise
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                (change)="onLogoSelected($event)"
+                class="w-full px-4 py-3 glass-effect-subtle border border-white/20 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700"
+              />
+              @if (logoPreview) {
+                <div class="mt-4">
+                  <img [src]="logoPreview" alt="Logo preview" class="max-w-xs max-h-32 object-contain">
+                </div>
+              }
+            </div>
+
+            <div class="flex justify-between gap-4 mt-6">
+              <button
+                type="button"
+                (click)="previousStep()"
+                class="px-6 py-3 glass-effect-subtle border border-white/20 text-white rounded-lg hover:bg-white/10 transition-all"
+              >
+                Précédent
+              </button>
+              <button
+                type="button"
+                (click)="onStep5Submit()"
+                [disabled]="loading"
+                class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all disabled:opacity-50"
+              >
+                @if (loading) { Enregistrement... } @else { Suivant }
+              </button>
+            </div>
+          </div>
+        </app-glass-card>
+      }
+
+      <!-- Step 6: Template de reçu -->
+      @if (currentStep === 6) {
+        <app-glass-card variant="strong" class="p-8">
+          <h2 class="text-2xl font-bold text-white mb-6">Étape 6 : Choix du template de reçu</h2>
+          <div class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              @for (template of templates; track template.id) {
+                <div
+                  [class.border-purple-500]="selectedTemplate?.id === template.id"
+                  [class.bg-purple-500/20]="selectedTemplate?.id === template.id"
+                  (click)="selectTemplate(template)"
+                  class="p-4 border border-white/20 rounded-lg cursor-pointer hover:bg-white/10 transition-all"
+                >
+                  <h3 class="text-lg font-semibold text-white mb-2">{{ template.name }}</h3>
+                  @if (template.isDefault) {
+                    <span class="text-xs text-purple-400">Par défaut</span>
+                  }
+                </div>
+              }
+            </div>
+
+            @if (selectedTemplate && previewHtml) {
+              <div class="mt-6">
+                <h3 class="text-lg font-semibold text-white mb-4">Aperçu du reçu</h3>
+                <div class="glass-effect-subtle border border-white/20 rounded-lg p-6">
+                  <div [innerHTML]="previewHtml"></div>
+                </div>
+              </div>
+            }
+
+            <div class="flex justify-between gap-4 mt-6">
+              <button
+                type="button"
+                (click)="previousStep()"
+                class="px-6 py-3 glass-effect-subtle border border-white/20 text-white rounded-lg hover:bg-white/10 transition-all"
+              >
+                Précédent
+              </button>
+              <button
+                type="button"
+                (click)="onStep6Submit()"
+                [disabled]="!selectedTemplate || loading"
+                class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all disabled:opacity-50"
+              >
+                @if (loading) { Finalisation... } @else { Terminer la configuration }
+              </button>
+            </div>
+          </div>
+        </app-glass-card>
+      }
+    </div>
+  </div>
+</div>

@@ -1,4 +1,4 @@
-.admin-dashboard-container {
+.add-business-owner-container {
   @apply min-h-screen relative overflow-x-hidden;
 }
 
@@ -57,24 +57,5 @@
   }
   66% {
     transform: translate(-30px, 30px) scale(0.9);
-  }
-}
-
-.revenue-bar {
-  @apply bg-blue-500;
-  background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,.2) 4px, rgba(255,255,255,.2) 8px);
-}
-
-.expenses-bar {
-  @apply bg-yellow-500;
-  background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,.2) 4px, rgba(255,255,255,.2) 8px);
-}
-
-@media (max-width: 1024px) {
-  .sidebar {
-    @apply -translate-x-full;
-  }
-  .main-content {
-    @apply ml-0;
   }
 }

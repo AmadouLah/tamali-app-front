@@ -29,6 +29,7 @@ export class LoginComponent implements OnDestroy {
   resendAttempts = 0;
   maxResendAttempts = 3;
   private resendTimer: any = null;
+  mustChangePassword = false;
 
   constructor() {
     this.loginForm = this.fb.group({
@@ -53,6 +54,7 @@ export class LoginComponent implements OnDestroy {
 
     this.loading = true;
     this.error = null;
+    this.userEmail = this.loginForm.value.email;
 
     this.authService.checkEmail(this.loginForm.value.email).subscribe({
       next: (response) => {
@@ -72,27 +74,69 @@ export class LoginComponent implements OnDestroy {
   }
 
   onSubmitPassword(): void {
-    if (this.passwordForm.invalid || !this.userId) {
+    if (this.passwordForm.invalid || !this.userEmail) {
       return;
     }
 
     this.loading = true;
     this.error = null;
 
-    this.authService.loginWithPassword({
-      userId: this.userId!,
-      password: this.passwordForm.value.password
-    }).subscribe({
-      next: (user) => {
-        this.userEmail = user.email;
-        this.step = 'code';
-        this.resendAttempts = 0;
-        this.startResendCooldown();
+    // Utiliser directLogin pour détecter mustChangePassword
+    this.authService.directLogin(this.userEmail, this.passwordForm.value.password).subscribe({
+      next: (response) => {
+        // Si mustChangePassword est true, rediriger vers la page de changement
+        if ('mustChangePassword' in response && response.mustChangePassword) {
+          this.router.navigate(['/auth/change-password'], {
+            queryParams: { userId: response.id }
+          });
+          return;
+        }
+        
+        // Sinon, si c'est un AuthResponse, l'utilisateur est connecté
+        if ('token' in response) {
+          this.router.navigate(['/dashboard']);
+          return;
+        }
+
+        // Sinon, continuer avec le flux OTP normal
+        if ('id' in response) {
+          this.userId = response.id;
+          this.userEmail = response.email;
+          this.step = 'code';
+          this.resendAttempts = 0;
+          this.startResendCooldown();
+        }
         this.loading = false;
       },
       error: (err) => {
-        this.error = err.error?.message || 'Mot de passe incorrect.';
-        this.loading = false;
+        // Si l'erreur indique qu'il faut changer le mot de passe
+        if (err.error?.message?.includes('changer votre mot de passe')) {
+          // Essayer avec loginWithPassword pour obtenir l'userId
+          if (this.userId) {
+            this.authService.loginWithPassword({
+              userId: this.userId,
+              password: this.passwordForm.value.password
+            }).subscribe({
+              next: (user) => {
+                if (user.mustChangePassword) {
+                  this.router.navigate(['/auth/change-password'], {
+                    queryParams: { userId: user.id }
+                  });
+                }
+              },
+              error: () => {
+                this.error = err.error?.message || 'Mot de passe incorrect.';
+                this.loading = false;
+              }
+            });
+          } else {
+            this.error = err.error?.message || 'Vous devez changer votre mot de passe temporaire.';
+            this.loading = false;
+          }
+        } else {
+          this.error = err.error?.message || 'Mot de passe incorrect.';
+          this.loading = false;
+        }
       }
     });
   }

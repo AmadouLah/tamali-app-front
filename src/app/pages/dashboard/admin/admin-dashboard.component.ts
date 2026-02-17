@@ -1,8 +1,9 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { Router } from '@angular/router';
-import { AuthService } from '../../../core/services/auth.service';
+import { Router, RouterModule } from '@angular/router';
+import { AuthService, UserDto } from '../../../core/services/auth.service';
 import { GlassCardComponent } from '../../../shared/components/glass-card/glass-card.component';
 
 export interface ServiceRequestDto {
@@ -13,10 +14,34 @@ export interface ServiceRequestDto {
   createdAt: string;
 }
 
+interface MenuItem {
+  label: string;
+  icon: string;
+  route?: string;
+  badge?: number;
+  active?: boolean;
+}
+
+interface KpiCard {
+  title: string;
+  value: string;
+  change: number;
+  changeLabel: string;
+  progress: number;
+  progressColor: string;
+}
+
+interface ChartData {
+  day: string;
+  revenue: number;
+  expenses: number;
+  profit: number;
+}
+
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, GlassCardComponent],
+  imports: [CommonModule, FormsModule, RouterModule, GlassCardComponent],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.css'
 })
@@ -25,18 +50,97 @@ export class AdminDashboardComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
+  user: UserDto | null = null;
   serviceRequests: ServiceRequestDto[] = [];
   loading = false;
   error: string | null = null;
   private readonly apiUrl = 'http://localhost:9999/api/service-requests';
 
+  activeMenu: string = 'dashboard';
+  searchQuery: string = '';
+  period: string = 'weekly';
+
+  menuItems: MenuItem[] = [
+    { label: 'Dashboard', icon: 'grid', route: '/dashboard/admin', active: true },
+    { label: 'Ajouter Propriétaire', icon: 'user-plus', route: '/dashboard/admin/add-business-owner' },
+    { label: 'Secteurs d\'activité', icon: 'briefcase', route: '/dashboard/admin/business-sectors' },
+    { label: 'Performance', icon: 'chart-up' },
+    { label: 'Statistics', icon: 'bar-chart' },
+    { label: 'Analytics', icon: 'line-chart' },
+    { label: 'Payments', icon: 'credit-card', badge: 3 },
+    { label: 'Help', icon: 'help-circle' },
+    { label: 'Settings', icon: 'settings' }
+  ];
+
+  kpiCards: KpiCard[] = [
+    {
+      title: 'Total Revenue',
+      value: '$7,00,000',
+      change: 6,
+      changeLabel: 'From last week',
+      progress: 25,
+      progressColor: 'bg-blue-500'
+    },
+    {
+      title: 'Total Expenses',
+      value: '$5,00,000',
+      change: -6,
+      changeLabel: 'From last week',
+      progress: 50,
+      progressColor: 'bg-green-500'
+    },
+    {
+      title: 'New Profit',
+      value: '$2,00,000',
+      change: -6,
+      changeLabel: 'From last week',
+      progress: 60,
+      progressColor: 'bg-purple-500'
+    },
+    {
+      title: 'Cash Balance',
+      value: '$85,000',
+      change: 6,
+      changeLabel: 'From last week',
+      progress: 35,
+      progressColor: 'bg-yellow-500'
+    }
+  ];
+
+  chartData: ChartData[] = [
+    { day: 'Sun', revenue: 120000, expenses: 80000, profit: 40000 },
+    { day: 'Mon', revenue: 150000, expenses: 90000, profit: 60000 },
+    { day: 'Tue', revenue: 180000, expenses: 100000, profit: 80000 },
+    { day: 'Wed', revenue: 140000, expenses: 85000, profit: 55000 },
+    { day: 'Thu', revenue: 160000, expenses: 95000, profit: 65000 },
+    { day: 'Fri', revenue: 200000, expenses: 110000, profit: 90000 },
+    { day: 'Sat', revenue: 170000, expenses: 100000, profit: 70000 }
+  ];
+
+  paymentSuccessRate = 87;
+  paymentSuccessCount = 550;
+  paymentTotalCount = 650;
+  paymentSuccessChange = 26;
+
   ngOnInit(): void {
-    const user = this.authService.getUser();
-    if (!user || !user.roles?.some(r => r.type === 'SUPER_ADMIN')) {
+    this.user = this.authService.getUser();
+    if (!this.user || !this.user.roles?.some(r => r.type === 'SUPER_ADMIN')) {
       this.router.navigate(['/auth/login']);
       return;
     }
     this.loadServiceRequests();
+    this.updateActiveMenuFromRoute();
+  }
+
+  private updateActiveMenuFromRoute(): void {
+    const currentRoute = this.router.url;
+    if (currentRoute.includes('add-business-owner')) {
+      this.activeMenu = 'ajouter propriétaire';
+    } else if (currentRoute.includes('business-sectors')) {
+      this.activeMenu = 'secteurs d\'activité';
+    } else if (currentRoute.includes('admin')) {
+      this.activeMenu = 'dashboard';
+    }
   }
 
   loadServiceRequests(): void {
@@ -78,5 +182,30 @@ export class AdminDashboardComponent implements OnInit {
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/auth/login']);
+  }
+
+  setActiveMenu(menu: string): void {
+    this.activeMenu = menu;
+  }
+
+  getUserDisplayName(): string {
+    if (!this.user) return '';
+    return `${this.user.firstname} ${this.user.lastname}`.trim() || this.user.email;
+  }
+
+  getUserInitials(): string {
+    if (!this.user) return '?';
+    const first = this.user.firstname?.charAt(0).toUpperCase() || '';
+    const last = this.user.lastname?.charAt(0).toUpperCase() || '';
+    return (first + last) || this.user.email?.charAt(0).toUpperCase() || '?';
+  }
+
+  getMaxChartValue(): number {
+    return Math.max(...this.chartData.map(d => d.revenue + d.expenses + d.profit));
+  }
+
+  getChartBarHeight(value: number): number {
+    const max = this.getMaxChartValue();
+    return (value / max) * 100;
   }
 }

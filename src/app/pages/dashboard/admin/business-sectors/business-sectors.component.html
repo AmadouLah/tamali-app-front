@@ -1,0 +1,179 @@
+<div class="admin-dashboard-container">
+  <!-- Background animations -->
+  <div class="liquid-gradient fixed inset-0 -z-10 bg-gradient-to-br from-slate-900/90 via-purple-900/80 to-slate-900/90"></div>
+  <div class="geometric-shapes fixed inset-0 -z-10"></div>
+
+  <div class="min-h-screen p-6">
+    <!-- Header -->
+    <div class="mb-6 flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-white mb-2">Gestion des secteurs d'activité</h1>
+        <p class="text-gray-300">Créez et gérez les secteurs d'activité disponibles pour les entreprises</p>
+      </div>
+      <button
+        type="button"
+        (click)="router.navigate(['/dashboard/admin'])"
+        class="px-4 py-2 glass-effect-subtle border border-white/20 rounded-lg text-white hover:bg-white/10 transition-all"
+      >
+        ← Retour
+      </button>
+    </div>
+
+    <!-- Messages -->
+    @if (success) {
+      <app-glass-card variant="strong" class="mb-6 p-4 bg-green-500/20 border-green-500/50">
+        <p class="text-green-300">{{ success }}</p>
+      </app-glass-card>
+    }
+
+    @if (error) {
+      <app-glass-card variant="strong" class="mb-6 p-4 bg-red-500/20 border-red-500/50">
+        <p class="text-red-300">{{ error }}</p>
+      </app-glass-card>
+    }
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Formulaire de création -->
+      <app-glass-card variant="strong" class="p-6">
+        <h2 class="text-2xl font-bold text-white mb-6">Ajouter un secteur d'activité</h2>
+        
+        <form [formGroup]="form" (ngSubmit)="onSubmit()">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                Nom <span class="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                formControlName="name"
+                [class.border-red-500]="isFieldInvalid(form, 'name')"
+                class="w-full px-4 py-2 glass-effect-subtle border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                placeholder="Ex: Commerce, Restauration, Services..."
+              />
+              @if (isFieldInvalid(form, 'name')) {
+                <p class="mt-1 text-sm text-red-400">{{ getFieldError(form, 'name') }}</p>
+              }
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                Description
+              </label>
+              <textarea
+                formControlName="description"
+                rows="3"
+                class="w-full px-4 py-2 glass-effect-subtle border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                placeholder="Description du secteur d'activité (optionnel)"
+              ></textarea>
+            </div>
+
+            <button
+              type="submit"
+              [disabled]="form.invalid || loading"
+              class="w-full px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              @if (loading) {
+                <span>Création...</span>
+              } @else {
+                <span>Créer le secteur</span>
+              }
+            </button>
+          </div>
+        </form>
+      </app-glass-card>
+
+      <!-- Liste des secteurs -->
+      <app-glass-card variant="strong" class="p-6">
+        <h2 class="text-2xl font-bold text-white mb-6">Secteurs d'activité existants</h2>
+        
+        @if (loading && sectors.length === 0) {
+          <p class="text-gray-300 text-center py-8">Chargement...</p>
+        } @else if (sectors.length === 0) {
+          <p class="text-gray-300 text-center py-8">Aucun secteur d'activité créé</p>
+        } @else {
+          <div class="space-y-4 max-h-[600px] overflow-y-auto">
+            @for (sector of sectors; track sector.id) {
+              <div class="glass-effect-subtle border border-white/20 rounded-lg p-4">
+                @if (editingId === sector.id) {
+                  <form [formGroup]="editForm" (ngSubmit)="onUpdate(sector.id)">
+                    <div class="space-y-3">
+                      <input
+                        type="text"
+                        formControlName="name"
+                        [class.border-red-500]="isFieldInvalid(editForm, 'name')"
+                        class="w-full px-3 py-2 glass-effect-subtle border border-white/20 rounded text-white text-sm"
+                      />
+                      <textarea
+                        formControlName="description"
+                        rows="2"
+                        class="w-full px-3 py-2 glass-effect-subtle border border-white/20 rounded text-white text-sm"
+                      ></textarea>
+                      <div class="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          formControlName="active"
+                          id="active-{{ sector.id }}"
+                          class="w-4 h-4"
+                        />
+                        <label for="active-{{ sector.id }}" class="text-sm text-gray-300">Actif</label>
+                      </div>
+                      <div class="flex gap-2">
+                        <button
+                          type="submit"
+                          [disabled]="editForm.invalid || loading"
+                          class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-all disabled:opacity-50"
+                        >
+                          Enregistrer
+                        </button>
+                        <button
+                          type="button"
+                          (click)="cancelEdit()"
+                          class="px-4 py-2 glass-effect-subtle border border-white/20 text-white text-sm rounded hover:bg-white/10 transition-all"
+                        >
+                          Annuler
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                } @else {
+                  <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                      <h3 class="text-lg font-semibold text-white mb-1">{{ sector.name }}</h3>
+                      @if (sector.description) {
+                        <p class="text-sm text-gray-300 mb-2">{{ sector.description }}</p>
+                      }
+                      <div class="flex items-center gap-2">
+                        <span [class]="sector.active ? 'text-green-400' : 'text-red-400'" class="text-xs">
+                          {{ sector.active ? '● Actif' : '● Inactif' }}
+                        </span>
+                        <span class="text-xs text-gray-400">
+                          Créé le {{ sector.createdAt | date:'dd/MM/yyyy' }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="flex gap-2 ml-4">
+                      <button
+                        type="button"
+                        (click)="startEdit(sector)"
+                        class="px-3 py-1.5 glass-effect-subtle border border-white/20 text-white text-sm rounded hover:bg-white/10 transition-all"
+                      >
+                        Modifier
+                      </button>
+                      <button
+                        type="button"
+                        (click)="onDelete(sector.id)"
+                        class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-all"
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </app-glass-card>
+    </div>
+  </div>
+</div>
