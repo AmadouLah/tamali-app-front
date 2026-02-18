@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpRequest, HttpEvent, HttpResponse } from '@angular/common/http';
 import { Observable, from, of } from 'rxjs';
-import { switchMap, catchError, map, tap } from 'rxjs/operators';
+import { switchMap, catchError, map, tap, filter } from 'rxjs/operators';
 import { NetworkService } from './network.service';
 import { IndexedDbService } from './indexed-db.service';
 import { SyncService } from './sync.service';
@@ -50,14 +50,18 @@ export class OfflineHttpService {
           return of(event);
         }),
         catchError(error => {
-          if (shouldQueue) {
+          const isNetworkError = !error?.status || error.status === 0;
+          if (shouldQueue && isNetworkError) {
             return this.queueRequest(req);
           }
-          return this.getFromCache<T>(req.url).pipe(
-            catchError(() => {
-              throw error;
-            })
-          );
+          if (!shouldQueue) {
+            return this.getFromCache<T>(req.url).pipe(
+              catchError(() => {
+                throw error;
+              })
+            );
+          }
+          throw error;
         })
       );
     } else {
@@ -68,15 +72,15 @@ export class OfflineHttpService {
     }
   }
 
+  private toBody<T>(event: HttpEvent<T>): T {
+    return (event as HttpResponse<T>).body as T;
+  }
+
   get<T>(url: string, options?: any): Observable<T> {
     const req = new HttpRequest('GET', url, null, options);
     return this.request<T>(req).pipe(
-      map(event => {
-        if (event instanceof HttpResponse) {
-          return event.body as T;
-        }
-        throw new Error('Réponse HTTP invalide');
-      }),
+      filter((event): event is HttpResponse<T> => event instanceof HttpResponse),
+      map(event => this.toBody(event)),
       tap(data => {
         if (this.networkService.isOnline) {
           this.cacheResponse(url, data).catch(console.error);
@@ -88,48 +92,32 @@ export class OfflineHttpService {
   post<T>(url: string, body: any, options?: any): Observable<T> {
     const req = new HttpRequest('POST', url, body, options);
     return this.request<T>(req).pipe(
-      map(event => {
-        if (event instanceof HttpResponse) {
-          return event.body as T;
-        }
-        throw new Error('Réponse HTTP invalide');
-      })
+      filter((event): event is HttpResponse<T> => event instanceof HttpResponse),
+      map(event => this.toBody(event))
     );
   }
 
   put<T>(url: string, body: any, options?: any): Observable<T> {
     const req = new HttpRequest('PUT', url, body, options);
     return this.request<T>(req).pipe(
-      map(event => {
-        if (event instanceof HttpResponse) {
-          return event.body as T;
-        }
-        throw new Error('Réponse HTTP invalide');
-      })
+      filter((event): event is HttpResponse<T> => event instanceof HttpResponse),
+      map(event => this.toBody(event))
     );
   }
 
   patch<T>(url: string, body: any, options?: any): Observable<T> {
     const req = new HttpRequest('PATCH', url, body, options);
     return this.request<T>(req).pipe(
-      map(event => {
-        if (event instanceof HttpResponse) {
-          return event.body as T;
-        }
-        throw new Error('Réponse HTTP invalide');
-      })
+      filter((event): event is HttpResponse<T> => event instanceof HttpResponse),
+      map(event => this.toBody(event))
     );
   }
 
   delete<T>(url: string, options?: any): Observable<T> {
     const req = new HttpRequest('DELETE', url, null, options);
     return this.request<T>(req).pipe(
-      map(event => {
-        if (event instanceof HttpResponse) {
-          return event.body as T;
-        }
-        throw new Error('Réponse HTTP invalide');
-      })
+      filter((event): event is HttpResponse<T> => event instanceof HttpResponse),
+      map(event => this.toBody(event))
     );
   }
 

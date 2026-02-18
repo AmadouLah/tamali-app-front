@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { AuthService } from '../../../core/services/auth.service';
 
 export interface MenuItem {
   label: string;
@@ -18,6 +19,7 @@ export interface MenuItem {
 })
 export class AdminSidebarComponent implements OnInit {
   private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
 
   @Input() menuItems: MenuItem[] = [];
   @Input() activeMenu: string = 'dashboard';
@@ -39,6 +41,12 @@ export class AdminSidebarComponent implements OnInit {
       this.activeMenu = 'mon entreprise';
     } else if (route.includes('business/account')) {
       this.activeMenu = 'paramètres';
+    } else if (route.includes('business/sales')) {
+      this.activeMenu = 'ventes';
+    } else if (route.includes('business/products')) {
+      this.activeMenu = 'produits';
+    } else if (route.includes('business/stock')) {
+      this.activeMenu = 'stock';
     } else if (route.includes('admin/account')) {
       this.activeMenu = 'mon compte';
     } else if (route.includes('admin')) {
@@ -56,6 +64,12 @@ export class AdminSidebarComponent implements OnInit {
   }
 
   closeMobile(): void {
+    this.mobileOpenChange.emit(false);
+  }
+
+  onLogout(): void {
+    this.authService.logout();
+    this.router.navigate(['/auth/login']);
     this.mobileOpenChange.emit(false);
   }
 }

@@ -149,6 +149,11 @@ export class SetupComponent implements OnInit {
     if (!this.businessId) return;
     this.http.get<BusinessDto>(`${this.apiConfig.getBusinessesUrl()}/${this.businessId}`).subscribe({
       next: (business) => {
+        if (business.receiptTemplateId) {
+          this.authService.updateUserBusinessId(this.businessId!);
+          this.router.navigate(['/dashboard']);
+          return;
+        }
         // Pré-remplir les formulaires avec les données existantes
         if (business.name) {
           this.step1Form.patchValue({ name: business.name, sectorId: business.sectorId });

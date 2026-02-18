@@ -1,10 +1,9 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService, UserDto } from '../../../core/services/auth.service';
-import { ApiConfigService } from '../../../core/services/api-config.service';
+import { BusinessOperationsService } from '../../../core/services/business-operations.service';
 import { GlassCardComponent } from '../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent } from '../../../shared/components/admin-sidebar/admin-sidebar.component';
 import { BUSINESS_OWNER_MENU_ITEMS } from './business-menu.const';
@@ -41,10 +40,9 @@ interface KpiCard {
   styleUrl: './business-dashboard.component.css'
 })
 export class BusinessDashboardComponent implements OnInit {
-  private readonly http = inject(HttpClient);
+  private readonly businessOps = inject(BusinessOperationsService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly apiConfig = inject(ApiConfigService);
 
   user: UserDto | null = null;
   business: BusinessDto | null = null;
@@ -78,9 +76,9 @@ export class BusinessDashboardComponent implements OnInit {
 
   private loadBusiness(): void {
     if (!this.user?.businessId) return;
-    this.http.get<BusinessDto>(`${this.apiConfig.getBusinessesUrl()}/${this.user.businessId}`).subscribe({
+    this.businessOps.getBusiness(this.user.businessId).subscribe({
       next: (b) => {
-        this.business = b;
+        this.business = b as unknown as BusinessDto;
         this.loadSales();
       },
       error: () => {
@@ -95,7 +93,7 @@ export class BusinessDashboardComponent implements OnInit {
       return;
     }
     this.loading = true;
-    this.http.get<SaleDto[]>(`${this.apiConfig.getSalesUrl(this.user.businessId)}?page=0&size=10`).subscribe({
+    this.businessOps.getSales(this.user.businessId, 0, 10).subscribe({
       next: (sales) => {
         this.sales = sales;
         this.computeKpis();
@@ -136,10 +134,5 @@ export class BusinessDashboardComponent implements OnInit {
 
   getDisplayName(): string {
     return this.authService.getDisplayName(this.user);
-  }
-
-  logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/auth/login']);
   }
 }

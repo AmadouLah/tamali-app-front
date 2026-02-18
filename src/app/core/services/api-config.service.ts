@@ -38,4 +38,16 @@ export class ApiConfigService {
   getSalesUrl(businessId: string): string {
     return `${this.baseUrl}/businesses/${businessId}/sales`;
   }
+
+  getProductsUrl(businessId: string): string {
+    return `${this.baseUrl}/businesses/${businessId}/products`;
+  }
+
+  getProductUrl(id: string): string {
+    return `${this.baseUrl}/products/${id}`;
+  }
+
+  getStockMovementUrl(productId: string): string {
+    return `${this.baseUrl}/products/${productId}/stock-movements`;
+  }
 }

@@ -177,11 +177,6 @@ export class AdminDashboardComponent implements OnInit {
     });
   }
 
-  logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/auth/login']);
-  }
-
   setActiveMenu(menu: string): void {
     this.activeMenu = menu;
   }

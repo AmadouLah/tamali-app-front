@@ -53,6 +53,48 @@
       @if (loading) {
         <div class="text-center py-16 text-gray-400">Chargement...</div>
       } @else {
+        <div class="flex flex-col sm:flex-row gap-4 mb-6">
+          <a
+            routerLink="/dashboard/business/sales"
+            class="flex-1 p-6 rounded-2xl glass-effect-strong border border-white/20 hover:border-purple-400/40 flex items-center gap-4 transition-all group"
+          >
+            <div class="w-14 h-14 rounded-xl bg-purple-500/30 flex items-center justify-center text-2xl group-hover:scale-105 transition-transform">🛒</div>
+            <div>
+              <h3 class="text-lg font-bold text-white">Faire une vente</h3>
+              <p class="text-gray-400 text-sm">Enregistrer une vente à la caisse</p>
+            </div>
+            <svg class="w-5 h-5 text-gray-400 ml-auto group-hover:text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </a>
+          <a
+            routerLink="/dashboard/business/products"
+            class="flex-1 p-6 rounded-2xl glass-effect-strong border border-white/20 hover:border-purple-400/40 flex items-center gap-4 transition-all group"
+          >
+            <div class="w-14 h-14 rounded-xl bg-purple-500/30 flex items-center justify-center text-2xl group-hover:scale-105 transition-transform">📦</div>
+            <div>
+              <h3 class="text-lg font-bold text-white">Produits</h3>
+              <p class="text-gray-400 text-sm">Ajouter et modifier des produits</p>
+            </div>
+            <svg class="w-5 h-5 text-gray-400 ml-auto group-hover:text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </a>
+          <a
+            routerLink="/dashboard/business/stock"
+            class="flex-1 p-6 rounded-2xl glass-effect-strong border border-white/20 hover:border-purple-400/40 flex items-center gap-4 transition-all group"
+          >
+            <div class="w-14 h-14 rounded-xl bg-purple-500/30 flex items-center justify-center text-2xl group-hover:scale-105 transition-transform">📊</div>
+            <div>
+              <h3 class="text-lg font-bold text-white">Stock</h3>
+              <p class="text-gray-400 text-sm">Entrées et sorties de stock</p>
+            </div>
+            <svg class="w-5 h-5 text-gray-400 ml-auto group-hover:text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </a>
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
           @for (card of kpiCards; track card.title) {
             <app-glass-card variant="default" class="p-6">
@@ -75,20 +117,18 @@
           <div class="p-6">
             <div class="flex justify-between items-center mb-6">
               <h2 class="text-2xl font-bold text-white">Ventes récentes</h2>
-              <button (click)="loadSales()" [disabled]="loading" class="btn btn-sm btn-primary rounded-full px-4 disabled:opacity-50">
-                Actualiser
-              </button>
+              <a routerLink="/dashboard/business/sales" class="btn btn-sm btn-primary rounded-full px-4">Voir la caisse</a>
             </div>
 
             @if (sales.length === 0) {
               <div class="text-center py-12">
-                <p class="text-gray-400 mb-4">Aucune vente enregistrée pour le moment.</p>
-                <p class="text-sm text-gray-500">L'enregistrement des ventes sera disponible dans une prochaine mise à jour.</p>
+                <p class="text-gray-400 mb-4">Aucune vente enregistrée.</p>
+                <a routerLink="/dashboard/business/sales" class="text-purple-300 hover:text-purple-200 font-medium">Faire une vente</a>
               </div>
             } @else {
               <div class="space-y-4">
                 @for (sale of sales; track sale.id) {
-                  <div class="glass-effect-subtle p-5 rounded-lg border border-white/10 flex justify-between items-center">
+                  <div class="glass-effect-subtle p-5 rounded-xl border border-white/10 flex justify-between items-center">
                     <div>
                       <p class="font-semibold text-white">Vente #{{ sale.id.substring(0, 8) }}</p>
                       <p class="text-gray-400 text-sm">{{ formatDate(sale.saleDate) }}</p>
@@ -96,6 +136,9 @@
                     <span class="text-lg font-bold text-white">{{ formatMoney(sale.totalAmount) }}</span>
                   </div>
                 }
+              </div>
+              <div class="mt-4 text-center">
+                <a routerLink="/dashboard/business/sales" class="text-sm text-purple-300 hover:text-purple-200">Toutes les ventes →</a>
               </div>
             }
           </div>

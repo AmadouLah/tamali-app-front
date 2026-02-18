@@ -12,6 +12,9 @@ import { SetupComponent } from './pages/business/setup/setup.component';
 import { BusinessDashboardComponent } from './pages/dashboard/business/business-dashboard.component';
 import { BusinessAccountComponent } from './pages/dashboard/business/account/business-account.component';
 import { BusinessCompanyComponent } from './pages/dashboard/business/company/business-company.component';
+import { BusinessSalesComponent } from './pages/dashboard/business/sales/business-sales.component';
+import { BusinessProductsComponent } from './pages/dashboard/business/products/business-products.component';
+import { BusinessStockComponent } from './pages/dashboard/business/stock/business-stock.component';
 
 export const routes: Routes = [
   {
@@ -41,6 +44,18 @@ export const routes: Routes = [
   {
     path: 'dashboard/business',
     component: BusinessDashboardComponent
+  },
+  {
+    path: 'dashboard/business/sales',
+    component: BusinessSalesComponent
+  },
+  {
+    path: 'dashboard/business/products',
+    component: BusinessProductsComponent
+  },
+  {
+    path: 'dashboard/business/stock',
+    component: BusinessStockComponent
   },
   {
     path: 'dashboard/business/account',
