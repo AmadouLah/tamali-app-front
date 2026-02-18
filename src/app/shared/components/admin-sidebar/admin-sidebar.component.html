@@ -14,10 +14,15 @@
   [class.-translate-x-full]="!mobileOpen"
 >
   <div class="p-6 border-b border-white/20 flex items-center justify-between">
-    <div class="flex items-center gap-3">
+    <a
+      routerLink="/"
+      (click)="closeMobile()"
+      class="flex items-center gap-3 group focus:outline-none focus:ring-2 focus:ring-purple-500/50 rounded-lg -m-2 p-2 transition-opacity hover:opacity-90"
+      aria-label="Retour à l'accueil"
+    >
       <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xl">T</div>
       <span class="text-xl font-bold text-gradient">Tamali</span>
-    </div>
+    </a>
     <button
       type="button"
       class="lg:hidden p-2 -mr-2 text-gray-300 hover:text-white rounded-lg hover:bg-white/10"

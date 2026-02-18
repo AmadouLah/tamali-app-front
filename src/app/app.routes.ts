@@ -5,6 +5,14 @@ import { DashboardComponent } from './pages/dashboard/dashboard.component';
 export const routes: Routes = [
   { path: '', component: HomeComponent },
   {
+    path: 'a-propos',
+    loadComponent: () => import('./pages/home/about/about.component').then(m => m.AboutComponent)
+  },
+  {
+    path: 'fonctionnalites',
+    loadComponent: () => import('./pages/home/features/features.component').then(m => m.FeaturesComponent)
+  },
+  {
     path: 'auth/login',
     loadComponent: () => import('./pages/auth/login/login.component').then(m => m.LoginComponent)
   },

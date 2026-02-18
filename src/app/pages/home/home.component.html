@@ -1,187 +1,43 @@
-<div class="home-container" data-theme="liquidGlace">
-  <!-- Background gradient animé avec formes géométriques -->
-  <div class="liquid-gradient fixed inset-0 -z-10"></div>
-  <div
-    class="fixed inset-0 -z-10 bg-gradient-to-br from-slate-900/90 via-purple-900/80 to-slate-900/90"
-  ></div>
-
-  <!-- Formes géométriques flottantes -->
-  <div class="geometric-shapes">
-    <div class="shape shape-1"></div>
-    <div class="shape shape-2"></div>
-    <div class="shape shape-3"></div>
-  </div>
-
-  <!-- Navigation Header -->
-  <header
-    class="sticky top-0 z-50 glass-effect-strong border-b border-white/20"
-  >
-    <nav
-      class="container mx-auto px-6 py-5 flex flex-col sm:flex-row justify-between items-center gap-4"
-    >
-      <div class="text-3xl font-bold text-gradient tracking-tight">Tamali</div>
-      <div class="flex gap-4 items-center">
-        <ng-container *ngIf="isAuthenticated && user; else notAuthenticated">
-          <div class="relative user-menu-container">
-            <button
-              type="button"
-              (click)="toggleUserMenu()"
-              class="flex items-center gap-2 px-4 py-2 rounded-full glass-effect-subtle border border-white/20 hover:border-white/40 transition-all duration-200"
-              [class.border-purple-400]="showUserMenu"
-              [style.border-color]="showUserMenu ? 'rgba(192, 132, 252, 0.5)' : ''"
-            >
-              <div
-                class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-semibold text-sm"
-              >
-                {{ getUserInitials() }}
-              </div>
-              <span class="hidden sm:inline text-white text-sm font-medium">{{
-                getUserDisplayName()
-              }}</span>
-              <svg
-                class="w-4 h-4 text-white transition-transform duration-200"
-                [class.rotate-180]="showUserMenu"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M19 9l-7 7-7-7"
-                ></path>
-              </svg>
-            </button>
-            <div
-              *ngIf="showUserMenu"
-              class="absolute right-0 mt-2 w-64 glass-effect-strong border border-white/20 rounded-lg shadow-xl overflow-hidden z-50"
-            >
-              <div class="p-4 border-b border-white/10">
-                <div class="flex items-center gap-3">
-                  <div
-                    class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-semibold text-lg"
-                  >
-                    {{ getUserInitials() }}
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-white font-semibold truncate">
-                      {{ getUserDisplayName() }}
-                    </p>
-                    <p class="text-gray-300 text-sm truncate">
-                      {{ user.email }}
-                    </p>
-                    <span
-                      *ngIf="hasRoles()"
-                      class="inline-block mt-1 px-2 py-0.5 text-xs rounded-full bg-purple-500/20 text-purple-300 border border-purple-400/30"
-                    >
-                      {{ getRoleLabel() }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div class="p-2">
-                <button
-                  type="button"
-                  (click)="goToDashboard()"
-                  class="w-full text-left px-4 py-2 rounded-lg text-white hover:bg-white/10 transition-colors duration-150 flex items-center gap-3"
-                >
-                  <svg
-                    class="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                    ></path>
-                  </svg>
-                  <span>Tableau de bord</span>
-                </button>
-                <button
-                  type="button"
-                  (click)="logout()"
-                  class="w-full text-left px-4 py-2 rounded-lg text-red-300 hover:bg-red-500/10 transition-colors duration-150 flex items-center gap-3 mt-1"
-                >
-                  <svg
-                    class="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                    ></path>
-                  </svg>
-                  <span>Déconnexion</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </ng-container>
-        <ng-template #notAuthenticated>
-          <a
-            routerLink="/auth/login"
-            class="btn btn-sm sm:btn-md btn-outline border-white/20 text-white rounded-full px-6"
-          >
-            Connexion
-          </a>
-          <a
-            routerLink="/service-request"
-            class="btn btn-sm sm:btn-md btn-primary glow-effect-hover rounded-full px-6"
-          >
-            Demander l'accès
-          </a>
-        </ng-template>
-      </div>
-    </nav>
-  </header>
-
+<app-home-layout
+  [isAuthenticated]="isAuthenticated"
+  [user]="user"
+  (logout)="logout()"
+>
   <!-- Hero Section -->
-  <section
-    class="hero-section min-h-screen flex items-center justify-center px-4 py-20"
-  >
+  <section class="hero-section min-h-[85vh] sm:min-h-screen flex items-center justify-center px-4 py-16 sm:py-20">
     <div class="container mx-auto text-center fade-in">
       <div class="inline-block mb-6 fade-in" style="animation-delay: 0.2s">
-        <span
-          class="glass-effect-subtle px-4 py-2 rounded-full text-sm font-medium text-gray-300"
-        >
+        <span class="glass-effect-subtle px-4 py-2 rounded-full text-sm font-medium text-gray-300">
           Solution de gestion moderne
         </span>
       </div>
       <h1
-        class="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-6 text-white leading-tight fade-in"
+        class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-6 text-white leading-tight fade-in"
         style="animation-delay: 0.3s"
       >
         Gérez votre entreprise
         <span class="text-gradient block mt-3">en toute simplicité</span>
       </h1>
       <p
-        class="text-lg md:text-xl lg:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto fade-in leading-relaxed"
+        class="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-300 mb-10 sm:mb-12 max-w-3xl mx-auto fade-in leading-relaxed"
         style="animation-delay: 0.4s"
       >
         La solution complète de gestion pour les entreprises maliennes. Stock,
         comptabilité, ventes et reçus, tout en un seul endroit.
       </p>
       <div
-        class="flex flex-col sm:flex-row gap-4 justify-center fade-in"
+        class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center fade-in"
         style="animation-delay: 0.5s"
       >
         <a
           routerLink="/auth/login"
-          class="btn btn-lg btn-primary glow-effect-hover px-8 py-4 rounded-full text-lg"
+          class="btn btn-lg btn-primary glow-effect-hover px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg"
         >
           Se connecter
         </a>
         <a
           routerLink="/service-request"
-          class="btn btn-lg btn-outline px-8 py-4 rounded-full text-lg border-white/30 text-white"
+          class="btn btn-lg btn-outline px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg border-white/30 text-white"
         >
           Demander l'accès
         </a>
@@ -190,20 +46,17 @@
   </section>
 
   <!-- Features Section -->
-  <section class="features-section py-24 px-4">
+  <section class="features-section py-16 sm:py-24 px-4">
     <div class="container mx-auto">
-      <div class="text-center mb-16 fade-in">
-        <h2 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 text-white">
+      <div class="text-center mb-12 sm:mb-16 fade-in">
+        <h2 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 text-white">
           Fonctionnalités
         </h2>
-        <p class="text-xl text-gray-300 max-w-2xl mx-auto">
+        <p class="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto">
           Tout ce dont vous avez besoin pour gérer votre entreprise efficacement
         </p>
       </div>
-
-      <div
-        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8"
-      >
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
         @for (feature of features; track feature.title; let i = $index) {
           <app-glass-card
             variant="default"
@@ -213,17 +66,13 @@
           >
             <div class="text-center">
               <div
-                class="glass-effect-subtle w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 text-4xl animate-float"
+                class="glass-effect-subtle w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 text-3xl sm:text-4xl animate-float"
                 [style.animation-delay]="i * 0.2 + 's'"
               >
                 {{ feature.icon }}
               </div>
-              <h3 class="text-xl font-bold mb-3 text-white">
-                {{ feature.title }}
-              </h3>
-              <p class="text-gray-300 leading-relaxed">
-                {{ feature.description }}
-              </p>
+              <h3 class="text-lg sm:text-xl font-bold mb-3 text-white">{{ feature.title }}</h3>
+              <p class="text-gray-300 leading-relaxed text-sm sm:text-base">{{ feature.description }}</p>
             </div>
           </app-glass-card>
         }
@@ -232,31 +81,25 @@
   </section>
 
   <!-- CTA Section -->
-  <section class="cta-section py-24 px-4">
+  <section class="cta-section py-16 sm:py-24 px-4">
     <div class="container mx-auto">
-      <app-glass-card
-        variant="strong"
-        class="max-w-5xl mx-auto text-center fade-in p-12"
-      >
-        <h2 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-white">
+      <app-glass-card variant="strong" class="max-w-5xl mx-auto text-center fade-in p-8 sm:p-12">
+        <h2 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-white">
           Prêt à démarrer ?
         </h2>
-        <p
-          class="text-xl text-gray-300 mb-10 max-w-2xl mx-auto leading-relaxed"
-        >
-          Rejoignez les entreprises qui font confiance à Tamali pour gérer leur
-          activité.
+        <p class="text-lg sm:text-xl text-gray-300 mb-8 sm:mb-10 max-w-2xl mx-auto leading-relaxed">
+          Rejoignez les entreprises qui font confiance à Tamali pour gérer leur activité.
         </p>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
           <a
             routerLink="/service-request"
-            class="btn btn-lg btn-primary glow-effect-hover px-10 py-4 rounded-full text-lg"
+            class="btn btn-lg btn-primary glow-effect-hover px-8 sm:px-10 py-3 sm:py-4 rounded-full text-base sm:text-lg"
           >
             Demander l'accès
           </a>
           <a
             routerLink="/auth/login"
-            class="btn btn-lg btn-outline px-10 py-4 rounded-full text-lg border-white/30 text-white"
+            class="btn btn-lg btn-outline px-8 sm:px-10 py-3 sm:py-4 rounded-full text-base sm:text-lg border-white/30 text-white"
           >
             J'ai déjà un compte
           </a>
@@ -264,27 +107,4 @@
       </app-glass-card>
     </div>
   </section>
-
-  <!-- Footer -->
-  <footer class="glass-effect-subtle border-t border-white/10 py-10 px-4 mt-24">
-    <div class="container mx-auto text-center">
-      <p class="text-gray-400 text-lg">
-        &copy; {{ currentYear }}, Tamali. Tous droits réservés.
-      </p>
-      <p class="text-gray-500 text-sm mt-2">
-        Solution de gestion pour les entreprises maliennes
-      </p>
-      <p class="text-xs text-gray-500 mt-2">
-        Conçu par
-        <a
-          href="https://www.linkedin.com/in/amadou-landouré-154a0123a"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="font-semibold text-gray-400 hover:text-purple-300 transition-colors cursor-pointer"
-        >
-          BercAgency
-        </a>
-      </p>
-    </div>
-  </footer>
-</div>
+</app-home-layout>
