@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://tamali.onrender.com/api',
+  apiUrl: 'https://tamali-app-back.onrender.com/api',
 };
