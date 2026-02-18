@@ -49,7 +49,25 @@ export class ServiceRequestComponent {
         }, 5000);
       },
       error: (err) => {
-        this.error = err.error?.message || 'Erreur lors de l\'envoi de la demande. Veuillez réessayer.';
+        console.error('Erreur lors de l\'envoi de la demande:', err);
+        // Gérer différents formats de réponse d'erreur
+        let errorMessage = 'Erreur lors de l\'envoi de la demande. Veuillez réessayer.';
+        
+        if (err.error) {
+          // Format ErrorResponse du backend
+          if (err.error.message) {
+            errorMessage = err.error.message;
+          } else if (err.error.errors && Array.isArray(err.error.errors) && err.error.errors.length > 0) {
+            // Erreurs de validation multiples
+            errorMessage = err.error.errors.join(', ');
+          } else if (typeof err.error === 'string') {
+            errorMessage = err.error;
+          }
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
+        
+        this.error = errorMessage;
         this.loading = false;
       }
     });
