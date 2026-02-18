@@ -1,84 +1,64 @@
 import { Routes } from '@angular/router';
 import { HomeComponent } from './pages/home/home.component';
-import { LoginComponent } from './pages/auth/login/login.component';
-import { ServiceRequestComponent } from './pages/service-request/service-request.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
-import { AdminDashboardComponent } from './pages/dashboard/admin/admin-dashboard.component';
-import { AddBusinessOwnerComponent } from './pages/dashboard/admin/add-business-owner/add-business-owner.component';
-import { BusinessSectorsComponent } from './pages/dashboard/admin/business-sectors/business-sectors.component';
-import { AccountComponent } from './pages/dashboard/admin/account/account.component';
-import { ChangePasswordComponent } from './pages/auth/change-password/change-password.component';
-import { SetupComponent } from './pages/business/setup/setup.component';
-import { BusinessDashboardComponent } from './pages/dashboard/business/business-dashboard.component';
-import { BusinessAccountComponent } from './pages/dashboard/business/account/business-account.component';
-import { BusinessCompanyComponent } from './pages/dashboard/business/company/business-company.component';
-import { BusinessSalesComponent } from './pages/dashboard/business/sales/business-sales.component';
-import { BusinessProductsComponent } from './pages/dashboard/business/products/business-products.component';
-import { BusinessStockComponent } from './pages/dashboard/business/stock/business-stock.component';
 
 export const routes: Routes = [
-  {
-    path: '',
-    component: HomeComponent
-  },
+  { path: '', component: HomeComponent },
   {
     path: 'auth/login',
-    component: LoginComponent
+    loadComponent: () => import('./pages/auth/login/login.component').then(m => m.LoginComponent)
   },
   {
     path: 'auth/change-password',
-    component: ChangePasswordComponent
+    loadComponent: () => import('./pages/auth/change-password/change-password.component').then(m => m.ChangePasswordComponent)
   },
   {
     path: 'business/setup',
-    component: SetupComponent
+    loadComponent: () => import('./pages/business/setup/setup.component').then(m => m.SetupComponent)
   },
   {
     path: 'service-request',
-    component: ServiceRequestComponent
+    loadComponent: () => import('./pages/service-request/service-request.component').then(m => m.ServiceRequestComponent)
   },
-  {
-    path: 'dashboard',
-    component: DashboardComponent
-  },
+  { path: 'dashboard', component: DashboardComponent },
   {
     path: 'dashboard/business',
-    component: BusinessDashboardComponent
+    loadComponent: () => import('./pages/dashboard/business/business-dashboard.component').then(m => m.BusinessDashboardComponent)
   },
   {
     path: 'dashboard/business/sales',
-    component: BusinessSalesComponent
+    loadComponent: () => import('./pages/dashboard/business/sales/business-sales.component').then(m => m.BusinessSalesComponent)
   },
   {
     path: 'dashboard/business/products',
-    component: BusinessProductsComponent
+    loadComponent: () => import('./pages/dashboard/business/products/business-products.component').then(m => m.BusinessProductsComponent)
   },
   {
     path: 'dashboard/business/stock',
-    component: BusinessStockComponent
+    loadComponent: () => import('./pages/dashboard/business/stock/business-stock.component').then(m => m.BusinessStockComponent)
   },
   {
     path: 'dashboard/business/account',
-    component: BusinessAccountComponent
+    loadComponent: () => import('./pages/dashboard/business/account/business-account.component').then(m => m.BusinessAccountComponent)
   },
   {
     path: 'dashboard/business/company',
-    component: BusinessCompanyComponent
+    loadComponent: () => import('./pages/dashboard/business/company/business-company.component').then(m => m.BusinessCompanyComponent)
   },
   {
     path: 'dashboard/admin',
-    component: AdminDashboardComponent
+    loadComponent: () => import('./pages/dashboard/admin/admin-dashboard.component').then(m => m.AdminDashboardComponent)
   },
   {
     path: 'dashboard/admin/add-business-owner',
-    component: AddBusinessOwnerComponent
+    loadComponent: () => import('./pages/dashboard/admin/add-business-owner/add-business-owner.component').then(m => m.AddBusinessOwnerComponent)
   },
   {
     path: 'dashboard/admin/business-sectors',
-    component: BusinessSectorsComponent
+    loadComponent: () => import('./pages/dashboard/admin/business-sectors/business-sectors.component').then(m => m.BusinessSectorsComponent)
   },
   {
     path: 'dashboard/admin/account',
-    component: AccountComponent
+    loadComponent: () => import('./pages/dashboard/admin/account/account.component').then(m => m.AccountComponent)
   }
 ];
