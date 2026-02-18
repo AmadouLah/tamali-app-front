@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const envFile = path.join(__dirname, 'src/environments/environment.prod.ts');
-const apiUrl = process.env.NG_APP_API_URL || 'https://your-backend-url.vercel.app/api';
+const apiUrl = process.env.NG_APP_API_URL || 'https://tamali.onrender.com/api';
 
 const content = `export const environment = {
   production: true,
