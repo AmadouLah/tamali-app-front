@@ -172,6 +172,27 @@ export class AuthService {
     return isBusinessOwner && hasNoBusiness;
   }
 
+  /**
+   * Vérifie si un utilisateur peut accéder au dashboard business.
+   * Retourne true si l'utilisateur est un BUSINESS_OWNER ou BUSINESS_ASSOCIATE avec une entreprise.
+   */
+  canAccessBusinessDashboard(user: UserDto | null): boolean {
+    if (!user) return false;
+    
+    // Vérifier si l'utilisateur a des rôles
+    if (!user.roles || user.roles.length === 0) return false;
+    
+    // Vérifier si l'utilisateur est un BUSINESS_OWNER ou BUSINESS_ASSOCIATE
+    const hasBusinessRole = user.roles.some(role => 
+      role.type === 'BUSINESS_OWNER' || role.type === 'BUSINESS_ASSOCIATE'
+    );
+    
+    // Vérifier si l'utilisateur a une entreprise
+    const hasBusiness = user.businessId && user.businessId !== '';
+    
+    return hasBusinessRole && hasBusiness;
+  }
+
   getToken(): string | null {
     return localStorage.getItem(this.tokenKey);
   }

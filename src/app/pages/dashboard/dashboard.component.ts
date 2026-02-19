@@ -30,6 +30,14 @@ export class DashboardComponent implements OnInit {
       return;
     }
 
+    this.redirectBasedOnRole(user);
+  }
+
+  /**
+   * Redirige l'utilisateur vers le dashboard approprié selon son rôle.
+   * Méthode centralisée pour éviter la duplication de code.
+   */
+  private redirectBasedOnRole(user: UserDto): void {
     const roleType = user.roles[0]?.type;
     
     switch (roleType) {
@@ -43,7 +51,16 @@ export class DashboardComponent implements OnInit {
             queryParams: { userId: user.id }
           });
         } else {
-          // Sinon, rediriger vers le dashboard business (à créer si nécessaire)
+          this.router.navigate(['/dashboard/business']);
+        }
+        break;
+      case 'BUSINESS_ASSOCIATE':
+        // Les associés accèdent au même dashboard que les propriétaires
+        // Ils n'ont pas besoin de créer une entreprise car ils sont déjà liés à une
+        if (!user.businessId) {
+          // Cas improbable : un associé sans entreprise (erreur de configuration)
+          this.router.navigate(['/auth/login']);
+        } else {
           this.router.navigate(['/dashboard/business']);
         }
         break;

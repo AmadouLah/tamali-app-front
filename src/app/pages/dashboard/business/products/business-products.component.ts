@@ -61,8 +61,12 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.user = this.authService.getUser();
-    if (!this.user?.roles?.some(r => r.type === 'BUSINESS_OWNER') || !this.user.businessId) {
-      this.router.navigate(['/auth/login']);
+    if (!this.authService.canAccessBusinessDashboard(this.user)) {
+      if (this.user && this.authService.shouldRedirectToSetup(this.user)) {
+        this.router.navigate(['/business/setup'], { queryParams: { userId: this.user.id } });
+      } else {
+        this.router.navigate(['/auth/login']);
+      }
       return;
     }
     this.businessId = this.user.businessId;
