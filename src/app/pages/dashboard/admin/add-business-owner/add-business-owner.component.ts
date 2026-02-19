@@ -526,9 +526,10 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
         this.loading = false;
         // Recharger les associés du propriétaire après un court délai
         const owner = this.businessOwners.find(o => o.id === ownerId);
-        if (owner?.businessId) {
+        const businessId = owner?.businessId;
+        if (businessId) {
           setTimeout(() => {
-            this.loadAssociates(owner.businessId, ownerId).then(() => {
+            this.loadAssociates(businessId, ownerId).then(() => {
               setTimeout(() => this.success = null, 3000);
             });
           }, 500);
@@ -555,9 +556,10 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
         this.loading = false;
         // Recharger les associés du propriétaire après un court délai
         const owner = this.businessOwners.find(o => o.id === ownerId);
-        if (owner?.businessId) {
+        const businessId = owner?.businessId;
+        if (businessId) {
           setTimeout(() => {
-            this.loadAssociates(owner.businessId, ownerId).then(() => {
+            this.loadAssociates(businessId, ownerId).then(() => {
               setTimeout(() => this.success = null, 3000);
             });
           }, 500);
