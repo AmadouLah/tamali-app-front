@@ -73,6 +73,8 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
   private visibilityChangeListener?: () => void;
   // Listener pour détecter quand la fenêtre reprend le focus
   private focusListener?: () => void;
+  // Set pour tracker les restaurations en cours pour éviter les boucles infinies
+  private restoringRoles = new Set<string>();
 
   menuItems: MenuItem[] = [
     { label: 'Dashboard', icon: 'grid', route: '/dashboard/admin' },
@@ -199,15 +201,8 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
         
         // Attendre que tous les associés soient chargés avant de désactiver le loading
         Promise.all(loadPromises).then(() => {
-          // Après le chargement, vérifier s'il y a des utilisateurs avec business_id mais sans associés
-          // Cela peut indiquer que les rôles ont été perdus
-          ownersWithBusiness.forEach(owner => {
-            const associates = this.associates.get(owner.id) || [];
-            if (associates.length === 0 && owner.businessId) {
-              // Essayer de restaurer les rôles manquants
-              this.restoreMissingAssociateRoles(owner.businessId, owner.id);
-            }
-          });
+          // Ne plus restaurer automatiquement les rôles ici pour éviter les boucles infinies
+          // La restauration se fera uniquement sur demande explicite ou lors d'erreurs spécifiques
         }).finally(() => {
           this.loading = false;
           console.log('Tous les associés ont été chargés');
@@ -228,7 +223,7 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadAssociates(businessId: string, ownerId: string): Promise<void> {
+  loadAssociates(businessId: string, ownerId: string, skipRestore: boolean = false): Promise<void> {
     return new Promise((resolve, reject) => {
       this.http.get<AssociateDto[]>(`${this.apiConfig.getUsersUrl()}/business/${businessId}/associates`).subscribe({
         next: (associates) => {
@@ -236,23 +231,20 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
           this.associates.set(ownerId, associates || []);
           console.log(`Associés chargés pour le propriétaire ${ownerId}:`, associates?.length || 0);
           
-          // Si aucun associé n'est trouvé mais qu'on sait qu'il devrait y en avoir,
-          // essayer de restaurer les rôles manquants
-          if ((associates?.length || 0) === 0) {
-            this.restoreMissingAssociateRoles(businessId, ownerId);
-          }
+          // Ne plus restaurer automatiquement pour éviter les boucles infinies
+          // La restauration se fera uniquement sur demande explicite
           
           resolve();
         },
         error: (err) => {
           console.error(`Erreur lors du chargement des associés pour le propriétaire ${ownerId}:`, err);
-          // En cas d'erreur, essayer de restaurer les rôles manquants
-          this.restoreMissingAssociateRoles(businessId, ownerId);
           
           // En cas d'erreur, on garde les associés existants ou on initialise avec un tableau vide
           if (!this.associates.has(ownerId)) {
             this.associates.set(ownerId, []);
           }
+          
+          // Ne plus restaurer automatiquement en cas d'erreur pour éviter les boucles infinies
           resolve(); // Résoudre quand même pour ne pas bloquer les autres chargements
         }
       });
@@ -263,19 +255,36 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
    * Restaure les rôles BUSINESS_ASSOCIATE manquants pour une entreprise
    */
   private restoreMissingAssociateRoles(businessId: string, ownerId: string): void {
+    const restoreKey = `${businessId}-${ownerId}`;
+    
+    // Éviter les appels répétés pour la même entreprise
+    if (this.restoringRoles.has(restoreKey)) {
+      console.log(`Restauration déjà en cours pour l'entreprise ${businessId}, ignorée`);
+      return;
+    }
+    
+    this.restoringRoles.add(restoreKey);
+    
     // Appeler l'endpoint de restauration en arrière-plan
-    this.http.post<string>(`${this.apiConfig.getUsersUrl()}/business/${businessId}/restore-associate-roles`, {}).subscribe({
+    this.http.post<{message: string, restored: number}>(`${this.apiConfig.getUsersUrl()}/business/${businessId}/restore-associate-roles`, {}).subscribe({
       next: (response) => {
         console.log(`Restauration des rôles pour l'entreprise ${businessId}:`, response);
-        // Recharger les associés après la restauration
+        // Recharger les associés après la restauration UNE SEULE FOIS
         setTimeout(() => {
-          this.loadAssociates(businessId, ownerId).catch(() => {
+          this.loadAssociates(businessId, ownerId, true).catch(() => {
             // Ignorer les erreurs silencieusement
+          }).finally(() => {
+            // Retirer de la liste des restaurations en cours après un délai
+            setTimeout(() => {
+              this.restoringRoles.delete(restoreKey);
+            }, 5000);
           });
         }, 1000);
       },
       error: (err) => {
         console.warn(`Impossible de restaurer les rôles pour l'entreprise ${businessId}:`, err);
+        // Retirer de la liste même en cas d'erreur
+        this.restoringRoles.delete(restoreKey);
       }
     });
   }
