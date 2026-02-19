@@ -198,7 +198,17 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
         );
         
         // Attendre que tous les associés soient chargés avant de désactiver le loading
-        Promise.all(loadPromises).finally(() => {
+        Promise.all(loadPromises).then(() => {
+          // Après le chargement, vérifier s'il y a des utilisateurs avec business_id mais sans associés
+          // Cela peut indiquer que les rôles ont été perdus
+          ownersWithBusiness.forEach(owner => {
+            const associates = this.associates.get(owner.id) || [];
+            if (associates.length === 0 && owner.businessId) {
+              // Essayer de restaurer les rôles manquants
+              this.restoreMissingAssociateRoles(owner.businessId, owner.id);
+            }
+          });
+        }).finally(() => {
           this.loading = false;
           console.log('Tous les associés ont été chargés');
         });
@@ -225,10 +235,20 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
           // Toujours mettre à jour la map, même si le tableau est vide
           this.associates.set(ownerId, associates || []);
           console.log(`Associés chargés pour le propriétaire ${ownerId}:`, associates?.length || 0);
+          
+          // Si aucun associé n'est trouvé mais qu'on sait qu'il devrait y en avoir,
+          // essayer de restaurer les rôles manquants
+          if ((associates?.length || 0) === 0) {
+            this.restoreMissingAssociateRoles(businessId, ownerId);
+          }
+          
           resolve();
         },
         error: (err) => {
           console.error(`Erreur lors du chargement des associés pour le propriétaire ${ownerId}:`, err);
+          // En cas d'erreur, essayer de restaurer les rôles manquants
+          this.restoreMissingAssociateRoles(businessId, ownerId);
+          
           // En cas d'erreur, on garde les associés existants ou on initialise avec un tableau vide
           if (!this.associates.has(ownerId)) {
             this.associates.set(ownerId, []);
@@ -236,6 +256,27 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
           resolve(); // Résoudre quand même pour ne pas bloquer les autres chargements
         }
       });
+    });
+  }
+
+  /**
+   * Restaure les rôles BUSINESS_ASSOCIATE manquants pour une entreprise
+   */
+  private restoreMissingAssociateRoles(businessId: string, ownerId: string): void {
+    // Appeler l'endpoint de restauration en arrière-plan
+    this.http.post<string>(`${this.apiConfig.getUsersUrl()}/business/${businessId}/restore-associate-roles`, {}).subscribe({
+      next: (response) => {
+        console.log(`Restauration des rôles pour l'entreprise ${businessId}:`, response);
+        // Recharger les associés après la restauration
+        setTimeout(() => {
+          this.loadAssociates(businessId, ownerId).catch(() => {
+            // Ignorer les erreurs silencieusement
+          });
+        }, 1000);
+      },
+      error: (err) => {
+        console.warn(`Impossible de restaurer les rôles pour l'entreprise ${businessId}:`, err);
+      }
     });
   }
 
