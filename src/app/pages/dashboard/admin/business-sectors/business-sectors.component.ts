@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { ApiConfigService } from '../../../../core/services/api-config.service';
+import { BusinessSectorStoreService } from '../../../../core/services/business-sector-store.service';
 import { AdminSidebarComponent, MenuItem } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
 
 interface BusinessSectorDto {
@@ -38,6 +39,7 @@ export class BusinessSectorsComponent implements OnInit {
   private readonly http = inject(HttpClient);
   readonly router = inject(Router);
   private readonly apiConfig = inject(ApiConfigService);
+  private readonly sectorStore = inject(BusinessSectorStoreService);
 
   sectors: BusinessSectorDto[] = [];
   form!: FormGroup;
@@ -88,6 +90,7 @@ export class BusinessSectorsComponent implements OnInit {
     this.http.get<BusinessSectorDto[]>(this.apiConfig.getBusinessSectorsUrl()).subscribe({
       next: (data) => {
         this.sectors = data;
+        this.sectorStore.setSectors(data);
         this.loading = false;
       },
       error: (err) => {
@@ -157,6 +160,7 @@ export class BusinessSectorsComponent implements OnInit {
 
     this.http.patch<BusinessSectorDto>(`${this.apiConfig.getBusinessSectorsUrl()}/${sectorId}`, request).subscribe({
       next: () => {
+        this.sectorStore.updateSector(sectorId, request.name || '', request.description, request.active);
         this.success = 'Secteur d\'activité mis à jour avec succès';
         this.editingId = null;
         this.loadSectors();

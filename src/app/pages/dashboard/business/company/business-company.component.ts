@@ -1,12 +1,14 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { forkJoin, of } from 'rxjs';
 import { switchMap, catchError } from 'rxjs/operators';
 import { AuthService } from '../../../../core/services/auth.service';
 import { ApiConfigService } from '../../../../core/services/api-config.service';
+import { BusinessSectorStoreService } from '../../../../core/services/business-sector-store.service';
 import {
   BusinessDto,
   BusinessSectorDto,
@@ -32,12 +34,14 @@ import { UserAvatarComponent } from '../../../../shared/components/user-avatar/u
   templateUrl: './business-company.component.html',
   styleUrl: './business-company.component.css'
 })
-export class BusinessCompanyComponent implements OnInit {
+export class BusinessCompanyComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly apiConfig = inject(ApiConfigService);
+  private readonly sectorStore = inject(BusinessSectorStoreService);
+  private sectorStoreSub?: Subscription;
 
   user = this.authService.getUser();
   business: BusinessDto | null = null;
@@ -66,10 +70,23 @@ export class BusinessCompanyComponent implements OnInit {
       return;
     }
     this.buildForm();
+    this.sectorStoreSub = this.sectorStore.sectors$.subscribe(() => {
+      // Mettre à jour la liste des secteurs actifs quand le store change
+      const allSectors = this.sectorStore.sectors;
+      this.sectors = allSectors.filter(s => s.active);
+      this.sectorsVersion++;
+    });
     this.loadSectors();
     this.loadTemplates();
     this.loadBusiness();
   }
+
+  ngOnDestroy(): void {
+    this.sectorStoreSub?.unsubscribe();
+  }
+
+  /** Incrémenté à chaque mise à jour du store pour forcer le recalcul des getters. */
+  sectorsVersion = 0;
 
   private buildForm(): void {
     this.form = this.fb.group({
@@ -112,9 +129,23 @@ export class BusinessCompanyComponent implements OnInit {
   }
 
   private loadSectors(): void {
-    this.http.get<BusinessSectorDto[]>(`${this.apiConfig.getBusinessSectorsUrl()}/active`).subscribe({
-      next: (data) => (this.sectors = data),
-      error: () => {}
+    // Charger tous les secteurs dans le store pour avoir les mises à jour en temps réel
+    this.http.get<BusinessSectorDto[]>(this.apiConfig.getBusinessSectorsUrl()).subscribe({
+      next: (allSectors) => {
+        this.sectorStore.setSectors(allSectors);
+        // Filtrer pour n'afficher que les secteurs actifs dans le select
+        this.sectors = allSectors.filter(s => s.active);
+      },
+      error: () => {
+        // Fallback : charger uniquement les actifs si l'endpoint complet échoue
+        this.http.get<BusinessSectorDto[]>(`${this.apiConfig.getBusinessSectorsUrl()}/active`).subscribe({
+          next: (activeSectors) => {
+            this.sectors = activeSectors;
+            this.sectorStore.setSectors(activeSectors);
+          },
+          error: () => {}
+        });
+      }
     });
   }
 
