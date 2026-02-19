@@ -66,7 +66,26 @@
           </button>
         </app-glass-card>
       } @else {
-        <div class="space-y-6 sm:space-y-8">
+        <div class="space-y-4 sm:space-y-6">
+          <app-glass-card variant="strong" class="dashboard-card">
+            <div class="flex items-center justify-between gap-4">
+              <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                <span class="w-2 h-5 sm:h-6 rounded-full bg-purple-500 shrink-0"></span>
+                <span>Produits</span>
+              </h2>
+              <button
+                type="button"
+                (click)="openAdd()"
+                class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-medium text-sm transition-all flex items-center gap-2 shadow-lg hover:shadow-xl hover:scale-105"
+              >
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                <span class="hidden sm:inline">Ajouter un produit</span>
+                <span class="sm:hidden">Ajouter</span>
+              </button>
+            </div>
+          </app-glass-card>
           @if (productsByCategory.length === 0 && products.length > 0) {
             <app-glass-card variant="strong" class="dashboard-card text-center py-8 sm:py-12">
               <p class="text-gray-400 text-sm sm:text-base">Aucun produit ne correspond à votre recherche.</p>
@@ -79,18 +98,6 @@
                     <span class="w-2 h-5 sm:h-6 rounded-full bg-purple-500 shrink-0"></span>
                     <span class="truncate">{{ group.category }}</span>
                   </h2>
-                  @if ($first) {
-                    <button
-                      type="button"
-                      (click)="openAdd()"
-                      class="w-full sm:w-auto px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-medium text-sm transition-all flex items-center justify-center gap-2"
-                    >
-                      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                      </svg>
-                      Ajouter
-                    </button>
-                  }
                 </div>
                 <div class="space-y-2 sm:space-y-3">
                   @for (p of group.products; track p.id) {

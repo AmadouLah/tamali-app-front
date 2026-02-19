@@ -82,6 +82,9 @@
 
   .dashboard-content {
     @apply flex-1 p-3 sm:p-4 md:p-6 overflow-x-hidden overflow-y-auto;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
   }
   .dashboard-card {
     @apply p-4 md:p-6;

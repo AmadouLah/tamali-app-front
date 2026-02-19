@@ -2,6 +2,22 @@
   @apply min-h-screen relative overflow-x-hidden;
 }
 
+.products-container .dashboard-main {
+  @apply flex flex-col;
+  min-height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+.products-container .dashboard-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
 .geometric-shapes {
   position: fixed;
   top: 0;
