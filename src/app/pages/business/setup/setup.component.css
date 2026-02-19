@@ -1,5 +1,27 @@
 .setup-container {
   @apply min-h-screen relative overflow-x-hidden;
+  scroll-behavior: smooth;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Amélioration du scroll pour une meilleure expérience utilisateur */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Padding pour éviter que le contenu ne soit collé aux bords lors du scroll */
+.setup-container > div {
+  padding-top: 1rem;
+  padding-bottom: 2rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Amélioration du scroll pour les cartes de contenu */
+.setup-container app-glass-card {
+  scroll-margin-top: 2rem;
 }
 
 .liquid-gradient {

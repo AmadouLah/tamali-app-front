@@ -250,6 +250,7 @@ export class SetupComponent implements OnInit {
 
       this.currentStep = 2;
       this.loading = false;
+      this.scrollToTop();
     } catch (err: any) {
       this.handleError(err);
     }
@@ -274,6 +275,7 @@ export class SetupComponent implements OnInit {
 
       this.currentStep = 3;
       this.loading = false;
+      this.scrollToTop();
     } catch (err: any) {
       this.handleError(err);
     }
@@ -294,6 +296,7 @@ export class SetupComponent implements OnInit {
 
       this.currentStep = 4;
       this.loading = false;
+      this.scrollToTop();
     } catch (err: any) {
       this.handleError(err);
     }
@@ -318,6 +321,7 @@ export class SetupComponent implements OnInit {
 
       this.currentStep = 5;
       this.loading = false;
+      this.scrollToTop();
     } catch (err: any) {
       this.handleError(err);
     }
@@ -360,6 +364,7 @@ export class SetupComponent implements OnInit {
       }).toPromise();
 
       this.currentStep = 6;
+      this.scrollToTop();
     } catch (err: any) {
       this.handleError(err);
     } finally {
@@ -419,7 +424,25 @@ export class SetupComponent implements OnInit {
   previousStep(): void {
     if (this.currentStep > 1) {
       this.currentStep--;
+      this.scrollToTop();
     }
+  }
+
+  /**
+   * Scroll fluide vers le haut de la page lors du changement d'étape.
+   * Méthode centralisée pour éviter la duplication de code.
+   */
+  private scrollToTop(): void {
+    // Utiliser requestAnimationFrame pour s'assurer que le DOM est mis à jour avant le scroll
+    requestAnimationFrame(() => {
+      const contentElement = document.getElementById('setup-content');
+      if (contentElement) {
+        contentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        // Fallback vers window.scrollTo si l'élément n'est pas trouvé
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
   }
 
   isFieldInvalid(form: FormGroup, fieldName: string): boolean {

@@ -51,7 +51,6 @@ export class AddBusinessOwnerComponent implements OnInit {
   private readonly apiConfig = inject(ApiConfigService);
 
   @ViewChild('emailInput') emailInput!: ElementRef<HTMLInputElement>;
-  @ViewChild('associateEmailInput') associateEmailInput!: ElementRef<HTMLInputElement>;
 
   form!: FormGroup;
   associateForm!: FormGroup;
@@ -271,8 +270,8 @@ export class AddBusinessOwnerComponent implements OnInit {
     });
   }
 
-  getFieldError(fieldName: string): string {
-    const field = this.form.get(fieldName);
+  getFieldError(fieldName: string, form: FormGroup = this.form): string {
+    const field = form.get(fieldName);
     if (!field || !field.errors || !field.touched) return '';
 
     if (field.errors['required']) return 'Ce champ est requis';
@@ -281,14 +280,14 @@ export class AddBusinessOwnerComponent implements OnInit {
     return '';
   }
 
-  isFieldInvalid(fieldName: string): boolean {
-    const field = this.form.get(fieldName);
+  isFieldInvalid(fieldName: string, form: FormGroup = this.form): boolean {
+    const field = form.get(fieldName);
     return !!(field && field.invalid && field.touched);
   }
 
   openAssociateModal(owner: BusinessOwnerDto): void {
     if (!owner.businessId) {
-      this.error = 'Ce propriétaire n\'a pas d\'entreprise associée.';
+      this.error = 'Ce propriétaire n\'a pas d\'entreprise associée. Vous devez d\'abord compléter les 6 étapes de création d\'entreprise.';
       setTimeout(() => this.error = null, 5000);
       return;
     }
@@ -297,11 +296,13 @@ export class AddBusinessOwnerComponent implements OnInit {
     this.associateForm.reset();
     this.error = null;
     this.success = null;
+    // Attendre que la modale soit rendue avant de focus
     setTimeout(() => {
-      if (this.associateEmailInput) {
-        this.associateEmailInput.nativeElement.focus();
+      const emailInput = document.querySelector('#associate-email-input') as HTMLInputElement;
+      if (emailInput) {
+        emailInput.focus();
       }
-    }, 100);
+    }, 150);
   }
 
   closeAssociateModal(): void {
