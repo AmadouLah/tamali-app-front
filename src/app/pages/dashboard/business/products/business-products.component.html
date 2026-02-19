@@ -113,10 +113,11 @@
                             }
                           </select>
                           <input formControlName="reference" class="input-field" placeholder="Référence" />
-                          <input type="number" formControlName="unitPrice" class="input-field" placeholder="Prix unitaire" step="0.01" min="0" />
+                          <input type="number" formControlName="purchasePrice" class="input-field" placeholder="Prix d'achat (FCFA)" step="0.01" min="0" />
+                          <input type="number" formControlName="unitPrice" class="input-field" placeholder="Prix de vente (FCFA)" step="0.01" min="0" />
                           <label class="flex items-center gap-2 text-gray-300 text-sm sm:col-span-2">
                             <input type="checkbox" formControlName="taxable" />
-                            TTC / Taxable
+                            TTC / Taxable (TVA 18%)
                           </label>
                         </div>
                         <div class="flex flex-col-reverse sm:flex-row gap-2">
@@ -176,8 +177,14 @@
           <input formControlName="reference" class="input-field" placeholder="Ex. REF-001" />
         </div>
         <div>
-          <label class="block text-sm text-gray-300 mb-1">Prix unitaire (FCFA) <span class="text-red-400">*</span></label>
+          <label class="block text-sm text-gray-300 mb-1">Prix d'achat (FCFA)</label>
+          <input type="number" formControlName="purchasePrice" class="input-field" placeholder="0" step="0.01" min="0" />
+          <p class="text-xs text-gray-400 mt-1">Prix auquel vous avez acheté le produit</p>
+        </div>
+        <div>
+          <label class="block text-sm text-gray-300 mb-1">Prix de vente (FCFA) <span class="text-red-400">*</span></label>
           <input type="number" formControlName="unitPrice" class="input-field" placeholder="0" step="0.01" min="0" />
+          <p class="text-xs text-gray-400 mt-1">Prix auquel vous vendez le produit</p>
         </div>
         <div>
           <label class="block text-sm text-gray-300 mb-1">Quantité initiale (stock)</label>
@@ -185,8 +192,9 @@
         </div>
         <label class="flex items-center gap-2 text-gray-300 text-sm">
           <input type="checkbox" formControlName="taxable" />
-          TTC / Taxable
+          TTC / Taxable (TVA 18%)
         </label>
+        <p class="text-xs text-gray-400">En activant cette option, le prix de vente inclura automatiquement 18% de TVA</p>
         <div class="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 pt-2">
           <button type="button" (click)="closeAdd()" class="flex-1 py-2.5 rounded-xl border border-white/20 text-white hover:bg-white/10">Annuler</button>
           <button type="submit" [disabled]="form.invalid || submitting" class="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-medium disabled:opacity-50">{{ submitting ? 'Ajout...' : 'Ajouter' }}</button>

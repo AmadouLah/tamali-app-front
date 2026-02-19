@@ -88,8 +88,33 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
       reference: [''],
       categoryId: [''],
       unitPrice: [0, [Validators.required, Validators.min(0)]],
+      purchasePrice: [0, [Validators.min(0)]],
       taxable: [false],
       initialQuantity: [0, [Validators.required, Validators.min(0)]]
+    });
+    
+    // Appliquer la TVA de 18% quand taxable est activé
+    let previousTaxableValue = false;
+    this.form.get('taxable')?.valueChanges.subscribe(taxable => {
+      const unitPriceControl = this.form.get('unitPrice');
+      if (unitPriceControl && unitPriceControl.value && unitPriceControl.value > 0) {
+        const currentPrice = Number(unitPriceControl.value);
+        // Ne recalculer que si on change l'état de taxable (pas à chaque modification)
+        if (taxable !== previousTaxableValue) {
+          if (taxable && !previousTaxableValue) {
+            // Si on active taxable, appliquer 18% de TVA (prix TTC = prix HT * 1.18)
+            const priceWithTax = currentPrice * 1.18;
+            unitPriceControl.setValue(Math.round(priceWithTax * 100) / 100, { emitEvent: false });
+          } else if (!taxable && previousTaxableValue) {
+            // Si on désactive taxable, retirer la TVA (prix HT = prix TTC / 1.18)
+            const priceWithoutTax = currentPrice / 1.18;
+            unitPriceControl.setValue(Math.round(priceWithoutTax * 100) / 100, { emitEvent: false });
+          }
+          previousTaxableValue = taxable;
+        }
+      } else {
+        previousTaxableValue = taxable;
+      }
     });
   }
 
@@ -99,7 +124,32 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
       reference: [''],
       categoryId: [''],
       unitPrice: [0, [Validators.required, Validators.min(0)]],
+      purchasePrice: [0, [Validators.min(0)]],
       taxable: [false]
+    });
+    
+    // Appliquer la TVA de 18% quand taxable est activé
+    let previousTaxableValue = false;
+    this.editForm.get('taxable')?.valueChanges.subscribe(taxable => {
+      const unitPriceControl = this.editForm.get('unitPrice');
+      if (unitPriceControl && unitPriceControl.value && unitPriceControl.value > 0) {
+        const currentPrice = Number(unitPriceControl.value);
+        // Ne recalculer que si on change l'état de taxable (pas à chaque modification)
+        if (taxable !== previousTaxableValue) {
+          if (taxable && !previousTaxableValue) {
+            // Si on active taxable, appliquer 18% de TVA (prix TTC = prix HT * 1.18)
+            const priceWithTax = currentPrice * 1.18;
+            unitPriceControl.setValue(Math.round(priceWithTax * 100) / 100, { emitEvent: false });
+          } else if (!taxable && previousTaxableValue) {
+            // Si on désactive taxable, retirer la TVA (prix HT = prix TTC / 1.18)
+            const priceWithoutTax = currentPrice / 1.18;
+            unitPriceControl.setValue(Math.round(priceWithoutTax * 100) / 100, { emitEvent: false });
+          }
+          previousTaxableValue = taxable;
+        }
+      } else {
+        previousTaxableValue = taxable;
+      }
     });
   }
 
@@ -148,7 +198,7 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
   }
 
   openAdd(): void {
-    this.form.reset({ name: '', reference: '', categoryId: '', unitPrice: 0, taxable: false, initialQuantity: 0 });
+    this.form.reset({ name: '', reference: '', categoryId: '', unitPrice: 0, purchasePrice: 0, taxable: false, initialQuantity: 0 });
     this.showAddModal = true;
     this.error = null;
   }
@@ -167,6 +217,7 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
       reference: v.reference || undefined,
       categoryId: v.categoryId || undefined,
       unitPrice: Number(v.unitPrice),
+      purchasePrice: v.purchasePrice ? Number(v.purchasePrice) : undefined,
       taxable: !!v.taxable,
       initialQuantity: Math.max(0, Number(v.initialQuantity) || 0)
     };
@@ -186,13 +237,16 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
 
   startEdit(p: ProductDto): void {
     this.editingId = p.id;
+    // Si le produit est taxable, le prix stocké est déjà TTC, donc on le garde tel quel
+    // Sinon, c'est le prix HT
     this.editForm.patchValue({
       name: p.name,
       reference: p.reference ?? '',
       categoryId: p.categoryId ?? '',
       unitPrice: p.unitPrice,
+      purchasePrice: p.purchasePrice ?? 0,
       taxable: p.taxable
-    });
+    }, { emitEvent: false });
     this.error = null;
   }
 
@@ -210,6 +264,7 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
       reference: v.reference || undefined,
       categoryId: v.categoryId || undefined,
       unitPrice: Number(v.unitPrice),
+      purchasePrice: v.purchasePrice ? Number(v.purchasePrice) : undefined,
       taxable: !!v.taxable
     };
     this.businessOps.updateProduct(this.editingId, body).subscribe({

@@ -9,6 +9,7 @@ export interface ProductDto {
   name: string;
   reference?: string;
   unitPrice: number;
+  purchasePrice?: number;
   businessId: string;
   categoryId?: string;
   categoryName?: string;
@@ -42,6 +43,7 @@ export interface ProductCreateRequest {
   reference?: string;
   categoryId?: string;
   unitPrice: number;
+  purchasePrice?: number;
   taxable: boolean;
   initialQuantity: number;
 }
@@ -51,6 +53,7 @@ export interface ProductUpdateRequest {
   reference?: string;
   categoryId?: string;
   unitPrice?: number;
+  purchasePrice?: number;
   taxable?: boolean;
 }
 
