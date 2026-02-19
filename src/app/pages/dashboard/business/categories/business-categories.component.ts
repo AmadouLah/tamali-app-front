@@ -155,14 +155,44 @@ export class BusinessCategoriesComponent implements OnInit {
   }
 
   deleteCategory(cat: ProductCategoryDto): void {
-    if (!confirm(`Supprimer la catégorie « ${cat.name } » ? Les produits de cette catégorie resteront mais seront sans catégorie.`)) return;
-    this.businessOps.deleteProductCategory(cat.id).subscribe({
-      next: (result) => {
-        this.loadCategories();
-        this.success = isPendingResponse(result) ? 'Catégorie supprimée. Synchronisation à la reconnexion.' : 'Catégorie supprimée.';
+    this.businessOps.getProductCategoryProductsCount(cat.id).subscribe({
+      next: (count) => {
+        const message = count > 0
+          ? `ATTENTION : Supprimer la catégorie « ${cat.name} » supprimera définitivement ${count} produit${count > 1 ? 's' : ''} associé${count > 1 ? 's' : ''}.\n\nCette action est irréversible. Êtes-vous sûr de vouloir continuer ?`
+          : `Supprimer la catégorie « ${cat.name} » ?`;
+        
+        if (!confirm(message)) return;
+        
+        this.businessOps.deleteProductCategory(cat.id).subscribe({
+          next: (result) => {
+            this.categoryStore.removeCategory(cat.id);
+            this.loadCategories();
+            const productMsg = count > 0 ? ` ainsi que ${count} produit${count > 1 ? 's' : ''}` : '';
+            this.success = isPendingResponse(result)
+              ? `Catégorie${productMsg} supprimée${count > 0 ? 's' : ''}. Synchronisation à la reconnexion.`
+              : `Catégorie${productMsg} supprimée${count > 0 ? 's' : ''}.`;
+          },
+          error: (err) => {
+            this.error = extractErrorMessage(err, 'Erreur lors de la suppression.');
+          }
+        });
       },
       error: (err) => {
-        this.error = extractErrorMessage(err, 'Erreur lors de la suppression.');
+        const message = `Supprimer la catégorie « ${cat.name} » supprimera tous les produits associés.\n\nCette action est irréversible. Êtes-vous sûr de vouloir continuer ?`;
+        if (!confirm(message)) return;
+        
+        this.businessOps.deleteProductCategory(cat.id).subscribe({
+          next: (result) => {
+            this.categoryStore.removeCategory(cat.id);
+            this.loadCategories();
+            this.success = isPendingResponse(result)
+              ? 'Catégorie supprimée. Synchronisation à la reconnexion.'
+              : 'Catégorie supprimée.';
+          },
+          error: (deleteErr) => {
+            this.error = extractErrorMessage(deleteErr, 'Erreur lors de la suppression.');
+          }
+        });
       }
     });
   }

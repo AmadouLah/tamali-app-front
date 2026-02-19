@@ -51,6 +51,10 @@ export class ApiConfigService {
     return `${this.baseUrl}/product-categories/${id}`;
   }
 
+  getProductCategoryProductsCountUrl(id: string): string {
+    return `${this.baseUrl}/product-categories/${id}/products-count`;
+  }
+
   getProductUrl(id: string): string {
     return `${this.baseUrl}/products/${id}`;
   }

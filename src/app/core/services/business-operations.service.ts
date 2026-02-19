@@ -82,6 +82,13 @@ export class BusinessOperationsService {
     return this.offlineHttp.delete<void | { requestId: string }>(this.apiConfig.getProductCategoryUrl(id));
   }
 
+  getProductCategoryProductsCount(id: string): Observable<number> {
+    const url = this.apiConfig.getProductCategoryProductsCountUrl(id);
+    return this.offlineHttp.get<number | { message: string }>(url).pipe(
+      map(body => (typeof body === 'number' ? body : 0))
+    );
+  }
+
   getSales(businessId: string, page = 0, size = 20): Observable<SaleDto[]> {
     const url = `${this.apiConfig.getSalesUrl(businessId)}?page=${page}&size=${size}`;
     return this.offlineHttp.get<SaleDto[] | { message: string }>(url).pipe(

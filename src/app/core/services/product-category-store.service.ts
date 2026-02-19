@@ -20,6 +20,12 @@ export class ProductCategoryStoreService {
     this.categoriesSubject.next(next);
   }
 
+  removeCategory(id: string): void {
+    const list = this.categoriesSubject.value;
+    const next = list.filter(c => c.id !== id);
+    this.categoriesSubject.next(next);
+  }
+
   getCategoryName(categoryId: string | undefined): string {
     if (!categoryId) return '';
     return this.categoriesSubject.value.find(c => c.id === categoryId)?.name ?? '';
