@@ -20,6 +20,21 @@ interface BusinessOwnerDto {
   email: string;
   enabled: boolean;
   mustChangePassword?: boolean;
+  businessId?: string;
+  roles?: Array<{ id: string; type: string }>;
+}
+
+interface AssociateDto {
+  id: string;
+  firstname?: string;
+  lastname?: string;
+  email: string;
+  enabled: boolean;
+  mustChangePassword?: boolean;
+}
+
+interface CreateAssociateRequest {
+  email: string;
 }
 
 @Component({
@@ -36,15 +51,20 @@ export class AddBusinessOwnerComponent implements OnInit {
   private readonly apiConfig = inject(ApiConfigService);
 
   @ViewChild('emailInput') emailInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('associateEmailInput') associateEmailInput!: ElementRef<HTMLInputElement>;
 
   form!: FormGroup;
+  associateForm!: FormGroup;
   businessOwners: BusinessOwnerDto[] = [];
   filteredOwners: BusinessOwnerDto[] = [];
+  associates: Map<string, AssociateDto[]> = new Map();
   searchQuery: string = '';
   loading = false;
   error: string | null = null;
   success: string | null = null;
   showCreateModal = false;
+  showAssociateModal = false;
+  selectedOwnerId: string | null = null;
   activeMenu: string = 'ajouter propriétaire';
   sidebarOpen = false;
 
@@ -63,6 +83,7 @@ export class AddBusinessOwnerComponent implements OnInit {
 
   ngOnInit(): void {
     this.initForm();
+    this.initAssociateForm();
     this.loadBusinessOwners();
   }
 
@@ -73,11 +94,29 @@ export class AddBusinessOwnerComponent implements OnInit {
       next: (owners) => {
         this.businessOwners = owners;
         this.filteredOwners = owners;
+        this.associates.clear();
+        // Charger les associés pour chaque propriétaire qui a une entreprise
+        owners.forEach(owner => {
+          if (owner.businessId) {
+            this.loadAssociates(owner.businessId, owner.id);
+          }
+        });
         this.loading = false;
       },
       error: (err) => {
         this.handleError(err);
         this.loading = false;
+      }
+    });
+  }
+
+  private loadAssociates(businessId: string, ownerId: string): void {
+    this.http.get<AssociateDto[]>(`${this.apiConfig.getUsersUrl()}/business/${businessId}/associates`).subscribe({
+      next: (associates) => {
+        this.associates.set(ownerId, associates);
+      },
+      error: () => {
+        // Ignorer les erreurs silencieusement pour ne pas perturber l'interface
       }
     });
   }
@@ -116,7 +155,7 @@ export class AddBusinessOwnerComponent implements OnInit {
     this.success = null;
   }
 
-  getFullName(owner: BusinessOwnerDto): string {
+  getFullName(owner: BusinessOwnerDto | AssociateDto): string {
     if (owner.firstname || owner.lastname) {
       return `${owner.firstname || ''} ${owner.lastname || ''}`.trim();
     }
@@ -173,6 +212,12 @@ export class AddBusinessOwnerComponent implements OnInit {
 
   private initForm(): void {
     this.form = this.fb.group({
+      email: ['', [Validators.required, Validators.email]]
+    });
+  }
+
+  private initAssociateForm(): void {
+    this.associateForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]]
     });
   }
@@ -239,5 +284,71 @@ export class AddBusinessOwnerComponent implements OnInit {
   isFieldInvalid(fieldName: string): boolean {
     const field = this.form.get(fieldName);
     return !!(field && field.invalid && field.touched);
+  }
+
+  openAssociateModal(owner: BusinessOwnerDto): void {
+    if (!owner.businessId) {
+      this.error = 'Ce propriétaire n\'a pas d\'entreprise associée.';
+      setTimeout(() => this.error = null, 5000);
+      return;
+    }
+    this.selectedOwnerId = owner.id;
+    this.showAssociateModal = true;
+    this.associateForm.reset();
+    this.error = null;
+    this.success = null;
+    setTimeout(() => {
+      if (this.associateEmailInput) {
+        this.associateEmailInput.nativeElement.focus();
+      }
+    }, 100);
+  }
+
+  closeAssociateModal(): void {
+    this.showAssociateModal = false;
+    this.selectedOwnerId = null;
+    this.associateForm.reset();
+    this.error = null;
+    this.success = null;
+  }
+
+  onSubmitAssociate(): void {
+    if (this.associateForm.invalid || this.loading || !this.selectedOwnerId) {
+      this.markFormGroupTouched(this.associateForm);
+      return;
+    }
+
+    this.loading = true;
+    this.error = null;
+    this.success = null;
+
+    const request: CreateAssociateRequest = {
+      email: this.associateForm.value.email.trim()
+    };
+
+    this.http.post<UserDto>(`${this.apiConfig.getUsersUrl()}/${this.selectedOwnerId}/associate`, request).subscribe({
+      next: () => {
+        this.success = 'Associé créé avec succès !';
+        this.loading = false;
+        this.associateForm.reset();
+        this.closeAssociateModal();
+        // Recharger les propriétaires et leurs associés
+        this.loadBusinessOwners();
+        setTimeout(() => {
+          this.success = null;
+        }, 3000);
+      },
+      error: (err) => {
+        this.handleError(err);
+      }
+    });
+  }
+
+  getAssociates(ownerId: string): AssociateDto[] {
+    return this.associates.get(ownerId) || [];
+  }
+
+  hasAssociates(ownerId: string): boolean {
+    return this.associates.has(ownerId) && this.associates.get(ownerId)!.length > 0;
   }
 }

@@ -30,7 +30,7 @@ export interface ConfirmLoginRequest {
 
 export interface RoleDto {
   id: string;
-  type: 'SUPER_ADMIN' | 'BUSINESS_OWNER';
+  type: 'SUPER_ADMIN' | 'BUSINESS_OWNER' | 'BUSINESS_ASSOCIATE';
 }
 
 export interface UserDto {
