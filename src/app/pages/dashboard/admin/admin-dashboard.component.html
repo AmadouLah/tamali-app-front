@@ -33,20 +33,20 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
         </svg>
       </button>
-      <div class="flex-1 min-w-0 flex justify-center md:justify-start">
-        <div class="relative w-full max-w-md">
-          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="flex-1 min-w-0 flex flex-col sm:flex-row gap-2 sm:gap-3 sm:justify-center md:justify-start">
+        <div class="relative w-full sm:max-w-md">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
           </svg>
           <input
             type="text"
             placeholder="Rechercher..."
             [(ngModel)]="searchQuery"
-            class="w-full pl-10 pr-4 py-2.5 glass-effect-subtle border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+            class="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 text-sm sm:text-base glass-effect-subtle border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
           />
         </div>
       </div>
-      <div class="flex items-center gap-2 md:gap-4 shrink-0">
+      <div class="flex items-center gap-1.5 sm:gap-2 md:gap-4 shrink-0">
         <div class="hidden md:flex items-center gap-2">
           <button class="p-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -64,12 +64,12 @@
             </svg>
           </button>
         </div>
-        <div class="flex items-center gap-2 md:gap-3 pl-2 md:pl-4 border-l border-white/20">
-          <div class="text-right">
-            <div class="text-sm font-semibold text-white truncate max-w-[120px] md:max-w-none">{{ getUserDisplayName() }}</div>
+        <div class="flex items-center gap-1.5 sm:gap-2 md:gap-3 pl-1.5 sm:pl-2 md:pl-4 border-l border-white/20">
+          <div class="text-right hidden sm:block">
+            <div class="text-xs sm:text-sm font-semibold text-white truncate max-w-[100px] sm:max-w-[120px] md:max-w-none">{{ getUserDisplayName() }}</div>
             <div class="text-xs text-gray-300 hidden sm:block">Super Admin</div>
           </div>
-          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-semibold text-sm">
+          <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-semibold text-xs sm:text-sm">
             {{ getUserInitials() }}
           </div>
         </div>
@@ -79,18 +79,18 @@
     <!-- Dashboard Content -->
     <main class="dashboard-content">
       <!-- KPI Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
         @for (card of kpiCards; track card.title) {
-          <app-glass-card variant="default" class="p-6">
-            <div class="mb-4">
-              <h3 class="text-sm font-medium text-gray-300">{{ card.title }}</h3>
+          <app-glass-card variant="default" class="p-4 sm:p-6">
+            <div class="mb-3 sm:mb-4">
+              <h3 class="text-xs sm:text-sm font-medium text-gray-300">{{ card.title }}</h3>
             </div>
-            <div class="text-3xl font-bold text-white mb-2">{{ card.value }}</div>
-            <div class="flex items-center gap-2 text-sm mb-4" [class.text-green-400]="card.change > 0" [class.text-red-400]="card.change < 0">
+            <div class="text-2xl sm:text-3xl font-bold text-white mb-2">{{ card.value }}</div>
+            <div class="flex items-center gap-2 text-xs sm:text-sm mb-3 sm:mb-4" [class.text-green-400]="card.change > 0" [class.text-red-400]="card.change < 0">
               <span>{{ card.change > 0 ? '+' : '' }}{{ card.change }}%</span>
-              <span class="text-gray-400">{{ card.changeLabel }}</span>
+              <span class="text-gray-400 hidden sm:inline">{{ card.changeLabel }}</span>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 sm:gap-3">
               <div class="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
                 <div class="h-full rounded-full" [class]="card.progressColor" [style.width.%]="card.progress"></div>
               </div>
@@ -101,37 +101,37 @@
       </div>
 
       <!-- Charts Row -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
         <!-- Overview Chart -->
-        <app-glass-card variant="strong" class="p-6 lg:col-span-2">
-          <div class="flex items-center justify-between mb-6">
-            <h2 class="text-xl font-bold text-white">Overview</h2>
-            <div class="flex items-center gap-4">
-              <div class="flex items-center gap-4">
-                <div class="flex items-center gap-2">
-                  <span class="w-3 h-3 rounded bg-blue-500"></span>
-                  <span class="text-sm text-gray-300">Revenue</span>
+        <app-glass-card variant="strong" class="p-4 sm:p-6 lg:col-span-2">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <h2 class="text-lg sm:text-xl font-bold text-white">Overview</h2>
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+              <div class="flex flex-wrap items-center gap-2 sm:gap-4">
+                <div class="flex items-center gap-1.5 sm:gap-2">
+                  <span class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-blue-500"></span>
+                  <span class="text-xs sm:text-sm text-gray-300">Revenue</span>
                 </div>
-                <div class="flex items-center gap-2">
-                  <span class="w-3 h-3 rounded bg-yellow-500"></span>
-                  <span class="text-sm text-gray-300">Expenses</span>
+                <div class="flex items-center gap-1.5 sm:gap-2">
+                  <span class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-yellow-500"></span>
+                  <span class="text-xs sm:text-sm text-gray-300">Expenses</span>
                 </div>
-                <div class="flex items-center gap-2">
-                  <span class="w-3 h-3 rounded bg-green-500"></span>
-                  <span class="text-sm text-gray-300">Profit</span>
+                <div class="flex items-center gap-1.5 sm:gap-2">
+                  <span class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-green-500"></span>
+                  <span class="text-xs sm:text-sm text-gray-300">Profit</span>
                 </div>
               </div>
-              <select [(ngModel)]="period" class="px-3 py-1.5 glass-effect-subtle border border-white/20 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 bg-transparent">
+              <select [(ngModel)]="period" class="w-full sm:w-auto px-3 py-1.5 text-xs sm:text-sm glass-effect-subtle border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 bg-transparent">
                 <option value="weekly" class="bg-slate-900">Weekly</option>
                 <option value="monthly" class="bg-slate-900">Monthly</option>
                 <option value="yearly" class="bg-slate-900">Yearly</option>
               </select>
             </div>
           </div>
-          <div class="h-64">
-            <div class="flex items-end justify-between gap-2 h-full">
+          <div class="h-48 sm:h-64">
+            <div class="flex items-end justify-between gap-1 sm:gap-2 h-full">
               @for (data of chartData; track data.day) {
-                <div class="flex flex-col items-center gap-2 flex-1">
+                <div class="flex flex-col items-center gap-1.5 sm:gap-2 flex-1">
                   <div class="w-full flex flex-col-reverse gap-0.5 h-full">
                     <div
                       class="w-full rounded-t transition-all duration-300 revenue-bar"
@@ -149,7 +149,7 @@
                       title="Profit: {{ data.profit | number }}"
                     ></div>
                   </div>
-                  <span class="text-xs text-gray-300 font-medium">{{ data.day }}</span>
+                  <span class="text-[10px] sm:text-xs text-gray-300 font-medium">{{ data.day }}</span>
                 </div>
               }
             </div>
@@ -157,33 +157,33 @@
         </app-glass-card>
 
         <!-- Payment Success Rate -->
-        <app-glass-card variant="strong" class="p-6">
-          <h2 class="text-xl font-bold text-white mb-4">Payment Success Rate</h2>
-          <div class="text-4xl font-bold text-white mb-2">{{ paymentSuccessRate }}%</div>
-          <div class="text-sm text-gray-300 mb-4">{{ paymentSuccessCount }} of {{ paymentTotalCount }}</div>
-          <div class="h-2 bg-white/10 rounded-full overflow-hidden mb-4">
+        <app-glass-card variant="strong" class="p-4 sm:p-6">
+          <h2 class="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4">Payment Success Rate</h2>
+          <div class="text-3xl sm:text-4xl font-bold text-white mb-2">{{ paymentSuccessRate }}%</div>
+          <div class="text-xs sm:text-sm text-gray-300 mb-3 sm:mb-4">{{ paymentSuccessCount }} of {{ paymentTotalCount }}</div>
+          <div class="h-2 bg-white/10 rounded-full overflow-hidden mb-3 sm:mb-4">
             <div class="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500" [style.width.%]="paymentSuccessRate"></div>
           </div>
-          <div class="text-sm font-medium mb-6 text-green-400">
+          <div class="text-xs sm:text-sm font-medium mb-4 sm:mb-6 text-green-400">
             +{{ paymentSuccessChange }}% Over the last 30 days
           </div>
-          <div class="flex gap-3">
-            <button class="flex-1 px-4 py-2 border-2 border-white/30 text-white rounded-lg font-medium hover:bg-white/10 transition-colors">See Later</button>
-            <button class="flex-1 px-4 py-2 btn-primary rounded-lg font-medium">View All</button>
+          <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <button class="flex-1 px-3 sm:px-4 py-2 text-xs sm:text-sm border-2 border-white/30 text-white rounded-lg font-medium hover:bg-white/10 transition-colors">See Later</button>
+            <button class="flex-1 px-3 sm:px-4 py-2 text-xs sm:text-sm btn-primary rounded-lg font-medium">View All</button>
           </div>
         </app-glass-card>
       </div>
 
       <!-- Service Requests Section -->
-      <div class="mt-6">
+      <div class="mt-4 sm:mt-6">
         <app-glass-card variant="strong">
-          <div class="p-6">
-            <div class="flex justify-between items-center mb-6">
-              <h2 class="text-2xl font-bold text-white">Demandes de service</h2>
+          <div class="p-4 sm:p-6">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+              <h2 class="text-xl sm:text-2xl font-bold text-white">Demandes de service</h2>
               <button
                 (click)="loadServiceRequests()"
                 [disabled]="loading"
-                class="btn btn-sm btn-primary rounded-full px-4 disabled:opacity-50"
+                class="btn btn-sm btn-primary rounded-full px-3 sm:px-4 text-xs sm:text-sm disabled:opacity-50 w-full sm:w-auto"
               >
                 @if (loading) {
                   <span>Chargement...</span>
@@ -194,44 +194,44 @@
             </div>
 
             @if (error) {
-              <div class="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm">
+              <div class="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-xs sm:text-sm">
                 {{ error }}
               </div>
             }
 
             @if (loading && serviceRequests.length === 0) {
-              <div class="text-center py-12">
-                <p class="text-gray-400">Chargement des demandes...</p>
+              <div class="text-center py-8 sm:py-12">
+                <p class="text-gray-400 text-sm sm:text-base">Chargement des demandes...</p>
               </div>
             } @else if (serviceRequests.length === 0) {
-              <div class="text-center py-12">
-                <p class="text-gray-400">Aucune demande pour le moment.</p>
+              <div class="text-center py-8 sm:py-12">
+                <p class="text-gray-400 text-sm sm:text-base">Aucune demande pour le moment.</p>
               </div>
             } @else {
-              <div class="space-y-4">
+              <div class="space-y-3 sm:space-y-4">
                 @for (request of serviceRequests; track request.id) {
-                  <div class="glass-effect-subtle p-5 rounded-lg border border-white/10">
-                    <div class="flex justify-between items-start mb-3">
-                      <div class="flex-1">
-                        <div class="flex items-center gap-3 mb-2">
-                          <p class="font-semibold text-white">{{ request.email }}</p>
+                  <div class="glass-effect-subtle p-4 sm:p-5 rounded-lg border border-white/10">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
+                      <div class="flex-1 min-w-0">
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                          <p class="font-semibold text-white text-sm sm:text-base truncate">{{ request.email }}</p>
                           @if (request.processed) {
-                            <span class="px-3 py-1 bg-green-500/20 text-green-300 text-xs rounded-full border border-green-500/50">
+                            <span class="px-2 sm:px-3 py-1 bg-green-500/20 text-green-300 text-xs rounded-full border border-green-500/50 w-fit">
                               Traitée
                             </span>
                           } @else {
-                            <span class="px-3 py-1 bg-yellow-500/20 text-yellow-300 text-xs rounded-full border border-yellow-500/50">
+                            <span class="px-2 sm:px-3 py-1 bg-yellow-500/20 text-yellow-300 text-xs rounded-full border border-yellow-500/50 w-fit">
                               En attente
                             </span>
                           }
                         </div>
-                        <p class="text-gray-300 text-sm mb-3 leading-relaxed">{{ request.objective }}</p>
-                        <p class="text-gray-400 text-xs">Reçue le {{ formatDate(request.createdAt) }}</p>
+                        <p class="text-gray-300 text-xs sm:text-sm mb-2 sm:mb-3 leading-relaxed break-words">{{ request.objective }}</p>
+                        <p class="text-gray-400 text-[10px] sm:text-xs">Reçue le {{ formatDate(request.createdAt) }}</p>
                       </div>
                       @if (!request.processed) {
                         <button
                           (click)="markAsProcessed(request.id)"
-                          class="btn btn-sm btn-primary rounded-full px-4 ml-4"
+                          class="btn btn-sm btn-primary rounded-full px-3 sm:px-4 text-xs sm:text-sm w-full sm:w-auto shrink-0"
                         >
                           Marquer comme traitée
                         </button>

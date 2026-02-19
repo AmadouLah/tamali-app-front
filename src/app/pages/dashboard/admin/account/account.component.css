@@ -75,3 +75,21 @@
     transform: translate(-30px, 30px) scale(0.9);
   }
 }
+
+/* Responsive adjustments for geometric shapes */
+@media (max-width: 640px) {
+  .shape-1 {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .shape-2 {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .shape-3 {
+    width: 180px;
+    height: 180px;
+  }
+}

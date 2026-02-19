@@ -54,10 +54,10 @@
       </app-glass-card>
     }
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
       <!-- Formulaire de création -->
-      <app-glass-card variant="strong" class="p-6">
-        <h2 class="text-2xl font-bold text-white mb-6">Ajouter un secteur d'activité</h2>
+      <app-glass-card variant="strong" class="p-4 sm:p-6">
+        <h2 class="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6">Ajouter un secteur d'activité</h2>
         
         <form [formGroup]="form" (ngSubmit)="onSubmit()">
           <div class="space-y-4">
@@ -92,7 +92,7 @@
             <button
               type="submit"
               [disabled]="form.invalid || loading"
-              class="w-full px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              class="w-full px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               @if (loading) {
                 <span>Création...</span>
@@ -105,30 +105,30 @@
       </app-glass-card>
 
       <!-- Liste des secteurs -->
-      <app-glass-card variant="strong" class="p-6">
-        <h2 class="text-2xl font-bold text-white mb-6">Secteurs d'activité existants</h2>
+      <app-glass-card variant="strong" class="p-4 sm:p-6">
+        <h2 class="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6">Secteurs d'activité existants</h2>
         
         @if (loading && sectors.length === 0) {
-          <p class="text-gray-300 text-center py-8">Chargement...</p>
+          <p class="text-gray-300 text-center py-6 sm:py-8 text-sm sm:text-base">Chargement...</p>
         } @else if (sectors.length === 0) {
-          <p class="text-gray-300 text-center py-8">Aucun secteur d'activité créé</p>
+          <p class="text-gray-300 text-center py-6 sm:py-8 text-sm sm:text-base">Aucun secteur d'activité créé</p>
         } @else {
-          <div class="space-y-4 max-h-[600px] overflow-y-auto">
+          <div class="space-y-3 sm:space-y-4 max-h-[600px] overflow-y-auto">
             @for (sector of sectors; track sector.id) {
-              <div class="glass-effect-subtle border border-white/20 rounded-lg p-4">
+              <div class="glass-effect-subtle border border-white/20 rounded-lg p-3 sm:p-4">
                 @if (editingId === sector.id) {
                   <form [formGroup]="editForm" (ngSubmit)="onUpdate(sector.id)">
-                    <div class="space-y-3">
+                    <div class="space-y-2 sm:space-y-3">
                       <input
                         type="text"
                         formControlName="name"
                         [class.border-red-500]="isFieldInvalid(editForm, 'name')"
-                        class="w-full px-3 py-2 glass-effect-subtle border border-white/20 rounded text-white text-sm"
+                        class="w-full px-3 py-2 text-xs sm:text-sm glass-effect-subtle border border-white/20 rounded text-white"
                       />
                       <textarea
                         formControlName="description"
                         rows="2"
-                        class="w-full px-3 py-2 glass-effect-subtle border border-white/20 rounded text-white text-sm"
+                        class="w-full px-3 py-2 text-xs sm:text-sm glass-effect-subtle border border-white/20 rounded text-white"
                       ></textarea>
                       <div class="flex items-center gap-2">
                         <input
@@ -137,20 +137,20 @@
                           id="active-{{ sector.id }}"
                           class="w-4 h-4"
                         />
-                        <label for="active-{{ sector.id }}" class="text-sm text-gray-300">Actif</label>
+                        <label for="active-{{ sector.id }}" class="text-xs sm:text-sm text-gray-300">Actif</label>
                       </div>
-                      <div class="flex gap-2">
+                      <div class="flex flex-col sm:flex-row gap-2">
                         <button
                           type="submit"
                           [disabled]="editForm.invalid || loading"
-                          class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-all disabled:opacity-50"
+                          class="flex-1 px-3 sm:px-4 py-2 text-xs sm:text-sm bg-green-600 hover:bg-green-700 text-white rounded transition-all disabled:opacity-50"
                         >
                           Enregistrer
                         </button>
                         <button
                           type="button"
                           (click)="cancelEdit()"
-                          class="px-4 py-2 glass-effect-subtle border border-white/20 text-white text-sm rounded hover:bg-white/10 transition-all"
+                          class="flex-1 px-3 sm:px-4 py-2 text-xs sm:text-sm glass-effect-subtle border border-white/20 text-white rounded hover:bg-white/10 transition-all"
                         >
                           Annuler
                         </button>
@@ -158,13 +158,13 @@
                     </div>
                   </form>
                 } @else {
-                  <div class="flex items-start justify-between">
-                    <div class="flex-1">
-                      <h3 class="text-lg font-semibold text-white mb-1">{{ sector.name }}</h3>
+                  <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+                    <div class="flex-1 min-w-0">
+                      <h3 class="text-base sm:text-lg font-semibold text-white mb-1">{{ sector.name }}</h3>
                       @if (sector.description) {
-                        <p class="text-sm text-gray-300 mb-2">{{ sector.description }}</p>
+                        <p class="text-xs sm:text-sm text-gray-300 mb-2 break-words">{{ sector.description }}</p>
                       }
-                      <div class="flex items-center gap-2">
+                      <div class="flex flex-wrap items-center gap-2">
                         <span [class]="sector.active ? 'text-green-400' : 'text-red-400'" class="text-xs">
                           {{ sector.active ? '● Actif' : '● Inactif' }}
                         </span>
@@ -173,18 +173,18 @@
                         </span>
                       </div>
                     </div>
-                    <div class="flex gap-2 ml-4">
+                    <div class="flex gap-2 shrink-0">
                       <button
                         type="button"
                         (click)="startEdit(sector)"
-                        class="px-3 py-1.5 glass-effect-subtle border border-white/20 text-white text-sm rounded hover:bg-white/10 transition-all"
+                        class="px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm glass-effect-subtle border border-white/20 text-white rounded hover:bg-white/10 transition-all"
                       >
                         Modifier
                       </button>
                       <button
                         type="button"
                         (click)="onDelete(sector.id)"
-                        class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-all"
+                        class="px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm bg-red-600 hover:bg-red-700 text-white rounded transition-all"
                       >
                         Supprimer
                       </button>

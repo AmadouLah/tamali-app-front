@@ -70,11 +70,20 @@
   background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,.2) 4px, rgba(255,255,255,.2) 8px);
 }
 
-@media (max-width: 1024px) {
-  .sidebar {
-    @apply -translate-x-full;
+/* Responsive adjustments for geometric shapes */
+@media (max-width: 640px) {
+  .shape-1 {
+    width: 200px;
+    height: 200px;
   }
-  .main-content {
-    @apply ml-0;
+  
+  .shape-2 {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .shape-3 {
+    width: 180px;
+    height: 180px;
   }
 }

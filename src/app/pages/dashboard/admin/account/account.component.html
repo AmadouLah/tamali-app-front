@@ -61,15 +61,15 @@
           
           @if (user) {
             <div class="space-y-4">
-              <div class="flex items-center gap-4 mb-6">
-                <div class="w-20 h-20 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-semibold text-2xl">
+              <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4 sm:mb-6">
+                <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-semibold text-xl sm:text-2xl shrink-0">
                   {{ getUserInitials() }}
                 </div>
-                <div>
-                  <div class="text-lg font-semibold text-white">{{ getUserDisplayName() }}</div>
-                  <div class="text-sm text-gray-300">{{ user.email }}</div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-base sm:text-lg font-semibold text-white truncate">{{ getUserDisplayName() }}</div>
+                  <div class="text-xs sm:text-sm text-gray-300 truncate">{{ user.email }}</div>
                   <div class="mt-1">
-                    <span class="px-3 py-1 bg-green-500/20 text-green-300 text-xs rounded-full border border-green-500/50">
+                    <span class="px-2 sm:px-3 py-1 bg-green-500/20 text-green-300 text-xs rounded-full border border-green-500/50">
                       @if (user.enabled) {
                         Actif
                       } @else {
@@ -80,7 +80,7 @@
                 </div>
               </div>
 
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-sm font-medium text-gray-300 mb-1">Prénom</label>
                   <div class="text-white">{{ user.firstname || 'Non renseigné' }}</div>
@@ -113,30 +113,30 @@
           
           <div class="space-y-4">
             <!-- Désactiver le compte -->
-            <div class="flex items-center justify-between p-4 glass-effect-subtle rounded-lg border border-orange-500/30">
-              <div class="flex-1">
-                <h3 class="text-white font-semibold mb-1">Désactiver mon compte</h3>
-                <p class="text-gray-300 text-sm">Votre compte sera désactivé et vous ne pourrez plus vous connecter. Vous pourrez le réactiver plus tard en contactant le support.</p>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-4 glass-effect-subtle rounded-lg border border-orange-500/30">
+              <div class="flex-1 min-w-0">
+                <h3 class="text-white font-semibold mb-1 text-sm sm:text-base">Désactiver mon compte</h3>
+                <p class="text-gray-300 text-xs sm:text-sm">Votre compte sera désactivé et vous ne pourrez plus vous connecter. Vous pourrez le réactiver plus tard en contactant le support.</p>
               </div>
               <button
                 (click)="showDisableConfirm = true"
                 [disabled]="loading || !user?.enabled"
-                class="px-4 py-2 border-2 border-orange-500/50 text-orange-300 rounded-lg font-medium hover:bg-orange-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-4"
+                class="px-3 sm:px-4 py-2 text-xs sm:text-sm border-2 border-orange-500/50 text-orange-300 rounded-lg font-medium hover:bg-orange-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto shrink-0"
               >
                 Désactiver
               </button>
             </div>
 
             <!-- Supprimer le compte -->
-            <div class="flex items-center justify-between p-4 glass-effect-subtle rounded-lg border border-red-500/30">
-              <div class="flex-1">
-                <h3 class="text-white font-semibold mb-1">Supprimer mon compte</h3>
-                <p class="text-gray-300 text-sm">Cette action supprimera définitivement votre compte et toutes les données associées. Cette action est irréversible.</p>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-4 glass-effect-subtle rounded-lg border border-red-500/30">
+              <div class="flex-1 min-w-0">
+                <h3 class="text-white font-semibold mb-1 text-sm sm:text-base">Supprimer mon compte</h3>
+                <p class="text-gray-300 text-xs sm:text-sm">Cette action supprimera définitivement votre compte et toutes les données associées. Cette action est irréversible.</p>
               </div>
               <button
                 (click)="showDeleteConfirm = true"
                 [disabled]="loading"
-                class="px-4 py-2 border-2 border-red-500/50 text-red-300 rounded-lg font-medium hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-4"
+                class="px-3 sm:px-4 py-2 text-xs sm:text-sm border-2 border-red-500/50 text-red-300 rounded-lg font-medium hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto shrink-0"
               >
                 Supprimer
               </button>
@@ -149,22 +149,22 @@
 
   <!-- Modal de confirmation désactivation -->
   @if (showDisableConfirm) {
-    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" (click)="showDisableConfirm = false">
-      <app-glass-card variant="strong" class="p-6 max-w-md mx-4" (click)="$event.stopPropagation()">
-        <h3 class="text-xl font-bold text-white mb-4">Confirmer la désactivation</h3>
-        <p class="text-gray-300 mb-6">Êtes-vous sûr de vouloir désactiver votre compte ? Vous ne pourrez plus vous connecter jusqu'à ce qu'il soit réactivé.</p>
-        <div class="flex gap-4 justify-end">
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="showDisableConfirm = false">
+      <app-glass-card variant="strong" class="p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+        <h3 class="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4">Confirmer la désactivation</h3>
+        <p class="text-gray-300 text-sm sm:text-base mb-4 sm:mb-6">Êtes-vous sûr de vouloir désactiver votre compte ? Vous ne pourrez plus vous connecter jusqu'à ce qu'il soit réactivé.</p>
+        <div class="flex flex-col-reverse sm:flex-row gap-2 sm:gap-4 justify-end">
           <button
             (click)="showDisableConfirm = false"
             [disabled]="loading"
-            class="px-4 py-2 border-2 border-white/30 text-white rounded-lg font-medium hover:bg-white/10 transition-colors disabled:opacity-50"
+            class="px-4 py-2 text-xs sm:text-sm border-2 border-white/30 text-white rounded-lg font-medium hover:bg-white/10 transition-colors disabled:opacity-50 w-full sm:w-auto"
           >
             Annuler
           </button>
           <button
             (click)="disableAccount()"
             [disabled]="loading"
-            class="px-4 py-2 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-colors disabled:opacity-50"
+            class="px-4 py-2 text-xs sm:text-sm bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-colors disabled:opacity-50 w-full sm:w-auto"
           >
             @if (loading) {
               Désactivation...
@@ -179,22 +179,22 @@
 
   <!-- Modal de confirmation suppression -->
   @if (showDeleteConfirm) {
-    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" (click)="showDeleteConfirm = false">
-      <app-glass-card variant="strong" class="p-6 max-w-md mx-4" (click)="$event.stopPropagation()">
-        <h3 class="text-xl font-bold text-white mb-4">Confirmer la suppression</h3>
-        <p class="text-gray-300 mb-6">⚠️ Attention : Cette action est irréversible. Votre compte et toutes les données associées seront définitivement supprimés.</p>
-        <div class="flex gap-4 justify-end">
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="showDeleteConfirm = false">
+      <app-glass-card variant="strong" class="p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+        <h3 class="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4">Confirmer la suppression</h3>
+        <p class="text-gray-300 text-sm sm:text-base mb-4 sm:mb-6">⚠️ Attention : Cette action est irréversible. Votre compte et toutes les données associées seront définitivement supprimés.</p>
+        <div class="flex flex-col-reverse sm:flex-row gap-2 sm:gap-4 justify-end">
           <button
             (click)="showDeleteConfirm = false"
             [disabled]="loading"
-            class="px-4 py-2 border-2 border-white/30 text-white rounded-lg font-medium hover:bg-white/10 transition-colors disabled:opacity-50"
+            class="px-4 py-2 text-xs sm:text-sm border-2 border-white/30 text-white rounded-lg font-medium hover:bg-white/10 transition-colors disabled:opacity-50 w-full sm:w-auto"
           >
             Annuler
           </button>
           <button
             (click)="deleteAccount()"
             [disabled]="loading"
-            class="px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+            class="px-4 py-2 text-xs sm:text-sm bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50 w-full sm:w-auto"
           >
             @if (loading) {
               Suppression...

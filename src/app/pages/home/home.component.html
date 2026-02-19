@@ -56,7 +56,7 @@
           Tout ce dont vous avez besoin pour gérer votre entreprise efficacement
         </p>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
         @for (feature of features; track feature.title; let i = $index) {
           <app-glass-card
             variant="default"
@@ -64,15 +64,15 @@
             class="fade-in"
             [style.animation-delay]="i * 0.1 + 's'"
           >
-            <div class="text-center">
+            <div class="text-center p-4 sm:p-6">
               <div
-                class="glass-effect-subtle w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 text-3xl sm:text-4xl animate-float"
+                class="glass-effect-subtle w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 text-2xl sm:text-3xl md:text-4xl animate-float"
                 [style.animation-delay]="i * 0.2 + 's'"
               >
                 {{ feature.icon }}
               </div>
-              <h3 class="text-lg sm:text-xl font-bold mb-3 text-white">{{ feature.title }}</h3>
-              <p class="text-gray-300 leading-relaxed text-sm sm:text-base">{{ feature.description }}</p>
+              <h3 class="text-base sm:text-lg md:text-xl font-bold mb-2 sm:mb-3 text-white">{{ feature.title }}</h3>
+              <p class="text-gray-300 leading-relaxed text-xs sm:text-sm md:text-base">{{ feature.description }}</p>
             </div>
           </app-glass-card>
         }
@@ -81,25 +81,25 @@
   </section>
 
   <!-- CTA Section -->
-  <section class="cta-section py-16 sm:py-24 px-4">
+  <section class="cta-section py-12 sm:py-16 md:py-24 px-4">
     <div class="container mx-auto">
-      <app-glass-card variant="strong" class="max-w-5xl mx-auto text-center fade-in p-8 sm:p-12">
-        <h2 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-white">
+      <app-glass-card variant="strong" class="max-w-5xl mx-auto text-center fade-in p-6 sm:p-8 md:p-12">
+        <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 sm:mb-6 text-white">
           Prêt à démarrer ?
         </h2>
-        <p class="text-lg sm:text-xl text-gray-300 mb-8 sm:mb-10 max-w-2xl mx-auto leading-relaxed">
+        <p class="text-base sm:text-lg md:text-xl text-gray-300 mb-6 sm:mb-8 md:mb-10 max-w-2xl mx-auto leading-relaxed px-2">
           Rejoignez les entreprises qui font confiance à Tamali pour gérer leur activité.
         </p>
-        <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+        <div class="flex flex-col sm:flex-row gap-2.5 sm:gap-3 md:gap-4 justify-center px-2">
           <a
             routerLink="/service-request"
-            class="btn btn-lg btn-primary glow-effect-hover px-8 sm:px-10 py-3 sm:py-4 rounded-full text-base sm:text-lg"
+            class="btn btn-lg btn-primary glow-effect-hover px-6 sm:px-8 md:px-10 py-2.5 sm:py-3 md:py-4 rounded-full text-sm sm:text-base md:text-lg w-full sm:w-auto"
           >
             Demander l'accès
           </a>
           <a
             routerLink="/auth/login"
-            class="btn btn-lg btn-outline px-8 sm:px-10 py-3 sm:py-4 rounded-full text-base sm:text-lg border-white/30 text-white"
+            class="btn btn-lg btn-outline px-6 sm:px-8 md:px-10 py-2.5 sm:py-3 md:py-4 rounded-full text-sm sm:text-base md:text-lg border-white/30 text-white w-full sm:w-auto"
           >
             J'ai déjà un compte
           </a>

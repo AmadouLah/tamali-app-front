@@ -87,3 +87,21 @@
     transform: translate(-20px, 20px) rotate(240deg);
   }
 }
+
+/* Responsive adjustments for geometric shapes */
+@media (max-width: 640px) {
+  .shape-1 {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .shape-2 {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .shape-3 {
+    width: 140px;
+    height: 140px;
+  }
+}

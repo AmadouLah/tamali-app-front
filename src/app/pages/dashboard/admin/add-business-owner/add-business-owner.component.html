@@ -33,15 +33,16 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
         </svg>
       </button>
-      <div class="min-w-0 flex-1 flex items-center justify-between gap-3">
-        <h1 class="text-xl md:text-2xl font-bold text-white uppercase truncate">Gestion des propriétaires</h1>
+      <div class="min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 class="text-lg sm:text-xl md:text-2xl font-bold text-white uppercase truncate">Gestion des propriétaires</h1>
         <button
           (click)="openCreateModal()"
-          class="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white font-medium rounded-lg transition-all flex items-center gap-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          class="px-3 sm:px-4 py-2 text-xs sm:text-sm bg-cyan-500 hover:bg-cyan-600 text-white font-medium rounded-lg transition-all flex items-center justify-center gap-1.5 sm:gap-2 w-full sm:w-auto">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
           </svg>
-          Créer un propriétaire
+          <span class="hidden sm:inline">Créer un propriétaire</span>
+          <span class="sm:hidden">Créer</span>
         </button>
       </div>
     </header>
@@ -78,8 +79,8 @@
           </div>
         }
 
-        <!-- En-têtes du tableau -->
-        <div class="grid grid-cols-12 gap-4 px-4 py-3 bg-slate-800/50 rounded-lg mb-2">
+        <!-- En-têtes du tableau - masqués sur mobile -->
+        <div class="hidden md:grid grid-cols-12 gap-4 px-4 py-3 bg-slate-800/50 rounded-lg mb-2">
           <div class="col-span-4">
             <span class="text-xs font-semibold text-gray-300 uppercase">Nom complet</span>
           </div>
@@ -104,72 +105,138 @@
             <p class="text-gray-400">Aucun propriétaire trouvé.</p>
           </div>
         } @else {
-          <div class="space-y-2">
+          <div class="space-y-3 sm:space-y-2">
             @for (owner of filteredOwners; track owner.id) {
-              <div class="grid grid-cols-12 gap-4 px-4 py-3 glass-effect-subtle border border-white/10 rounded-lg hover:bg-white/5 transition-all">
-                <div class="col-span-4 flex items-center">
-                  <span class="text-white">{{ getFullName(owner) }}</span>
-                </div>
-                <div class="col-span-4 flex items-center">
-                  <span class="text-gray-300">{{ owner.email }}</span>
-                </div>
-                <div class="col-span-2 flex items-center">
-                  @if (owner.enabled) {
-                    <span class="px-3 py-1 bg-green-500/20 text-green-300 text-xs rounded-full border border-green-500/50">
-                      Actif
-                    </span>
-                  } @else {
-                    <span class="px-3 py-1 bg-red-500/20 text-red-300 text-xs rounded-full border border-red-500/50">
-                      Inactif
-                    </span>
-                  }
-                  @if (owner.mustChangePassword) {
-                    <span class="ml-2 px-2 py-1 bg-orange-500/20 text-orange-300 text-xs rounded border border-orange-500/50">
-                      Mot de passe temporaire
-                    </span>
-                  }
-                </div>
-                <div class="col-span-2 flex items-center gap-2">
-                  <button
-                    type="button"
-                    (click)="openAssociateModal(owner)"
-                    [disabled]="loading || !owner.businessId"
-                    [title]="!owner.businessId ? 'Ce propriétaire doit d\'abord compléter les 6 étapes de création d\'entreprise' : 'Ajouter un associé'"
-                    class="p-2 text-purple-400 hover:bg-purple-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
-                    </svg>
-                  </button>
-                  <button
-                    (click)="toggleOwnerStatus(owner)"
-                    [disabled]="loading"
-                    [class.text-orange-400]="!owner.enabled"
-                    [class.text-blue-400]="owner.enabled"
-                    class="p-2 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50"
-                    [title]="owner.enabled ? 'Désactiver' : 'Activer'">
+              <div class="glass-effect-subtle border border-white/10 rounded-lg hover:bg-white/5 transition-all overflow-hidden">
+                <!-- Mobile layout -->
+                <div class="md:hidden p-4 space-y-3">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="flex-1 min-w-0">
+                      <h3 class="text-white font-semibold text-sm mb-1 truncate">{{ getFullName(owner) }}</h3>
+                      <p class="text-gray-300 text-xs truncate">{{ owner.email }}</p>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        (click)="openAssociateModal(owner)"
+                        [disabled]="loading || !owner.businessId"
+                        [title]="!owner.businessId ? 'Ce propriétaire doit d\'abord compléter les 6 étapes de création d\'entreprise' : 'Ajouter un associé'"
+                        class="p-1.5 text-purple-400 hover:bg-purple-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                        </svg>
+                      </button>
+                      <button
+                        (click)="toggleOwnerStatus(owner)"
+                        [disabled]="loading"
+                        [class.text-orange-400]="!owner.enabled"
+                        [class.text-blue-400]="owner.enabled"
+                        class="p-1.5 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50"
+                        [title]="owner.enabled ? 'Désactiver' : 'Activer'">
+                        @if (owner.enabled) {
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                          </svg>
+                        } @else {
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                          </svg>
+                        }
+                      </button>
+                      <button
+                        (click)="deleteOwner(owner)"
+                        [disabled]="loading"
+                        class="p-1.5 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors disabled:opacity-50"
+                        title="Supprimer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-2">
                     @if (owner.enabled) {
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
-                      </svg>
+                      <span class="px-2 py-1 bg-green-500/20 text-green-300 text-xs rounded-full border border-green-500/50">
+                        Actif
+                      </span>
                     } @else {
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                      </svg>
+                      <span class="px-2 py-1 bg-red-500/20 text-red-300 text-xs rounded-full border border-red-500/50">
+                        Inactif
+                      </span>
                     }
-                  </button>
-                  <button
-                    (click)="deleteOwner(owner)"
-                    [disabled]="loading"
-                    class="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors disabled:opacity-50"
-                    title="Supprimer">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                    </svg>
-                  </button>
+                    @if (owner.mustChangePassword) {
+                      <span class="px-2 py-1 bg-orange-500/20 text-orange-300 text-xs rounded border border-orange-500/50">
+                        Mot de passe temporaire
+                      </span>
+                    }
+                  </div>
                 </div>
-              </div>
+                
+                <!-- Desktop layout -->
+                <div class="hidden md:grid grid-cols-12 gap-4 px-4 py-3">
+                  <div class="col-span-4 flex items-center">
+                    <span class="text-white text-sm">{{ getFullName(owner) }}</span>
+                  </div>
+                  <div class="col-span-4 flex items-center">
+                    <span class="text-gray-300 text-sm truncate">{{ owner.email }}</span>
+                  </div>
+                  <div class="col-span-2 flex items-center gap-2">
+                    @if (owner.enabled) {
+                      <span class="px-3 py-1 bg-green-500/20 text-green-300 text-xs rounded-full border border-green-500/50">
+                        Actif
+                      </span>
+                    } @else {
+                      <span class="px-3 py-1 bg-red-500/20 text-red-300 text-xs rounded-full border border-red-500/50">
+                        Inactif
+                      </span>
+                    }
+                    @if (owner.mustChangePassword) {
+                      <span class="px-2 py-1 bg-orange-500/20 text-orange-300 text-xs rounded border border-orange-500/50">
+                        Mot de passe temporaire
+                      </span>
+                    }
+                  </div>
+                  <div class="col-span-2 flex items-center gap-2">
+                    <button
+                      type="button"
+                      (click)="openAssociateModal(owner)"
+                      [disabled]="loading || !owner.businessId"
+                      [title]="!owner.businessId ? 'Ce propriétaire doit d\'abord compléter les 6 étapes de création d\'entreprise' : 'Ajouter un associé'"
+                      class="p-2 text-purple-400 hover:bg-purple-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                      </svg>
+                    </button>
+                    <button
+                      (click)="toggleOwnerStatus(owner)"
+                      [disabled]="loading"
+                      [class.text-orange-400]="!owner.enabled"
+                      [class.text-blue-400]="owner.enabled"
+                      class="p-2 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50"
+                      [title]="owner.enabled ? 'Désactiver' : 'Activer'">
+                      @if (owner.enabled) {
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                        </svg>
+                      } @else {
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                      }
+                    </button>
+                    <button
+                      (click)="deleteOwner(owner)"
+                      [disabled]="loading"
+                      class="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors disabled:opacity-50"
+                      title="Supprimer">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               @if (owner.businessId) {
-                <div class="col-span-12 mt-2 ml-4 pl-4 border-l-2 border-purple-500/30">
+                <div class="md:col-span-12 mt-3 md:mt-2 md:ml-4 md:pl-4 md:border-l-2 border-purple-500/30 px-4 md:px-0">
                   <div class="flex items-center justify-between mb-2">
                     <div class="text-xs text-gray-400">
                       Associés: 
@@ -193,34 +260,38 @@
                   @if (isLoadingAssociates(owner.id) && getAssociates(owner.id).length === 0) {
                     <div class="text-xs text-gray-500 py-2">Chargement des associés...</div>
                   } @else if (hasAssociates(owner.id)) {
-                    <div class="space-y-1">
+                    <div class="space-y-2">
                       @for (associate of getAssociates(owner.id); track associate.id) {
-                        <div class="flex items-center justify-between px-3 py-2 glass-effect-subtle rounded text-sm">
-                          <div class="flex items-center gap-3 flex-1">
-                            <span class="text-gray-300">{{ getFullName(associate) }} ({{ associate.email }})</span>
-                            @if (associate.mustChangePassword) {
-                              <span class="px-2 py-1 bg-orange-500/20 text-orange-300 text-xs rounded border border-orange-500/50">
-                                Mot de passe temporaire
-                              </span>
-                            }
-                            @if (associate.enabled) {
-                              <span class="px-2 py-1 bg-green-500/20 text-green-300 text-xs rounded border border-green-500/50">
-                                Actif
-                              </span>
-                            } @else {
-                              <span class="px-2 py-1 bg-red-500/20 text-red-300 text-xs rounded border border-red-500/50">
-                                Inactif
-                              </span>
-                            }
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 py-2 glass-effect-subtle rounded">
+                          <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                            <span class="text-gray-300 text-xs sm:text-sm truncate">{{ getFullName(associate) }}</span>
+                            <span class="text-gray-400 text-xs truncate hidden sm:inline">({{ associate.email }})</span>
+                            <span class="text-gray-400 text-xs truncate sm:hidden">{{ associate.email }}</span>
+                            <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                              @if (associate.mustChangePassword) {
+                                <span class="px-2 py-1 bg-orange-500/20 text-orange-300 text-xs rounded border border-orange-500/50">
+                                  Mot de passe temporaire
+                                </span>
+                              }
+                              @if (associate.enabled) {
+                                <span class="px-2 py-1 bg-green-500/20 text-green-300 text-xs rounded border border-green-500/50">
+                                  Actif
+                                </span>
+                              } @else {
+                                <span class="px-2 py-1 bg-red-500/20 text-red-300 text-xs rounded border border-red-500/50">
+                                  Inactif
+                                </span>
+                              }
+                            </div>
                           </div>
-                          <div class="flex items-center gap-2">
+                          <div class="flex items-center gap-2 shrink-0">
                             <button
                               type="button"
                               (click)="toggleAssociateStatus(associate, owner.id)"
                               [disabled]="loading"
                               [title]="associate.enabled ? 'Désactiver cet associé' : 'Activer cet associé'"
-                              class="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              class="p-1.5 sm:p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                              <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 @if (associate.enabled) {
                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
                                 } @else {
@@ -233,8 +304,8 @@
                               (click)="removeAssociate(associate, owner.id)"
                               [disabled]="loading"
                               title="Retirer cet associé"
-                              class="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              class="p-1.5 sm:p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                              <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                               </svg>
                             </button>
@@ -256,20 +327,20 @@
 
   <!-- Modal de création -->
   @if (showCreateModal) {
-    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" (click)="closeCreateModal()">
-      <app-glass-card variant="strong" class="p-6 max-w-md mx-4 w-full" (click)="$event.stopPropagation()">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-2xl font-bold text-white">Créer un propriétaire</h2>
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="closeCreateModal()">
+      <app-glass-card variant="strong" class="p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+        <div class="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 class="text-xl sm:text-2xl font-bold text-white">Créer un propriétaire</h2>
           <button
             (click)="closeCreateModal()"
-            class="text-gray-400 hover:text-white transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            class="text-gray-400 hover:text-white transition-colors shrink-0">
+            <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
           </button>
         </div>
 
-        <p class="text-gray-300 text-sm mb-6">
+        <p class="text-gray-300 text-xs sm:text-sm mb-4 sm:mb-6">
           Entrez l'email du propriétaire. Un mot de passe temporaire sera généré et envoyé par email avec un lien de connexion.
         </p>
 
@@ -293,21 +364,21 @@
             </div>
           </div>
 
-          <div class="flex justify-end gap-4 mt-6">
+          <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-4 mt-4 sm:mt-6">
             <button
               type="button"
               (click)="closeCreateModal()"
               [disabled]="loading"
-              class="px-6 py-2 border-2 border-white/30 text-white rounded-lg font-medium hover:bg-white/10 transition-colors disabled:opacity-50">
+              class="px-4 sm:px-6 py-2 text-xs sm:text-sm border-2 border-white/30 text-white rounded-lg font-medium hover:bg-white/10 transition-colors disabled:opacity-50 w-full sm:w-auto">
               Annuler
             </button>
             <button
               type="submit"
               [disabled]="loading || form.invalid"
-              class="px-6 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+              class="px-4 sm:px-6 py-2 text-xs sm:text-sm bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto">
               @if (loading) {
-                <span class="flex items-center gap-2">
-                  <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                <span class="flex items-center justify-center gap-2">
+                  <svg class="animate-spin h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
@@ -325,20 +396,20 @@
 
   <!-- Modal d'ajout d'associé -->
   @if (showAssociateModal && selectedOwnerId) {
-    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" (click)="closeAssociateModal()">
-      <app-glass-card variant="strong" class="p-6 max-w-md mx-4 w-full" (click)="$event.stopPropagation()">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-2xl font-bold text-white">Ajouter un associé</h2>
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" (click)="closeAssociateModal()">
+      <app-glass-card variant="strong" class="p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+        <div class="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 class="text-xl sm:text-2xl font-bold text-white">Ajouter un associé</h2>
           <button
             (click)="closeAssociateModal()"
-            class="text-gray-400 hover:text-white transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            class="text-gray-400 hover:text-white transition-colors shrink-0">
+            <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
           </button>
         </div>
 
-        <p class="text-gray-300 text-sm mb-6">
+        <p class="text-gray-300 text-xs sm:text-sm mb-4 sm:mb-6">
           Entrez l'email de l'associé. Un mot de passe temporaire sera généré et envoyé par email. 
           L'associé pourra uniquement ajouter des ventes.
         </p>
@@ -363,21 +434,21 @@
             </div>
           </div>
 
-          <div class="flex justify-end gap-4 mt-6">
+          <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-4 mt-4 sm:mt-6">
             <button
               type="button"
               (click)="closeAssociateModal()"
               [disabled]="loading"
-              class="px-6 py-2 border-2 border-white/30 text-white rounded-lg font-medium hover:bg-white/10 transition-colors disabled:opacity-50">
+              class="px-4 sm:px-6 py-2 text-xs sm:text-sm border-2 border-white/30 text-white rounded-lg font-medium hover:bg-white/10 transition-colors disabled:opacity-50 w-full sm:w-auto">
               Annuler
             </button>
             <button
               type="submit"
               [disabled]="loading || associateForm.invalid"
-              class="px-6 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+              class="px-4 sm:px-6 py-2 text-xs sm:text-sm bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto">
               @if (loading) {
-                <span class="flex items-center gap-2">
-                  <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                <span class="flex items-center justify-center gap-2">
+                  <svg class="animate-spin h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
