@@ -4,6 +4,7 @@ import { OfflineHttpService } from './offline-http.service';
 import { ApiConfigService } from './api-config.service';
 import type {
   ProductDto,
+  ProductCategoryDto,
   SaleDto,
   SaleCreateRequest,
   ProductCreateRequest,
@@ -54,6 +55,31 @@ export class BusinessOperationsService {
     return this.offlineHttp.get<ProductDto[] | { message: string }>(url).pipe(
       map(body => (Array.isArray(body) ? body : []))
     );
+  }
+
+  getProductCategories(businessId: string): Observable<ProductCategoryDto[]> {
+    const url = this.apiConfig.getProductCategoriesUrl(businessId);
+    return this.offlineHttp.get<ProductCategoryDto[] | { message: string }>(url).pipe(
+      map(body => (Array.isArray(body) ? body : []))
+    );
+  }
+
+  createProductCategory(businessId: string, name: string): Observable<ProductCategoryDto | { requestId: string }> {
+    return this.offlineHttp.post<ProductCategoryDto | { requestId: string }>(
+      this.apiConfig.getProductCategoriesUrl(businessId),
+      { name }
+    );
+  }
+
+  updateProductCategory(id: string, name: string): Observable<ProductCategoryDto | { requestId: string }> {
+    return this.offlineHttp.patch<ProductCategoryDto | { requestId: string }>(
+      this.apiConfig.getProductCategoryUrl(id),
+      { name }
+    );
+  }
+
+  deleteProductCategory(id: string): Observable<void | { requestId: string }> {
+    return this.offlineHttp.delete<void | { requestId: string }>(this.apiConfig.getProductCategoryUrl(id));
   }
 
   getSales(businessId: string, page = 0, size = 20): Observable<SaleDto[]> {

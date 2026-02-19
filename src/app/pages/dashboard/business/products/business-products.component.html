@@ -78,7 +78,13 @@
                       <form [formGroup]="editForm" (ngSubmit)="submitEdit()" class="space-y-3">
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <input formControlName="name" class="input-field" placeholder="Nom" />
-                          <input formControlName="reference" class="input-field" placeholder="Catégorie / Référence" />
+                          <select formControlName="categoryId" class="input-field">
+                            <option value="">Sans catégorie</option>
+                            @for (cat of categories; track cat.id) {
+                              <option [value]="cat.id">{{ cat.name }}</option>
+                            }
+                          </select>
+                          <input formControlName="reference" class="input-field" placeholder="Référence" />
                           <input type="number" formControlName="unitPrice" class="input-field" placeholder="Prix unitaire" step="0.01" min="0" />
                           <label class="flex items-center gap-2 text-gray-300 text-sm">
                             <input type="checkbox" formControlName="taxable" />
@@ -125,8 +131,20 @@
           <input formControlName="name" class="input-field" placeholder="Ex. Parfum Vanille" />
         </div>
         <div>
-          <label class="block text-sm text-gray-300 mb-1">Catégorie / Référence</label>
-          <input formControlName="reference" class="input-field" placeholder="Ex. Parfum" />
+          <label class="block text-sm text-gray-300 mb-1">Catégorie</label>
+          <select formControlName="categoryId" class="input-field">
+            <option value="">Sans catégorie</option>
+            @for (cat of categories; track cat.id) {
+              <option [value]="cat.id">{{ cat.name }}</option>
+            }
+          </select>
+          @if (categories.length === 0) {
+            <p class="text-xs text-gray-400 mt-1"><a routerLink="/dashboard/business/categories" class="text-purple-300 hover:underline">Créer des catégories</a> pour organiser vos produits.</p>
+          }
+        </div>
+        <div>
+          <label class="block text-sm text-gray-300 mb-1">Référence (optionnel)</label>
+          <input formControlName="reference" class="input-field" placeholder="Ex. REF-001" />
         </div>
         <div>
           <label class="block text-sm text-gray-300 mb-1">Prix unitaire (FCFA) <span class="text-red-400">*</span></label>

@@ -43,6 +43,14 @@ export class ApiConfigService {
     return `${this.baseUrl}/businesses/${businessId}/products`;
   }
 
+  getProductCategoriesUrl(businessId: string): string {
+    return `${this.baseUrl}/businesses/${businessId}/product-categories`;
+  }
+
+  getProductCategoryUrl(id: string): string {
+    return `${this.baseUrl}/product-categories/${id}`;
+  }
+
   getProductUrl(id: string): string {
     return `${this.baseUrl}/products/${id}`;
   }

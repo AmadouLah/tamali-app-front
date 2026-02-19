@@ -1,9 +1,17 @@
+export interface ProductCategoryDto {
+  id: string;
+  name: string;
+  businessId: string;
+}
+
 export interface ProductDto {
   id: string;
   name: string;
   reference?: string;
   unitPrice: number;
   businessId: string;
+  categoryId?: string;
+  categoryName?: string;
   stockQuantity: number;
   taxable: boolean;
 }
@@ -32,6 +40,7 @@ export type MovementType = 'IN' | 'OUT' | 'SALE';
 export interface ProductCreateRequest {
   name: string;
   reference?: string;
+  categoryId?: string;
   unitPrice: number;
   taxable: boolean;
   initialQuantity: number;
@@ -40,6 +49,7 @@ export interface ProductCreateRequest {
 export interface ProductUpdateRequest {
   name?: string;
   reference?: string;
+  categoryId?: string;
   unitPrice?: number;
   taxable?: boolean;
 }

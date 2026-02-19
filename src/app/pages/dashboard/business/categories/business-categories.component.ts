@@ -4,12 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Router, RouterModule } from '@angular/router';
 import { AuthService, UserDto } from '../../../../core/services/auth.service';
 import { BusinessOperationsService, isPendingResponse } from '../../../../core/services/business-operations.service';
-import {
-  ProductDto,
-  ProductCategoryDto,
-  ProductCreateRequest,
-  ProductUpdateRequest
-} from '../../../../core/models/product.model';
+import type { ProductCategoryDto } from '../../../../core/models/product.model';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
 import { BUSINESS_OWNER_MENU_ITEMS } from '../business-menu.const';
@@ -17,7 +12,7 @@ import { UserAvatarComponent } from '../../../../shared/components/user-avatar/u
 import { extractErrorMessage } from '../../../../core/utils/error.utils';
 
 @Component({
-  selector: 'app-business-products',
+  selector: 'app-business-categories',
   standalone: true,
   imports: [
     CommonModule,
@@ -27,10 +22,10 @@ import { extractErrorMessage } from '../../../../core/utils/error.utils';
     AdminSidebarComponent,
     UserAvatarComponent
   ],
-  templateUrl: './business-products.component.html',
-  styleUrl: './business-products.component.css'
+  templateUrl: './business-categories.component.html',
+  styleUrl: './business-categories.component.css'
 })
-export class BusinessProductsComponent implements OnInit {
+export class BusinessCategoriesComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly businessOps = inject(BusinessOperationsService);
   private readonly authService = inject(AuthService);
@@ -38,7 +33,6 @@ export class BusinessProductsComponent implements OnInit {
 
   user: UserDto | null = null;
   businessId: string | null = null;
-  products: ProductDto[] = [];
   categories: ProductCategoryDto[] = [];
   form!: FormGroup;
   editForm!: FormGroup;
@@ -47,7 +41,7 @@ export class BusinessProductsComponent implements OnInit {
   submitting = false;
   error: string | null = null;
   success: string | null = null;
-  activeMenu = 'produits';
+  activeMenu = 'catégories';
   sidebarOpen = false;
   showAddModal = false;
 
@@ -63,42 +57,25 @@ export class BusinessProductsComponent implements OnInit {
     this.buildForm();
     this.buildEditForm();
     this.loadCategories();
-    this.loadProducts();
   }
 
   private buildForm(): void {
     this.form = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(2)]],
-      reference: [''],
-      categoryId: [''],
-      unitPrice: [0, [Validators.required, Validators.min(0)]],
-      taxable: [false],
-      initialQuantity: [0, [Validators.required, Validators.min(0)]]
+      name: ['', [Validators.required, Validators.minLength(2)]]
     });
   }
 
   private buildEditForm(): void {
     this.editForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(2)]],
-      reference: [''],
-      categoryId: [''],
-      unitPrice: [0, [Validators.required, Validators.min(0)]],
-      taxable: [false]
+      name: ['', [Validators.required, Validators.minLength(2)]]
     });
   }
 
   private loadCategories(): void {
     if (!this.businessId) return;
     this.businessOps.getProductCategories(this.businessId).subscribe({
-      next: (list) => { this.categories = list; }
-    });
-  }
-
-  private loadProducts(): void {
-    if (!this.businessId) return;
-    this.businessOps.getProducts(this.businessId).subscribe({
       next: (list) => {
-        this.products = list;
+        this.categories = list;
         this.loading = false;
       },
       error: () => {
@@ -107,18 +84,8 @@ export class BusinessProductsComponent implements OnInit {
     });
   }
 
-  get productsByCategory(): { category: string; products: ProductDto[] }[] {
-    const map = new Map<string, ProductDto[]>();
-    for (const p of this.products) {
-      const cat = (p.categoryName || p.reference)?.trim() || 'Sans catégorie';
-      if (!map.has(cat)) map.set(cat, []);
-      map.get(cat)!.push(p);
-    }
-    return Array.from(map.entries()).map(([category, products]) => ({ category, products }));
-  }
-
   openAdd(): void {
-    this.form.reset({ name: '', reference: '', categoryId: '', unitPrice: 0, taxable: false, initialQuantity: 0 });
+    this.form.reset({ name: '' });
     this.showAddModal = true;
     this.error = null;
   }
@@ -131,20 +98,12 @@ export class BusinessProductsComponent implements OnInit {
     if (!this.businessId || this.form.invalid || this.submitting) return;
     this.error = null;
     this.submitting = true;
-    const v = this.form.value as ProductCreateRequest;
-    const body = {
-      name: v.name,
-      reference: v.reference || undefined,
-      categoryId: v.categoryId || undefined,
-      unitPrice: Number(v.unitPrice),
-      taxable: !!v.taxable,
-      initialQuantity: Math.max(0, Number(v.initialQuantity) || 0)
-    };
-    this.businessOps.createProduct(this.businessId, body).subscribe({
+    const name = this.form.value.name?.trim();
+    this.businessOps.createProductCategory(this.businessId, name).subscribe({
       next: (result) => {
-        this.loadProducts();
+        this.loadCategories();
         this.closeAdd();
-        this.success = isPendingResponse(result) ? 'Produit ajouté. Synchronisation à la reconnexion.' : 'Produit ajouté.';
+        this.success = isPendingResponse(result) ? 'Catégorie ajoutée. Synchronisation à la reconnexion.' : 'Catégorie ajoutée.';
         this.submitting = false;
       },
       error: (err) => {
@@ -154,15 +113,9 @@ export class BusinessProductsComponent implements OnInit {
     });
   }
 
-  startEdit(p: ProductDto): void {
-    this.editingId = p.id;
-    this.editForm.patchValue({
-      name: p.name,
-      reference: p.reference ?? '',
-      categoryId: p.categoryId ?? '',
-      unitPrice: p.unitPrice,
-      taxable: p.taxable
-    });
+  startEdit(cat: ProductCategoryDto): void {
+    this.editingId = cat.id;
+    this.editForm.patchValue({ name: cat.name });
     this.error = null;
   }
 
@@ -174,19 +127,12 @@ export class BusinessProductsComponent implements OnInit {
     if (!this.editingId || this.editForm.invalid || this.submitting) return;
     this.error = null;
     this.submitting = true;
-    const v = this.editForm.value as ProductUpdateRequest;
-    const body = {
-      name: v.name,
-      reference: v.reference || undefined,
-      categoryId: v.categoryId || undefined,
-      unitPrice: Number(v.unitPrice),
-      taxable: !!v.taxable
-    };
-    this.businessOps.updateProduct(this.editingId, body).subscribe({
+    const name = this.editForm.value.name?.trim();
+    this.businessOps.updateProductCategory(this.editingId, name).subscribe({
       next: (result) => {
-        this.loadProducts();
+        this.loadCategories();
         this.editingId = null;
-        this.success = isPendingResponse(result) ? 'Produit mis à jour. Synchronisation à la reconnexion.' : 'Produit mis à jour.';
+        this.success = isPendingResponse(result) ? 'Catégorie mise à jour. Synchronisation à la reconnexion.' : 'Catégorie mise à jour.';
         this.submitting = false;
       },
       error: (err) => {
@@ -196,21 +142,17 @@ export class BusinessProductsComponent implements OnInit {
     });
   }
 
-  deleteProduct(p: ProductDto): void {
-    if (!confirm(`Supprimer « ${p.name } » ?`)) return;
-    this.businessOps.deleteProduct(p.id).subscribe({
+  deleteCategory(cat: ProductCategoryDto): void {
+    if (!confirm(`Supprimer la catégorie « ${cat.name } » ? Les produits de cette catégorie resteront mais seront sans catégorie.`)) return;
+    this.businessOps.deleteProductCategory(cat.id).subscribe({
       next: (result) => {
-        this.loadProducts();
-        this.success = isPendingResponse(result) ? 'Produit supprimé. Synchronisation à la reconnexion.' : 'Produit supprimé.';
+        this.loadCategories();
+        this.success = isPendingResponse(result) ? 'Catégorie supprimée. Synchronisation à la reconnexion.' : 'Catégorie supprimée.';
       },
       error: (err) => {
         this.error = extractErrorMessage(err, 'Erreur lors de la suppression.');
       }
     });
-  }
-
-  formatMoney(amount: number): string {
-    return `${(amount ?? 0).toLocaleString('fr-FR')} FCFA`;
   }
 
   getDisplayName(): string {

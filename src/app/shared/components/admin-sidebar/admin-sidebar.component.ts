@@ -43,6 +43,8 @@ export class AdminSidebarComponent implements OnInit {
       this.activeMenu = 'paramètres';
     } else if (route.includes('business/sales')) {
       this.activeMenu = 'ventes';
+    } else if (route.includes('business/categories')) {
+      this.activeMenu = 'catégories';
     } else if (route.includes('business/products')) {
       this.activeMenu = 'produits';
     } else if (route.includes('business/stock')) {
