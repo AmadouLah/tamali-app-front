@@ -373,4 +373,62 @@ export class AddBusinessOwnerComponent implements OnInit {
   hasAssociates(ownerId: string): boolean {
     return this.associates.has(ownerId) && this.associates.get(ownerId)!.length > 0;
   }
+
+  toggleAssociateStatus(associate: AssociateDto, ownerId: string): void {
+    if (!confirm(`Êtes-vous sûr de vouloir ${associate.enabled ? 'désactiver' : 'activer'} cet associé ?`)) {
+      return;
+    }
+
+    this.loading = true;
+    this.error = null;
+    this.success = null;
+    
+    const action = associate.enabled 
+      ? this.http.patch(`${this.apiConfig.getUsersUrl()}/${associate.id}/disable`, {})
+      : this.http.patch(`${this.apiConfig.getUsersUrl()}/${associate.id}/enable`, {});
+
+    action.subscribe({
+      next: () => {
+        this.success = `Associé ${associate.enabled ? 'désactivé' : 'activé'} avec succès`;
+        this.loading = false;
+        // Recharger les associés du propriétaire
+        const owner = this.businessOwners.find(o => o.id === ownerId);
+        if (owner?.businessId) {
+          this.loadAssociates(owner.businessId, ownerId).then(() => {
+            setTimeout(() => this.success = null, 3000);
+          });
+        }
+      },
+      error: (err) => {
+        this.handleError(err);
+      }
+    });
+  }
+
+  removeAssociate(associate: AssociateDto, ownerId: string): void {
+    if (!confirm(`Êtes-vous sûr de vouloir retirer ${this.getFullName(associate)} en tant qu'associé ? Cette action est irréversible.`)) {
+      return;
+    }
+
+    this.loading = true;
+    this.error = null;
+    this.success = null;
+    
+    this.http.delete(`${this.apiConfig.getUsersUrl()}/${associate.id}/associate`).subscribe({
+      next: () => {
+        this.success = 'Associé retiré avec succès';
+        this.loading = false;
+        // Recharger les associés du propriétaire
+        const owner = this.businessOwners.find(o => o.id === ownerId);
+        if (owner?.businessId) {
+          this.loadAssociates(owner.businessId, ownerId).then(() => {
+            setTimeout(() => this.success = null, 3000);
+          });
+        }
+      },
+      error: (err) => {
+        this.handleError(err);
+      }
+    });
+  }
 }
