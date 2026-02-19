@@ -69,8 +69,12 @@ export class BusinessCompanyComponent implements OnInit, OnDestroy {
       }
       return;
     }
-    if (!this.user.businessId) {
-      this.router.navigate(['/business/setup'], { queryParams: { userId: this.user.id } });
+    if (!this.user || !this.user.businessId) {
+      if (this.user) {
+        this.router.navigate(['/business/setup'], { queryParams: { userId: this.user.id } });
+      } else {
+        this.router.navigate(['/auth/login']);
+      }
       return;
     }
     this.buildForm();

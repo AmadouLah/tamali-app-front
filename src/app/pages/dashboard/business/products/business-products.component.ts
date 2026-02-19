@@ -69,7 +69,7 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
       }
       return;
     }
-    this.businessId = this.user.businessId;
+    this.businessId = this.user?.businessId ?? null;
     this.buildForm();
     this.buildEditForm();
     this.categoryStoreSub = this.categoryStore.categories$.subscribe(() => {

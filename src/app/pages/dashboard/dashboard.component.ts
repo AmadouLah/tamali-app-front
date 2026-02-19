@@ -38,7 +38,7 @@ export class DashboardComponent implements OnInit {
    * Méthode centralisée pour éviter la duplication de code.
    */
   private redirectBasedOnRole(user: UserDto): void {
-    const roleType = user.roles[0]?.type;
+    const roleType = user.roles?.[0]?.type;
     
     switch (roleType) {
       case 'SUPER_ADMIN':

@@ -70,7 +70,7 @@ export class BusinessSalesComponent implements OnInit {
       }
       return;
     }
-    this.businessId = this.user.businessId!;
+    this.businessId = this.user?.businessId ?? null;
     this.loadProducts();
     this.loadSales();
   }

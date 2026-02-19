@@ -188,7 +188,7 @@ export class AuthService {
     );
     
     // Vérifier si l'utilisateur a une entreprise
-    const hasBusiness = user.businessId && user.businessId !== '';
+    const hasBusiness = !!(user.businessId && user.businessId !== '');
     
     return hasBusinessRole && hasBusiness;
   }

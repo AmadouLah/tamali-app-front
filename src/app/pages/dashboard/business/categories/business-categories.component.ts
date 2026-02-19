@@ -67,7 +67,7 @@ export class BusinessCategoriesComponent implements OnInit {
       }
       return;
     }
-    this.businessId = this.user.businessId;
+    this.businessId = this.user?.businessId ?? null;
     this.buildForm();
     this.buildEditForm();
     this.loadCategories();

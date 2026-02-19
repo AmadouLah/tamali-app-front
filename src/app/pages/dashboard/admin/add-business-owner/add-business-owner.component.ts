@@ -95,12 +95,14 @@ export class AddBusinessOwnerComponent implements OnInit {
         this.filteredOwners = owners;
         this.associates.clear();
         // Charger les associés pour chaque propriétaire qui a une entreprise
-        owners.forEach(owner => {
-          if (owner.businessId) {
-            this.loadAssociates(owner.businessId, owner.id);
-          }
+        const loadPromises = owners
+          .filter(owner => owner.businessId)
+          .map(owner => this.loadAssociates(owner.businessId!, owner.id));
+        
+        // Attendre que tous les associés soient chargés avant de désactiver le loading
+        Promise.all(loadPromises).finally(() => {
+          this.loading = false;
         });
-        this.loading = false;
       },
       error: (err) => {
         this.handleError(err);
@@ -109,14 +111,18 @@ export class AddBusinessOwnerComponent implements OnInit {
     });
   }
 
-  private loadAssociates(businessId: string, ownerId: string): void {
-    this.http.get<AssociateDto[]>(`${this.apiConfig.getUsersUrl()}/business/${businessId}/associates`).subscribe({
-      next: (associates) => {
-        this.associates.set(ownerId, associates);
-      },
-      error: () => {
-        // Ignorer les erreurs silencieusement pour ne pas perturber l'interface
-      }
+  private loadAssociates(businessId: string, ownerId: string): Promise<void> {
+    return new Promise((resolve) => {
+      this.http.get<AssociateDto[]>(`${this.apiConfig.getUsersUrl()}/business/${businessId}/associates`).subscribe({
+        next: (associates) => {
+          this.associates.set(ownerId, associates);
+          resolve();
+        },
+        error: () => {
+          // Ignorer les erreurs silencieusement pour ne pas perturber l'interface
+          resolve();
+        }
+      });
     });
   }
 
@@ -327,17 +333,32 @@ export class AddBusinessOwnerComponent implements OnInit {
       email: this.associateForm.value.email.trim()
     };
 
-    this.http.post<UserDto>(`${this.apiConfig.getUsersUrl()}/${this.selectedOwnerId}/associate`, request).subscribe({
-      next: () => {
+    // Sauvegarder les informations du propriétaire avant de fermer la modale
+    const ownerId = this.selectedOwnerId;
+    const owner = this.businessOwners.find(o => o.id === ownerId);
+    const ownerBusinessId = owner?.businessId;
+
+    this.http.post<UserDto>(`${this.apiConfig.getUsersUrl()}/${ownerId}/associate`, request).subscribe({
+      next: (createdAssociate) => {
         this.success = 'Associé créé avec succès !';
-        this.loading = false;
         this.associateForm.reset();
         this.closeAssociateModal();
-        // Recharger les propriétaires et leurs associés
-        this.loadBusinessOwners();
-        setTimeout(() => {
-          this.success = null;
-        }, 3000);
+        
+        // Recharger directement les associés du propriétaire concerné
+        if (ownerBusinessId && ownerId) {
+          this.loadAssociates(ownerBusinessId, ownerId).then(() => {
+            this.loading = false;
+            setTimeout(() => {
+              this.success = null;
+            }, 3000);
+          });
+        } else {
+          // Si on n'a pas le businessId, recharger tous les propriétaires
+          this.loadBusinessOwners();
+          setTimeout(() => {
+            this.success = null;
+          }, 3000);
+        }
       },
       error: (err) => {
         this.handleError(err);

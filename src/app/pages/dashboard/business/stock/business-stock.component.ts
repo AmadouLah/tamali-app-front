@@ -58,7 +58,7 @@ export class BusinessStockComponent implements OnInit {
       }
       return;
     }
-    this.businessId = this.user.businessId;
+    this.businessId = this.user?.businessId ?? null;
     this.buildStockForm();
     this.loadProducts();
   }
