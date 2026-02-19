@@ -1,9 +1,11 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { AuthService, UserDto } from '../../../../core/services/auth.service';
 import { BusinessOperationsService, isPendingResponse } from '../../../../core/services/business-operations.service';
+import { ProductCategoryStoreService } from '../../../../core/services/product-category-store.service';
 import {
   ProductDto,
   ProductCategoryDto,
@@ -21,6 +23,7 @@ import { extractErrorMessage } from '../../../../core/utils/error.utils';
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     ReactiveFormsModule,
     RouterModule,
     GlassCardComponent,
@@ -30,11 +33,13 @@ import { extractErrorMessage } from '../../../../core/utils/error.utils';
   templateUrl: './business-products.component.html',
   styleUrl: './business-products.component.css'
 })
-export class BusinessProductsComponent implements OnInit {
+export class BusinessProductsComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly businessOps = inject(BusinessOperationsService);
+  private readonly categoryStore = inject(ProductCategoryStoreService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private categoryStoreSub?: Subscription;
 
   user: UserDto | null = null;
   businessId: string | null = null;
@@ -50,6 +55,7 @@ export class BusinessProductsComponent implements OnInit {
   activeMenu = 'produits';
   sidebarOpen = false;
   showAddModal = false;
+  searchQuery = '';
 
   readonly menuItems = BUSINESS_OWNER_MENU_ITEMS;
 
@@ -62,9 +68,19 @@ export class BusinessProductsComponent implements OnInit {
     this.businessId = this.user.businessId;
     this.buildForm();
     this.buildEditForm();
+    this.categoryStoreSub = this.categoryStore.categories$.subscribe(() => {
+      this.categoriesVersion++;
+    });
     this.loadCategories();
     this.loadProducts();
   }
+
+  ngOnDestroy(): void {
+    this.categoryStoreSub?.unsubscribe();
+  }
+
+  /** Incrémenté à chaque mise à jour du store pour forcer le recalcul de productsByCategory. */
+  categoriesVersion = 0;
 
   private buildForm(): void {
     this.form = this.fb.group({
@@ -90,7 +106,10 @@ export class BusinessProductsComponent implements OnInit {
   private loadCategories(): void {
     if (!this.businessId) return;
     this.businessOps.getProductCategories(this.businessId).subscribe({
-      next: (list) => { this.categories = list; }
+      next: (list) => {
+        this.categories = list;
+        this.categoryStore.setCategories(this.businessId!, list);
+      }
     });
   }
 
@@ -107,10 +126,21 @@ export class BusinessProductsComponent implements OnInit {
     });
   }
 
+  get filteredProducts(): ProductDto[] {
+    const q = this.searchQuery?.trim().toLowerCase() ?? '';
+    if (!q) return this.products;
+    const nameFor = (p: ProductDto) => this.categoryStore.getCategoryName(p.categoryId) || p.categoryName || '';
+    return this.products.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      p.reference?.toLowerCase().includes(q) ||
+      nameFor(p).toLowerCase().includes(q)
+    );
+  }
+
   get productsByCategory(): { category: string; products: ProductDto[] }[] {
     const map = new Map<string, ProductDto[]>();
-    for (const p of this.products) {
-      const cat = (p.categoryName || p.reference)?.trim() || 'Sans catégorie';
+    for (const p of this.filteredProducts) {
+      const cat = (this.categoryStore.getCategoryName(p.categoryId) || p.categoryName?.trim() || '').trim() || 'Sans catégorie';
       if (!map.has(cat)) map.set(cat, []);
       map.get(cat)!.push(p);
     }

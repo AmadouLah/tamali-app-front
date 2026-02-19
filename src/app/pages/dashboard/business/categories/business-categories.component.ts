@@ -1,9 +1,10 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService, UserDto } from '../../../../core/services/auth.service';
 import { BusinessOperationsService, isPendingResponse } from '../../../../core/services/business-operations.service';
+import { ProductCategoryStoreService } from '../../../../core/services/product-category-store.service';
 import type { ProductCategoryDto } from '../../../../core/models/product.model';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
@@ -16,6 +17,7 @@ import { extractErrorMessage } from '../../../../core/utils/error.utils';
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     ReactiveFormsModule,
     RouterModule,
     GlassCardComponent,
@@ -28,6 +30,7 @@ import { extractErrorMessage } from '../../../../core/utils/error.utils';
 export class BusinessCategoriesComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly businessOps = inject(BusinessOperationsService);
+  private readonly categoryStore = inject(ProductCategoryStoreService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
@@ -44,8 +47,15 @@ export class BusinessCategoriesComponent implements OnInit {
   activeMenu = 'catégories';
   sidebarOpen = false;
   showAddModal = false;
+  searchQuery = '';
 
   readonly menuItems = BUSINESS_OWNER_MENU_ITEMS;
+
+  get filteredCategories(): ProductCategoryDto[] {
+    const q = this.searchQuery?.trim().toLowerCase() ?? '';
+    if (!q) return this.categories;
+    return this.categories.filter(c => c.name.toLowerCase().includes(q));
+  }
 
   ngOnInit(): void {
     this.user = this.authService.getUser();
@@ -76,6 +86,7 @@ export class BusinessCategoriesComponent implements OnInit {
     this.businessOps.getProductCategories(this.businessId).subscribe({
       next: (list) => {
         this.categories = list;
+        this.categoryStore.setCategories(this.businessId!, list);
         this.loading = false;
       },
       error: () => {
@@ -130,6 +141,7 @@ export class BusinessCategoriesComponent implements OnInit {
     const name = this.editForm.value.name?.trim();
     this.businessOps.updateProductCategory(this.editingId, name).subscribe({
       next: (result) => {
+        this.categoryStore.updateCategory(this.editingId!, name);
         this.loadCategories();
         this.editingId = null;
         this.success = isPendingResponse(result) ? 'Catégorie mise à jour. Synchronisation à la reconnexion.' : 'Catégorie mise à jour.';

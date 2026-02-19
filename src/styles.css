@@ -68,11 +68,23 @@
   }
 
   .dashboard-header {
-    @apply flex flex-nowrap items-center justify-between gap-3 px-4 md:px-6 py-4 min-h-[3.5rem];
+    @apply flex flex-nowrap items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 md:px-6 py-3 sm:py-4 min-h-[3.25rem] sm:min-h-[3.5rem];
+  }
+  .dashboard-header > *:first-child {
+    @apply min-w-0;
+  }
+  .dashboard-header .dashboard-header-title {
+    @apply truncate min-w-0 flex-1;
+  }
+  .dashboard-header .dashboard-header-user {
+    @apply shrink-0 flex items-center gap-2 sm:gap-3 pl-2 sm:pl-4 border-l border-white/20;
   }
 
   .dashboard-content {
-    @apply flex-1 p-4 md:p-6 overflow-y-auto;
+    @apply flex-1 p-3 sm:p-4 md:p-6 overflow-x-hidden overflow-y-auto;
+  }
+  .dashboard-card {
+    @apply p-4 md:p-6;
   }
   
   .btn-primary {

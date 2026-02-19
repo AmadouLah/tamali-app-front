@@ -27,20 +27,22 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
         </svg>
       </button>
-      <h1 class="text-xl md:text-2xl font-bold text-white truncate min-w-0 flex-1">Catégories</h1>
-      <div class="flex items-center gap-3 pl-4 border-l border-white/20 shrink-0">
-        <button
-          type="button"
-          (click)="openAdd()"
-          class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-medium text-sm transition-all flex items-center gap-2"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+      <div class="flex-1 min-w-0 flex justify-center md:justify-start">
+        <div class="relative w-full max-w-md">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
           </svg>
-          Ajouter une catégorie
-        </button>
-        <div class="text-right hidden sm:block">
-          <div class="text-sm font-semibold text-white">{{ getDisplayName() }}</div>
+          <input
+            type="text"
+            placeholder="Rechercher une catégorie..."
+            [(ngModel)]="searchQuery"
+            class="w-full pl-10 pr-4 py-2.5 glass-effect-subtle border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 bg-transparent"
+          />
+        </div>
+      </div>
+      <div class="dashboard-header-user">
+        <div class="text-right hidden sm:block min-w-0 max-w-[100px] md:max-w-none">
+          <div class="text-sm font-semibold text-white truncate">{{ getDisplayName() }}</div>
         </div>
         <app-user-avatar [user]="user"></app-user-avatar>
       </div>
@@ -55,33 +57,50 @@
       }
 
       @if (loading) {
-        <div class="text-center py-16 text-gray-400">Chargement...</div>
+        <div class="text-center py-12 sm:py-16 text-gray-400 text-sm">Chargement...</div>
       } @else if (categories.length === 0) {
-        <app-glass-card variant="strong" class="p-12 text-center">
-          <p class="text-gray-400 mb-4">Aucune catégorie. Créez vos catégories pour organiser vos produits.</p>
-          <button type="button" (click)="openAdd()" class="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-medium">
+        <app-glass-card variant="strong" class="dashboard-card text-center py-8 sm:py-12">
+          <p class="text-gray-400 mb-4 text-sm sm:text-base">Aucune catégorie. Créez vos catégories pour organiser vos produits.</p>
+          <button type="button" (click)="openAdd()" class="px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-medium text-sm sm:text-base">
             Ajouter une catégorie
           </button>
         </app-glass-card>
       } @else {
-        <app-glass-card variant="strong" class="p-4 md:p-6">
-          <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-            <span class="w-2 h-6 rounded-full bg-purple-500"></span>
-            Vos catégories
-          </h2>
-          <p class="text-gray-400 text-sm mb-6">Sélectionnez une catégorie lors de l'ajout de produits pour les organiser.</p>
-          <div class="space-y-3">
-            @for (cat of categories; track cat.id) {
-              <div class="p-4 rounded-xl glass-effect-subtle border border-white/10 flex items-center justify-between gap-4">
+        <app-glass-card variant="strong" class="dashboard-card">
+          <div class="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
+            <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+              <span class="w-2 h-5 sm:h-6 rounded-full bg-purple-500 shrink-0"></span>
+              <span class="min-w-0">Vos catégories</span>
+            </h2>
+            <button
+              type="button"
+              (click)="openAdd()"
+              class="w-full sm:w-auto px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-medium text-sm transition-all flex items-center justify-center gap-2"
+            >
+              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+              </svg>
+              Ajouter
+            </button>
+          </div>
+          <p class="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6">Sélectionnez une catégorie lors de l'ajout de produits pour les organiser.</p>
+          @if (filteredCategories.length === 0 && categories.length > 0) {
+            <p class="text-gray-400 text-center py-6 sm:py-8 text-sm">Aucune catégorie ne correspond à votre recherche.</p>
+          } @else {
+          <div class="space-y-2 sm:space-y-3">
+            @for (cat of filteredCategories; track cat.id) {
+              <div class="p-3 sm:p-4 rounded-xl glass-effect-subtle border border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 min-w-0">
                 @if (editingId === cat.id) {
-                  <form [formGroup]="editForm" (ngSubmit)="submitEdit()" class="flex-1 flex gap-2">
-                    <input formControlName="name" class="input-field flex-1" placeholder="Nom de la catégorie" />
-                    <button type="submit" [disabled]="editForm.invalid || submitting" class="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm disabled:opacity-50">Enregistrer</button>
-                    <button type="button" (click)="cancelEdit()" class="px-4 py-2 rounded-lg glass-effect-subtle border border-white/20 text-white text-sm">Annuler</button>
+                  <form [formGroup]="editForm" (ngSubmit)="submitEdit()" class="flex flex-col sm:flex-row gap-2 w-full min-w-0">
+                    <input formControlName="name" class="input-field flex-1 min-w-0" placeholder="Nom de la catégorie" />
+                    <div class="flex gap-2 shrink-0">
+                      <button type="submit" [disabled]="editForm.invalid || submitting" class="flex-1 sm:flex-none px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm disabled:opacity-50">Enregistrer</button>
+                      <button type="button" (click)="cancelEdit()" class="flex-1 sm:flex-none px-4 py-2 rounded-lg glass-effect-subtle border border-white/20 text-white text-sm">Annuler</button>
+                    </div>
                   </form>
                 } @else {
-                  <span class="font-semibold text-white">{{ cat.name }}</span>
-                  <div class="flex items-center gap-2">
+                  <span class="font-semibold text-white truncate min-w-0">{{ cat.name }}</span>
+                  <div class="flex items-center gap-2 flex-wrap">
                     <button type="button" (click)="startEdit(cat)" class="px-3 py-1.5 rounded-lg glass-effect-subtle border border-white/20 text-white text-sm hover:bg-white/10">Modifier</button>
                     <button type="button" (click)="deleteCategory(cat)" class="px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/50 text-red-300 text-sm hover:bg-red-500/30">Supprimer</button>
                   </div>
@@ -89,6 +108,7 @@
               </div>
             }
           </div>
+          }
         </app-glass-card>
       }
     </main>
@@ -96,15 +116,15 @@
 </div>
 
 @if (showAddModal) {
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" (click)="closeAdd()">
-    <div class="w-full max-w-md glass-effect-strong rounded-2xl border border-white/20 p-6 shadow-xl" (click)="$event.stopPropagation()">
-      <h3 class="text-xl font-bold text-white mb-4">Nouvelle catégorie</h3>
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 overflow-y-auto" (click)="closeAdd()">
+    <div class="w-full max-w-md glass-effect-strong rounded-2xl border border-white/20 p-4 sm:p-6 shadow-xl my-auto" (click)="$event.stopPropagation()">
+      <h3 class="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4">Nouvelle catégorie</h3>
       <form [formGroup]="form" (ngSubmit)="submitAdd()" class="space-y-4">
         <div>
           <label class="block text-sm text-gray-300 mb-1">Nom <span class="text-red-400">*</span></label>
           <input formControlName="name" class="input-field" placeholder="Ex. Parfums" />
         </div>
-        <div class="flex gap-3 pt-2">
+        <div class="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 pt-2">
           <button type="button" (click)="closeAdd()" class="flex-1 py-2.5 rounded-xl border border-white/20 text-white hover:bg-white/10">Annuler</button>
           <button type="submit" [disabled]="form.invalid || submitting" class="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-medium disabled:opacity-50">{{ submitting ? 'Ajout...' : 'Ajouter' }}</button>
         </div>
