@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
@@ -44,7 +44,7 @@ interface CreateAssociateRequest {
   templateUrl: './add-business-owner.component.html',
   styleUrl: './add-business-owner.component.css'
 })
-export class AddBusinessOwnerComponent implements OnInit {
+export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
   private readonly http = inject(HttpClient);
   readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
@@ -66,6 +66,13 @@ export class AddBusinessOwnerComponent implements OnInit {
   selectedOwnerId: string | null = null;
   activeMenu: string = 'ajouter propriétaire';
   sidebarOpen = false;
+  
+  // Interval pour rafraîchir périodiquement les associés
+  private refreshInterval?: any;
+  // Listener pour détecter quand la page redevient visible
+  private visibilityChangeListener?: () => void;
+  // Listener pour détecter quand la fenêtre reprend le focus
+  private focusListener?: () => void;
 
   menuItems: MenuItem[] = [
     { label: 'Dashboard', icon: 'grid', route: '/dashboard/admin' },
@@ -84,6 +91,85 @@ export class AddBusinessOwnerComponent implements OnInit {
     this.initForm();
     this.initAssociateForm();
     this.loadBusinessOwners();
+    this.setupAutoRefresh();
+    this.setupVisibilityRefresh();
+    this.setupFocusRefresh();
+  }
+
+  ngOnDestroy(): void {
+    // Nettoyer les listeners et intervalles
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+    }
+    if (this.visibilityChangeListener) {
+      document.removeEventListener('visibilitychange', this.visibilityChangeListener);
+    }
+    if (this.focusListener) {
+      window.removeEventListener('focus', this.focusListener);
+    }
+  }
+
+  /**
+   * Configure le rafraîchissement automatique des associés toutes les 30 secondes
+   */
+  private setupAutoRefresh(): void {
+    // Rafraîchir toutes les 30 secondes pour s'assurer que les associés sont toujours à jour
+    // Si la page est visible et qu'on n'est pas en train de charger
+    this.refreshInterval = setInterval(() => {
+      if (!this.loading && document.visibilityState === 'visible') {
+        // Recharger complètement les propriétaires et leurs associés pour garantir la cohérence
+        // Cela garantit que même après un redémarrage du serveur, tout sera à jour
+        this.loadBusinessOwners();
+      }
+    }, 30000); // 30 secondes
+  }
+
+  /**
+   * Configure le rafraîchissement lorsque la page redevient visible
+   */
+  private setupVisibilityRefresh(): void {
+    this.visibilityChangeListener = () => {
+      if (document.visibilityState === 'visible' && !this.loading) {
+        // Rafraîchir les associés quand la page redevient visible
+        this.refreshAssociates();
+      }
+    };
+    document.addEventListener('visibilitychange', this.visibilityChangeListener);
+  }
+
+  /**
+   * Configure le rafraîchissement lorsque la fenêtre reprend le focus
+   */
+  private setupFocusRefresh(): void {
+    this.focusListener = () => {
+      if (!this.loading && document.visibilityState === 'visible') {
+        // Rafraîchir les associés quand la fenêtre reprend le focus
+        // Attendre un peu pour éviter de surcharger le serveur
+        setTimeout(() => {
+          this.refreshAssociates();
+        }, 1000);
+      }
+    };
+    window.addEventListener('focus', this.focusListener);
+  }
+
+  /**
+   * Rafraîchit uniquement les associés sans recharger tous les propriétaires
+   */
+  private refreshAssociates(): void {
+    const ownersWithBusiness = this.businessOwners.filter(owner => owner.businessId);
+    if (ownersWithBusiness.length === 0) {
+      return;
+    }
+
+    // Recharger les associés pour chaque propriétaire qui a une entreprise
+    ownersWithBusiness.forEach(owner => {
+      if (owner.businessId) {
+        this.loadAssociates(owner.businessId, owner.id).catch(() => {
+          // Ignorer les erreurs silencieusement pour ne pas perturber l'interface
+        });
+      }
+    });
   }
 
   loadBusinessOwners(): void {
@@ -93,16 +179,37 @@ export class AddBusinessOwnerComponent implements OnInit {
       next: (owners) => {
         this.businessOwners = owners;
         this.filteredOwners = owners;
-        this.associates.clear();
+        
+        // Ne pas vider complètement la map pour éviter de perdre les données pendant le chargement
+        // On va plutôt mettre à jour uniquement les propriétaires qui ont changé
+        
         // Charger les associés pour chaque propriétaire qui a une entreprise
-        const loadPromises = owners
-          .filter(owner => owner.businessId)
-          .map(owner => this.loadAssociates(owner.businessId!, owner.id));
+        const ownersWithBusiness = owners.filter(owner => owner.businessId);
+        
+        if (ownersWithBusiness.length === 0) {
+          this.associates.clear();
+          this.loading = false;
+          return;
+        }
+        
+        // Charger tous les associés en parallèle
+        const loadPromises = ownersWithBusiness.map(owner => 
+          this.loadAssociates(owner.businessId!, owner.id)
+        );
         
         // Attendre que tous les associés soient chargés avant de désactiver le loading
         Promise.all(loadPromises).finally(() => {
           this.loading = false;
+          console.log('Tous les associés ont été chargés');
         });
+        
+        // Nettoyer les associés des propriétaires qui n'existent plus
+        const currentOwnerIds = new Set(owners.map(o => o.id));
+        for (const ownerId of this.associates.keys()) {
+          if (!currentOwnerIds.has(ownerId)) {
+            this.associates.delete(ownerId);
+          }
+        }
       },
       error: (err) => {
         this.handleError(err);
@@ -111,16 +218,22 @@ export class AddBusinessOwnerComponent implements OnInit {
     });
   }
 
-  private loadAssociates(businessId: string, ownerId: string): Promise<void> {
-    return new Promise((resolve) => {
+  loadAssociates(businessId: string, ownerId: string): Promise<void> {
+    return new Promise((resolve, reject) => {
       this.http.get<AssociateDto[]>(`${this.apiConfig.getUsersUrl()}/business/${businessId}/associates`).subscribe({
         next: (associates) => {
-          this.associates.set(ownerId, associates);
+          // Toujours mettre à jour la map, même si le tableau est vide
+          this.associates.set(ownerId, associates || []);
+          console.log(`Associés chargés pour le propriétaire ${ownerId}:`, associates?.length || 0);
           resolve();
         },
-        error: () => {
-          // Ignorer les erreurs silencieusement pour ne pas perturber l'interface
-          resolve();
+        error: (err) => {
+          console.error(`Erreur lors du chargement des associés pour le propriétaire ${ownerId}:`, err);
+          // En cas d'erreur, on garde les associés existants ou on initialise avec un tableau vide
+          if (!this.associates.has(ownerId)) {
+            this.associates.set(ownerId, []);
+          }
+          resolve(); // Résoudre quand même pour ne pas bloquer les autres chargements
         }
       });
     });
@@ -346,12 +459,21 @@ export class AddBusinessOwnerComponent implements OnInit {
         
         // Recharger directement les associés du propriétaire concerné
         if (ownerBusinessId && ownerId) {
-          this.loadAssociates(ownerBusinessId, ownerId).then(() => {
-            this.loading = false;
-            setTimeout(() => {
-              this.success = null;
-            }, 3000);
-          });
+          // Attendre un peu pour s'assurer que le serveur a bien persisté les données
+          setTimeout(() => {
+            this.loadAssociates(ownerBusinessId, ownerId).then(() => {
+              this.loading = false;
+              setTimeout(() => {
+                this.success = null;
+              }, 3000);
+            }).catch(() => {
+              // En cas d'erreur, recharger tous les propriétaires
+              this.loadBusinessOwners();
+              setTimeout(() => {
+                this.success = null;
+              }, 3000);
+            });
+          }, 500);
         } else {
           // Si on n'a pas le businessId, recharger tous les propriétaires
           this.loadBusinessOwners();
@@ -367,11 +489,22 @@ export class AddBusinessOwnerComponent implements OnInit {
   }
 
   getAssociates(ownerId: string): AssociateDto[] {
-    return this.associates.get(ownerId) || [];
+    const associatesList = this.associates.get(ownerId);
+    // Toujours retourner un tableau, même vide
+    return associatesList || [];
   }
 
   hasAssociates(ownerId: string): boolean {
-    return this.associates.has(ownerId) && this.associates.get(ownerId)!.length > 0;
+    const associatesList = this.associates.get(ownerId);
+    return associatesList !== undefined && associatesList.length > 0;
+  }
+
+  /**
+   * Vérifie si les associés sont en cours de chargement pour un propriétaire donné
+   */
+  isLoadingAssociates(ownerId: string): boolean {
+    // Si la map n'a pas encore cette clé, les associés sont probablement en cours de chargement
+    return !this.associates.has(ownerId) && this.businessOwners.some(o => o.id === ownerId && o.businessId);
   }
 
   toggleAssociateStatus(associate: AssociateDto, ownerId: string): void {
@@ -391,12 +524,14 @@ export class AddBusinessOwnerComponent implements OnInit {
       next: () => {
         this.success = `Associé ${associate.enabled ? 'désactivé' : 'activé'} avec succès`;
         this.loading = false;
-        // Recharger les associés du propriétaire
+        // Recharger les associés du propriétaire après un court délai
         const owner = this.businessOwners.find(o => o.id === ownerId);
         if (owner?.businessId) {
-          this.loadAssociates(owner.businessId, ownerId).then(() => {
-            setTimeout(() => this.success = null, 3000);
-          });
+          setTimeout(() => {
+            this.loadAssociates(owner.businessId, ownerId).then(() => {
+              setTimeout(() => this.success = null, 3000);
+            });
+          }, 500);
         }
       },
       error: (err) => {
@@ -418,12 +553,14 @@ export class AddBusinessOwnerComponent implements OnInit {
       next: () => {
         this.success = 'Associé retiré avec succès';
         this.loading = false;
-        // Recharger les associés du propriétaire
+        // Recharger les associés du propriétaire après un court délai
         const owner = this.businessOwners.find(o => o.id === ownerId);
         if (owner?.businessId) {
-          this.loadAssociates(owner.businessId, ownerId).then(() => {
-            setTimeout(() => this.success = null, 3000);
-          });
+          setTimeout(() => {
+            this.loadAssociates(owner.businessId, ownerId).then(() => {
+              setTimeout(() => this.success = null, 3000);
+            });
+          }, 500);
         }
       },
       error: (err) => {
