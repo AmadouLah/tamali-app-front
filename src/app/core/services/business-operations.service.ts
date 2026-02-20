@@ -120,4 +120,12 @@ export class BusinessOperationsService {
     const url = this.apiConfig.getStockMovementUrl(productId);
     return this.offlineHttp.post<unknown>(url, body);
   }
+
+  /** Génère le reçu PDF (template propriétaire), l'upload vers Supabase et retourne l'URL. */
+  generateReceipt(saleId: string): Observable<{ receiptPdfUrl: string }> {
+    return this.offlineHttp.post<{ receiptPdfUrl: string }>(
+      this.apiConfig.getGenerateReceiptUrl(saleId),
+      {}
+    );
+  }
 }

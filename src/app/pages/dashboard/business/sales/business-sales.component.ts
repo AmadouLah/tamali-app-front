@@ -170,6 +170,22 @@ export class BusinessSalesComponent implements OnInit {
     });
   }
 
+  generatingReceiptId: string | null = null;
+
+  generateReceipt(sale: SaleDto): void {
+    if (this.generatingReceiptId) return;
+    this.generatingReceiptId = sale.id;
+    this.businessOps.generateReceipt(sale.id).subscribe({
+      next: (res) => {
+        if (res?.receiptPdfUrl) window.open(res.receiptPdfUrl, '_blank');
+        this.generatingReceiptId = null;
+      },
+      error: () => {
+        this.generatingReceiptId = null;
+      }
+    });
+  }
+
   formatMoney(amount: number): string {
     return `${(amount ?? 0).toLocaleString('fr-FR')} FCFA`;
   }

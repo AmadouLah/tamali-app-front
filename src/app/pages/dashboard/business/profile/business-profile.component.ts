@@ -29,7 +29,9 @@ export class BusinessProfileComponent implements OnInit {
 
   user: UserDto | null = null;
   form!: FormGroup;
+  identityForm!: FormGroup;
   loading = false;
+  loadingIdentity = false;
   error: string | null = null;
   success: string | null = null;
   activeMenu = 'profil';
@@ -50,6 +52,31 @@ export class BusinessProfileComponent implements OnInit {
       newPassword: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', [Validators.required]]
     }, { validators: (g) => g.get('newPassword')?.value === g.get('confirmPassword')?.value ? null : { passwordMismatch: true } });
+
+    this.identityForm = this.fb.group({
+      firstname: [(this.user?.firstname ?? '').trim()],
+      lastname: [(this.user?.lastname ?? '').trim()]
+    });
+  }
+
+  saveIdentity(): void {
+    if (this.loadingIdentity || !this.user) return;
+    const first = (this.identityForm.value.firstname ?? '').trim();
+    const last = (this.identityForm.value.lastname ?? '').trim();
+    this.loadingIdentity = true;
+    this.error = null;
+    this.success = null;
+    this.authService.updateUserProfile(first, last).subscribe({
+      next: () => {
+        this.user = this.authService.getUser();
+        this.success = 'Profil mis à jour.';
+        this.loadingIdentity = false;
+      },
+      error: (err) => {
+        this.error = err.error?.message ?? 'Erreur lors de la mise à jour.';
+        this.loadingIdentity = false;
+      }
+    });
   }
 
   submit(): void {
