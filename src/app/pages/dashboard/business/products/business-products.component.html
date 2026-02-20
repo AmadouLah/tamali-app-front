@@ -105,7 +105,7 @@
                 </div>
                 <div class="space-y-2 sm:space-y-3">
                   @for (p of group.products; track p.id) {
-                  <div class="p-3 sm:p-4 rounded-xl glass-effect-subtle border border-white/10 min-w-0">
+                  <div class="p-3 sm:p-4 rounded-xl glass-effect-subtle border min-w-0" [ngClass]="getProductBorderClass(p)">
                     @if (editingId === p.id) {
                       <form [formGroup]="editForm" (ngSubmit)="submitEdit()" class="space-y-3">
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -129,24 +129,42 @@
                           <button type="submit" [disabled]="editForm.invalid || submitting" class="w-full sm:w-auto px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm disabled:opacity-50">Enregistrer</button>
                         </div>
                       </form>
+                    } @else if (p.isLocal && p.operation === 'DELETE') {
+                      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                        <div class="min-w-0">
+                          <div class="flex items-center gap-2">
+                            <p class="font-semibold text-white truncate line-through opacity-60">{{ p.name }}</p>
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 shrink-0" title="Suppression en attente de synchronisation">Suppression en attente</span>
+                          </div>
+                          <p class="text-gray-400 text-xs sm:text-sm mt-0.5 opacity-60">{{ formatMoney(p.unitPrice) }} · Stock : <span>{{ p.stockQuantity }}</span></p>
+                        </div>
+                      </div>
                     } @else {
                       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                         <div class="min-w-0">
                           <div class="flex items-center gap-2">
                             <p class="font-semibold text-white truncate">{{ p.name }}</p>
                             @if (p.isLocal) {
-                              <span class="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/30" title="En attente de synchronisation">Hors ligne</span>
+                              <span class="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 shrink-0" title="En attente de synchronisation">
+                                @if (p.operation === 'PATCH') {
+                                  Modification en attente
+                                } @else {
+                                  Hors ligne
+                                }
+                              </span>
                             }
                           </div>
                           <p class="text-gray-400 text-xs sm:text-sm mt-0.5">{{ formatMoney(p.unitPrice) }} · Stock : <span [class.text-green-400]="p.stockQuantity > 0" [class.text-red-400]="p.stockQuantity === 0">{{ p.stockQuantity }}</span></p>
                         </div>
                                         <div class="flex flex-wrap items-center gap-2 shrink-0">
-                          @if (!p.isLocal) {
-                            <a [routerLink]="['/dashboard/business/stock']" class="px-3 py-1.5 rounded-lg glass-effect-subtle border border-white/20 text-white text-sm hover:bg-white/10">Stock</a>
-                          }
-                          @if (!isReadOnly && !p.isLocal) {
-                            <button type="button" (click)="startEdit(p)" class="px-3 py-1.5 rounded-lg glass-effect-subtle border border-white/20 text-white text-sm hover:bg-white/10">Modifier</button>
-                            <button type="button" (click)="deleteProduct(p)" class="px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/50 text-red-300 text-sm hover:bg-red-500/30">Supprimer</button>
+                          @if (!p.isLocal || p.operation !== 'DELETE') {
+                            @if (!p.isLocal || p.operation === 'POST') {
+                              <a [routerLink]="['/dashboard/business/stock']" class="px-3 py-1.5 rounded-lg glass-effect-subtle border border-white/20 text-white text-sm hover:bg-white/10">Stock</a>
+                            }
+                            @if (!isReadOnly) {
+                              <button type="button" (click)="startEdit(p)" [disabled]="p.isLocal && (p.operation === 'PATCH' || p.operation === 'DELETE')" class="px-3 py-1.5 rounded-lg glass-effect-subtle border border-white/20 text-white text-sm hover:bg-white/10 disabled:opacity-50">Modifier</button>
+                              <button type="button" (click)="deleteProduct(p)" [disabled]="p.isLocal && p.operation === 'DELETE'" class="px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/50 text-red-300 text-sm hover:bg-red-500/30 disabled:opacity-50">Supprimer</button>
+                            }
                           }
                         </div>
                       </div>
@@ -216,4 +234,3 @@
     </div>
   </div>
 }
-

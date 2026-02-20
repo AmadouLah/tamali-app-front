@@ -194,31 +194,79 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
     if (!this.businessId) return;
     
     try {
+      // Charger les produits créés localement
       const localProductsData = await this.dbService.getLocalProducts(this.businessId);
-      this.localProducts = localProductsData
+      const createdProducts = localProductsData
         .filter(lp => !lp.synced)
         .map(lp => {
           const product = lp.product as any;
-          // Trouver le nom de la catégorie si disponible
           const category = this.categories.find(c => c.id === product.categoryId);
           return {
             ...product,
             id: lp.id,
             categoryName: category?.name,
-            isLocal: true
-          } as ProductDto & { isLocal?: boolean };
+            isLocal: true,
+            operation: 'POST'
+          } as ProductDto & { isLocal?: boolean; operation?: string };
         });
+      
+      // Charger les modifications/suppressions de produits
+      const allLocalEntities = await this.dbService.getLocalEntities('product', '');
+      const localEntities = allLocalEntities.filter(le => 
+        !le.businessId || le.businessId === this.businessId || 
+        this.products.some(p => p.id === le.entityId)
+      );
+      
+      const modifiedProducts = localEntities
+        .filter(le => le.operation === 'PATCH')
+        .map(le => {
+          const existingProduct = this.products.find(p => p.id === le.entityId);
+          if (!existingProduct) return null;
+          const updates = le.entity as any;
+          return {
+            ...existingProduct,
+            ...updates,
+            isLocal: true,
+            operation: 'PATCH'
+          } as ProductDto & { isLocal?: boolean; operation?: string };
+        })
+        .filter((p): p is ProductDto & { isLocal?: boolean; operation?: string } => p !== null);
+      
+      // Charger les produits marqués pour suppression
+      const deletedProducts = localEntities
+        .filter(le => le.operation === 'DELETE')
+        .map(le => {
+          const existingProduct = this.products.find(p => p.id === le.entityId);
+          if (!existingProduct) return null;
+          return {
+            ...existingProduct,
+            isLocal: true,
+            operation: 'DELETE'
+          } as ProductDto & { isLocal?: boolean; operation?: string };
+        })
+        .filter((p): p is ProductDto & { isLocal?: boolean; operation?: string } => p !== null);
+      
+      this.localProducts = [...createdProducts, ...modifiedProducts, ...deletedProducts];
     } catch (error) {
       console.error('Erreur lors du chargement des produits locaux:', error);
     }
   }
 
-  get allProducts(): (ProductDto & { isLocal?: boolean })[] {
-    const combined = [...this.products, ...this.localProducts];
+  get allProducts(): (ProductDto & { isLocal?: boolean; operation?: string })[] {
+    // Exclure les produits supprimés de la liste principale
+    const deletedIds = new Set(
+      this.localProducts
+        .filter(p => (p as ProductDto & { operation?: string }).operation === 'DELETE')
+        .map(p => p.id)
+    );
+    const activeProducts = this.products.filter(p => !deletedIds.has(p.id));
+    
+    // Combiner produits actifs et produits locaux
+    const combined = [...activeProducts, ...this.localProducts];
     return combined.sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  get filteredProducts(): (ProductDto & { isLocal?: boolean })[] {
+  get filteredProducts(): (ProductDto & { isLocal?: boolean; operation?: string })[] {
     const q = this.searchQuery?.trim().toLowerCase() ?? '';
     if (!q) return this.allProducts;
     const nameFor = (p: ProductDto) => this.categoryStore.getCategoryName(p.categoryId) || p.categoryName || '';
@@ -229,8 +277,8 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
     );
   }
 
-  get productsByCategory(): { category: string; products: (ProductDto & { isLocal?: boolean })[] }[] {
-    const map = new Map<string, (ProductDto & { isLocal?: boolean })[]>();
+  get productsByCategory(): { category: string; products: (ProductDto & { isLocal?: boolean; operation?: string })[] }[] {
+    const map = new Map<string, (ProductDto & { isLocal?: boolean; operation?: string })[]>();
     for (const p of this.filteredProducts) {
       const cat = (this.categoryStore.getCategoryName(p.categoryId) || p.categoryName?.trim() || '').trim() || 'Sans catégorie';
       if (!map.has(cat)) map.set(cat, []);
@@ -282,7 +330,8 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
     });
   }
 
-  startEdit(p: ProductDto): void {
+  startEdit(p: ProductDto & { isLocal?: boolean; operation?: string }): void {
+    if (p.isLocal && (p.operation === 'DELETE' || p.operation === 'PATCH')) return;
     this.editingId = p.id;
     // Si le produit est taxable, le prix stocké est déjà TTC, donc on le garde tel quel
     // Sinon, c'est le prix HT
@@ -301,7 +350,7 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
     this.editingId = null;
   }
 
-  submitEdit(): void {
+  async submitEdit(): Promise<void> {
     if (!this.editingId || this.editForm.invalid || this.submitting) return;
     this.error = null;
     this.submitting = true;
@@ -315,10 +364,15 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
       taxable: !!v.taxable
     };
     this.businessOps.updateProduct(this.editingId, body).subscribe({
-      next: (result) => {
-        this.loadProducts();
+      next: async (result) => {
+        if (isPendingResponse(result)) {
+          this.success = 'Produit mis à jour localement. Synchronisation à la reconnexion.';
+          await this.loadLocalProducts();
+        } else {
+          this.success = 'Produit mis à jour.';
+        }
+        await this.loadProducts();
         this.editingId = null;
-        this.success = isPendingResponse(result) ? 'Produit mis à jour. Synchronisation à la reconnexion.' : 'Produit mis à jour.';
         this.submitting = false;
       },
       error: (err) => {
@@ -328,12 +382,18 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
     });
   }
 
-  deleteProduct(p: ProductDto): void {
+  async deleteProduct(p: ProductDto & { isLocal?: boolean; operation?: string }): Promise<void> {
+    if (p.isLocal && p.operation === 'DELETE') return;
     if (!confirm(`Supprimer « ${p.name } » ?`)) return;
     this.businessOps.deleteProduct(p.id).subscribe({
-      next: (result) => {
-        this.loadProducts();
-        this.success = isPendingResponse(result) ? 'Produit supprimé. Synchronisation à la reconnexion.' : 'Produit supprimé.';
+      next: async (result) => {
+        if (isPendingResponse(result)) {
+          this.success = 'Produit marqué pour suppression. Synchronisation à la reconnexion.';
+          await this.loadLocalProducts();
+        } else {
+          this.success = 'Produit supprimé.';
+        }
+        await this.loadProducts();
       },
       error: (err) => {
         this.error = extractErrorMessage(err, 'Erreur lors de la suppression.');
@@ -351,5 +411,14 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
 
   setActiveMenu(menu: string): void {
     this.activeMenu = menu;
+  }
+
+  getProductBorderClass(p: ProductDto & { isLocal?: boolean; operation?: string }): Record<string, boolean> {
+    if (p.isLocal && p.operation === 'DELETE') {
+      return { 'border-red-500/50': true };
+    } else if (p.isLocal) {
+      return { 'border-yellow-500/50': true };
+    }
+    return { 'border-white/10': true };
   }
 }

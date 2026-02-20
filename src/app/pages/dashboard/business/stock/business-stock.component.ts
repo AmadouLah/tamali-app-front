@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Router, RouterModule } from '@angular/router';
 import { AuthService, UserDto } from '../../../../core/services/auth.service';
 import { BusinessOperationsService, isPendingResponse } from '../../../../core/services/business-operations.service';
+import { IndexedDbService } from '../../../../core/services/indexed-db.service';
 import {
   ProductDto,
   StockMovementCreateRequest,
@@ -33,10 +34,12 @@ export class BusinessStockComponent implements OnInit {
   private readonly businessOps = inject(BusinessOperationsService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly dbService = inject(IndexedDbService);
 
   user: UserDto | null = null;
   businessId: string | null = null;
   products: ProductDto[] = [];
+  availableStocks: Map<string, number> = new Map();
   stockForm!: FormGroup;
   stockProductId: string | null = null;
   loading = true;
@@ -73,17 +76,30 @@ export class BusinessStockComponent implements OnInit {
     });
   }
 
-  private loadProducts(): void {
+  private async loadProducts(): Promise<void> {
     if (!this.businessId) return;
     this.businessOps.getProducts(this.businessId).subscribe({
-      next: (list) => {
+      next: async (list) => {
         this.products = list;
+        await this.updateAvailableStocks();
         this.loading = false;
       },
       error: () => {
         this.loading = false;
       }
     });
+  }
+
+  private async updateAvailableStocks(): Promise<void> {
+    this.availableStocks.clear();
+    for (const product of this.products) {
+      const available = await this.dbService.getAvailableStock(product.id, product.stockQuantity);
+      this.availableStocks.set(product.id, available);
+    }
+  }
+
+  getAvailableStockForProduct(productId: string): number {
+    return this.availableStocks.get(productId) ?? 0;
   }
 
   openStock(p: ProductDto): void {
@@ -101,18 +117,34 @@ export class BusinessStockComponent implements OnInit {
     this.stockProductId = null;
   }
 
-  submitStock(): void {
+  async submitStock(): Promise<void> {
     if (!this.stockProductId || this.stockForm.invalid || this.submitting) return;
     const v = this.stockForm.getRawValue() as StockMovementCreateRequest;
     this.error = null;
     this.submitting = true;
     const type = this.isEntryOnly ? 'IN' : v.type;
     const body = { quantity: Math.abs(v.quantity), type };
+    
+    // Vérifier le stock disponible pour les sorties
+    if (type === 'OUT' || type === 'SALE') {
+      const availableStock = this.getAvailableStockForProduct(this.stockProductId);
+      if (body.quantity > availableStock) {
+        this.error = `Stock insuffisant. Stock disponible: ${availableStock}`;
+        this.submitting = false;
+        return;
+      }
+    }
+    
     this.businessOps.postStockMovement(this.stockProductId, body).subscribe({
-      next: (result) => {
-        this.loadProducts();
+      next: async (result) => {
+        if (isPendingResponse(result)) {
+          this.success = 'Stock mis à jour localement. Synchronisation à la reconnexion.';
+          await this.updateAvailableStocks();
+        } else {
+          this.success = 'Stock mis à jour.';
+        }
+        await this.loadProducts();
         this.closeStock();
-        this.success = isPendingResponse(result) ? 'Stock mis à jour. Synchronisation à la reconnexion.' : 'Stock mis à jour.';
         this.submitting = false;
       },
       error: (err) => {

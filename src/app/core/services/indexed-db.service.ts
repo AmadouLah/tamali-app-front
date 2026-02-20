@@ -77,6 +77,27 @@ interface TamaliDB extends DBSchema {
       requestId: string;
     };
   };
+  localEntities: {
+    key: string;
+    value: {
+      id: string;
+      entityType: string;
+      businessId: string;
+      entityId: string;
+      entity: Record<string, unknown>;
+      operation: string;
+      requestId: string;
+      timestamp: number;
+      synced: boolean;
+    };
+    indexes: {
+      entityType: string;
+      businessId: string;
+      entityId: string;
+      timestamp: number;
+      requestId: string;
+    };
+  };
 }
 
 @Injectable({
@@ -85,7 +106,7 @@ interface TamaliDB extends DBSchema {
 export class IndexedDbService {
   private db: IDBPDatabase<TamaliDB> | null = null;
   private readonly dbName = 'TamaliDB';
-  private readonly dbVersion = 4;
+  private readonly dbVersion = 5;
 
   async init(): Promise<void> {
     if (!this.db) {
@@ -129,6 +150,14 @@ export class IndexedDbService {
             localProductsStore.createIndex('businessId', 'businessId');
             localProductsStore.createIndex('timestamp', 'timestamp');
             localProductsStore.createIndex('requestId', 'requestId');
+          }
+          if (!db.objectStoreNames.contains('localEntities')) {
+            const localEntitiesStore = db.createObjectStore('localEntities', { keyPath: 'id' });
+            localEntitiesStore.createIndex('entityType', 'entityType');
+            localEntitiesStore.createIndex('businessId', 'businessId');
+            localEntitiesStore.createIndex('entityId', 'entityId');
+            localEntitiesStore.createIndex('timestamp', 'timestamp');
+            localEntitiesStore.createIndex('requestId', 'requestId');
           }
         }
       });
@@ -368,5 +397,75 @@ export class IndexedDbService {
     for (const product of products) {
       await this.db!.delete('localProducts', product.id);
     }
+  }
+
+  async addLocalEntity(entity: {
+    id: string;
+    entityType: string;
+    businessId: string;
+    entityId: string;
+    entity: Record<string, unknown>;
+    operation: string;
+    requestId: string;
+  }): Promise<void> {
+    await this.init();
+    await this.db!.put('localEntities', {
+      ...entity,
+      timestamp: Date.now(),
+      synced: false
+    });
+  }
+
+  async getLocalEntities(entityType: string, businessId: string): Promise<Array<{
+    id: string;
+    entityType: string;
+    businessId: string;
+    entityId: string;
+    entity: Record<string, unknown>;
+    operation: string;
+    requestId: string;
+    timestamp: number;
+    synced: boolean;
+  }>> {
+    await this.init();
+    const typeIndex = this.db!.transaction('localEntities').store.index('entityType');
+    const allByType = await typeIndex.getAll(entityType);
+    // Si businessId est vide, retourner toutes les entités de ce type non synchronisées
+    if (!businessId) {
+      return allByType.filter(e => !e.synced);
+    }
+    return allByType.filter(e => e.businessId === businessId && !e.synced);
+  }
+
+  async getLocalEntityByRequestId(requestId: string): Promise<{
+    id: string;
+    entityType: string;
+    businessId: string;
+    entityId: string;
+    entity: Record<string, unknown>;
+    operation: string;
+    requestId: string;
+    timestamp: number;
+    synced: boolean;
+  } | null> {
+    await this.init();
+    const index = this.db!.transaction('localEntities').store.index('requestId');
+    const entities = await index.getAll(requestId);
+    return entities.length > 0 ? entities[0] : null;
+  }
+
+  async removeLocalEntityByRequestId(requestId: string): Promise<void> {
+    await this.init();
+    const index = this.db!.transaction('localEntities').store.index('requestId');
+    const entities = await index.getAll(requestId);
+    
+    for (const entity of entities) {
+      await this.db!.delete('localEntities', entity.id);
+    }
+  }
+
+  async removeLocalEntity(id: string): Promise<void> {
+    await this.init();
+    await this.db!.delete('localEntities', id);
   }
 }

@@ -85,6 +85,13 @@ export class SyncService {
             await this.dbService.removeLocalProductByRequestId(request.id);
           }
           
+          // Si c'est une opération sur une entité générique (catégorie, modification produit, etc.)
+          if ((request.method === 'POST' || request.method === 'PATCH' || request.method === 'DELETE') && 
+              (request.url.includes('/product-categories') || 
+               (request.url.includes('/products/') && !request.url.includes('/stock-movements')))) {
+            await this.dbService.removeLocalEntityByRequestId(request.id);
+          }
+          
           await this.dbService.removePendingRequest(request.id);
         } catch (error) {
           const httpError = error as HttpErrorResponse;

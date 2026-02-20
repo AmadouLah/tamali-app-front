@@ -61,11 +61,15 @@
           </h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             @for (p of products; track p.id) {
+              @let availableStock = getAvailableStockForProduct(p.id);
               <div class="p-3 sm:p-4 rounded-xl glass-effect-subtle border border-white/10 flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 min-w-0">
                 <div class="min-w-0 flex-1">
                   <p class="font-semibold text-white truncate">{{ p.name }}</p>
                   <p class="text-gray-400 text-xs sm:text-sm mt-0.5">
-                    {{ formatMoney(p.unitPrice) }} · Stock : <span [class.text-green-400]="p.stockQuantity > 0" [class.text-red-400]="p.stockQuantity === 0">{{ p.stockQuantity }}</span>
+                    {{ formatMoney(p.unitPrice) }} · Stock : <span [class.text-green-400]="availableStock > 0" [class.text-red-400]="availableStock === 0">{{ availableStock }}</span>
+                    @if (availableStock < p.stockQuantity) {
+                      <span class="text-yellow-400">({{ p.stockQuantity - availableStock }} réservé)</span>
+                    }
                   </p>
                 </div>
                 <button

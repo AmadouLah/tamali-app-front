@@ -213,6 +213,58 @@ export class OfflineHttpService {
             });
           }
         }
+        // Si c'est une création/modification/suppression de catégorie
+        if ((req.method === 'POST' || req.method === 'PATCH' || req.method === 'DELETE') && req.url.includes('/product-categories')) {
+          const businessIdMatch = req.url.match(/\/businesses\/([^/]+)\/product-categories/);
+          const categoryIdMatch = req.url.match(/\/product-categories\/([^/]+)/);
+          if (businessIdMatch || categoryIdMatch) {
+            const businessId = businessIdMatch ? businessIdMatch[1] : null;
+            const categoryId = categoryIdMatch ? categoryIdMatch[1] : `local-category-${requestId}`;
+            
+            if (businessId || categoryId) {
+              let entityData: Record<string, unknown> = {};
+              if (req.method === 'POST' && req.body) {
+                entityData = { name: req.body.name || '', businessId };
+              } else if (req.method === 'PATCH' && req.body) {
+                entityData = { name: req.body.name || '' };
+              }
+              
+              await this.dbService.addLocalEntity({
+                id: `local-entity-${requestId}`,
+                entityType: 'category',
+                businessId: businessId || '',
+                entityId: categoryId,
+                entity: entityData,
+                operation: req.method,
+                requestId
+              });
+            }
+          }
+        }
+        // Si c'est une modification/suppression de produit
+        if ((req.method === 'PATCH' || req.method === 'DELETE') && req.url.includes('/products/') && !req.url.includes('/stock-movements')) {
+          const productIdMatch = req.url.match(/\/products\/([^/]+)/);
+          const businessIdMatch = req.url.match(/\/businesses\/([^/]+)\//);
+          if (productIdMatch) {
+            const productId = productIdMatch[1];
+            const businessId = businessIdMatch ? businessIdMatch[1] : '';
+            
+            let entityData: Record<string, unknown> = {};
+            if (req.method === 'PATCH' && req.body) {
+              entityData = { ...req.body };
+            }
+            
+            await this.dbService.addLocalEntity({
+              id: `local-entity-${requestId}`,
+              entityType: 'product',
+              businessId,
+              entityId: productId,
+              entity: entityData,
+              operation: req.method,
+              requestId
+            });
+          }
+        }
       })
     ).pipe(
       switchMap(() => {

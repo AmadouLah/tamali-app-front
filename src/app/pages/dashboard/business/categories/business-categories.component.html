@@ -58,7 +58,7 @@
 
       @if (loading) {
         <div class="text-center py-12 sm:py-16 text-gray-400 text-sm">Chargement...</div>
-      } @else if (categories.length === 0) {
+      } @else if (allCategories.length === 0) {
         <app-glass-card variant="strong" class="dashboard-card text-center py-8 sm:py-12">
           <p class="text-gray-400 mb-4 text-sm sm:text-base">Aucune catégorie. Créez vos catégories pour organiser vos produits.</p>
           <button type="button" (click)="openAdd()" class="px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-medium text-sm sm:text-base">
@@ -84,12 +84,12 @@
             </button>
           </div>
           <p class="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6">Sélectionnez une catégorie lors de l'ajout de produits pour les organiser.</p>
-          @if (filteredCategories.length === 0 && categories.length > 0) {
+          @if (filteredCategories.length === 0 && allCategories.length > 0) {
             <p class="text-gray-400 text-center py-6 sm:py-8 text-sm">Aucune catégorie ne correspond à votre recherche.</p>
           } @else {
           <div class="space-y-2 sm:space-y-3">
             @for (cat of filteredCategories; track cat.id) {
-              <div class="p-3 sm:p-4 rounded-xl glass-effect-subtle border border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 min-w-0">
+              <div class="p-3 sm:p-4 rounded-xl glass-effect-subtle border min-w-0" [ngClass]="getCategoryBorderClass(cat)">
                 @if (editingId === cat.id) {
                   <form [formGroup]="editForm" (ngSubmit)="submitEdit()" class="flex flex-col sm:flex-row gap-2 w-full min-w-0">
                     <input formControlName="name" class="input-field flex-1 min-w-0" placeholder="Nom de la catégorie" />
@@ -98,11 +98,31 @@
                       <button type="button" (click)="cancelEdit()" class="flex-1 sm:flex-none px-4 py-2 rounded-lg glass-effect-subtle border border-white/20 text-white text-sm">Annuler</button>
                     </div>
                   </form>
+                } @else if (cat.isLocal && cat.operation === 'DELETE') {
+                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 min-w-0">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <span class="font-semibold text-white truncate line-through opacity-60">{{ cat.name }}</span>
+                      <span class="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 shrink-0" title="Suppression en attente de synchronisation">Suppression en attente</span>
+                    </div>
+                  </div>
                 } @else {
-                  <span class="font-semibold text-white truncate min-w-0">{{ cat.name }}</span>
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <button type="button" (click)="startEdit(cat)" class="px-3 py-1.5 rounded-lg glass-effect-subtle border border-white/20 text-white text-sm hover:bg-white/10">Modifier</button>
-                    <button type="button" (click)="deleteCategory(cat)" class="px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/50 text-red-300 text-sm hover:bg-red-500/30">Supprimer</button>
+                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 min-w-0">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <span class="font-semibold text-white truncate">{{ cat.name }}</span>
+                      @if (cat.isLocal) {
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 shrink-0" title="En attente de synchronisation">
+                          @if (cat.operation === 'PATCH') {
+                            Modification en attente
+                          } @else {
+                            Hors ligne
+                          }
+                        </span>
+                      }
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <button type="button" (click)="startEdit(cat)" [disabled]="cat.isLocal && cat.operation === 'PATCH'" class="px-3 py-1.5 rounded-lg glass-effect-subtle border border-white/20 text-white text-sm hover:bg-white/10 disabled:opacity-50">Modifier</button>
+                      <button type="button" (click)="deleteCategory(cat)" [disabled]="cat.isLocal && cat.operation === 'DELETE'" class="px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/50 text-red-300 text-sm hover:bg-red-500/30 disabled:opacity-50">Supprimer</button>
+                    </div>
                   </div>
                 }
               </div>

@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService, UserDto } from '../../../../core/services/auth.service';
 import { BusinessOperationsService, isPendingResponse } from '../../../../core/services/business-operations.service';
 import { ProductCategoryStoreService } from '../../../../core/services/product-category-store.service';
+import { IndexedDbService } from '../../../../core/services/indexed-db.service';
 import type { ProductCategoryDto } from '../../../../core/models/product.model';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
@@ -33,10 +34,12 @@ export class BusinessCategoriesComponent implements OnInit {
   private readonly categoryStore = inject(ProductCategoryStoreService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly dbService = inject(IndexedDbService);
 
   user: UserDto | null = null;
   businessId: string | null = null;
   categories: ProductCategoryDto[] = [];
+  localCategories: ProductCategoryDto[] = [];
   form!: FormGroup;
   editForm!: FormGroup;
   editingId: string | null = null;
@@ -51,10 +54,25 @@ export class BusinessCategoriesComponent implements OnInit {
 
   menuItems = getBusinessMenuItems(null);
 
-  get filteredCategories(): ProductCategoryDto[] {
+  get filteredCategories(): (ProductCategoryDto & { isLocal?: boolean; operation?: string })[] {
     const q = this.searchQuery?.trim().toLowerCase() ?? '';
-    if (!q) return this.categories;
-    return this.categories.filter(c => c.name.toLowerCase().includes(q));
+    const allCategories = this.allCategories;
+    if (!q) return allCategories;
+    return allCategories.filter(c => c.name.toLowerCase().includes(q));
+  }
+
+  get allCategories(): (ProductCategoryDto & { isLocal?: boolean; operation?: string })[] {
+    // Exclure les catégories supprimées de la liste principale
+    const deletedIds = new Set(
+      this.localCategories
+        .filter(c => (c as ProductCategoryDto & { operation?: string }).operation === 'DELETE')
+        .map(c => c.id)
+    );
+    const activeCategories = this.categories.filter(c => !deletedIds.has(c.id));
+    
+    // Combiner catégories actives et catégories locales
+    const combined = [...activeCategories, ...this.localCategories];
+    return combined.sort((a, b) => a.name.localeCompare(b.name));
   }
 
   ngOnInit(): void {
@@ -90,18 +108,51 @@ export class BusinessCategoriesComponent implements OnInit {
     });
   }
 
-  private loadCategories(): void {
+  private async loadCategories(): Promise<void> {
     if (!this.businessId) return;
     this.businessOps.getProductCategories(this.businessId).subscribe({
-      next: (list) => {
+      next: async (list) => {
         this.categories = list;
         this.categoryStore.setCategories(this.businessId!, list);
+        await this.loadLocalCategories();
         this.loading = false;
       },
-      error: () => {
+      error: async () => {
+        await this.loadLocalCategories();
         this.loading = false;
       }
     });
+  }
+
+  private async loadLocalCategories(): Promise<void> {
+    if (!this.businessId) return;
+    
+    try {
+      // Charger toutes les entités locales de type category (même sans businessId)
+      const allLocalEntities = await this.dbService.getLocalEntities('category', '');
+      // Filtrer celles qui appartiennent à ce businessId ou qui n'ont pas de businessId (seront vérifiées par ID)
+      const localEntities = allLocalEntities.filter(le => 
+        !le.businessId || le.businessId === this.businessId || 
+        this.categories.some(c => c.id === le.entityId)
+      );
+      
+      this.localCategories = localEntities.map(le => {
+        const category = le.entity as any;
+        // Pour les modifications/suppressions, utiliser le nom de la catégorie existante si disponible
+        const existingCategory = this.categories.find(c => c.id === le.entityId);
+        const categoryName = category.name || existingCategory?.name || '';
+        
+        return {
+          id: le.entityId,
+          name: categoryName,
+          businessId: le.businessId || existingCategory?.businessId || this.businessId!,
+          isLocal: true,
+          operation: le.operation
+        } as ProductCategoryDto & { isLocal?: boolean; operation?: string };
+      });
+    } catch (error) {
+      console.error('Erreur lors du chargement des catégories locales:', error);
+    }
   }
 
   openAdd(): void {
@@ -114,16 +165,21 @@ export class BusinessCategoriesComponent implements OnInit {
     this.showAddModal = false;
   }
 
-  submitAdd(): void {
+  async submitAdd(): Promise<void> {
     if (!this.businessId || this.form.invalid || this.submitting) return;
     this.error = null;
     this.submitting = true;
     const name = this.form.value.name?.trim();
     this.businessOps.createProductCategory(this.businessId, name).subscribe({
-      next: (result) => {
-        this.loadCategories();
+      next: async (result) => {
+        if (isPendingResponse(result)) {
+          this.success = 'Catégorie ajoutée localement. Synchronisation à la reconnexion.';
+          await this.loadLocalCategories();
+        } else {
+          this.success = 'Catégorie ajoutée.';
+        }
+        await this.loadCategories();
         this.closeAdd();
-        this.success = isPendingResponse(result) ? 'Catégorie ajoutée. Synchronisation à la reconnexion.' : 'Catégorie ajoutée.';
         this.submitting = false;
       },
       error: (err) => {
@@ -133,7 +189,8 @@ export class BusinessCategoriesComponent implements OnInit {
     });
   }
 
-  startEdit(cat: ProductCategoryDto): void {
+  startEdit(cat: ProductCategoryDto & { isLocal?: boolean; operation?: string }): void {
+    if (cat.isLocal && cat.operation === 'PATCH') return;
     this.editingId = cat.id;
     this.editForm.patchValue({ name: cat.name });
     this.error = null;
@@ -143,17 +200,22 @@ export class BusinessCategoriesComponent implements OnInit {
     this.editingId = null;
   }
 
-  submitEdit(): void {
+  async submitEdit(): Promise<void> {
     if (!this.editingId || this.editForm.invalid || this.submitting) return;
     this.error = null;
     this.submitting = true;
     const name = this.editForm.value.name?.trim();
     this.businessOps.updateProductCategory(this.editingId, name).subscribe({
-      next: (result) => {
-        this.categoryStore.updateCategory(this.editingId!, name);
-        this.loadCategories();
+      next: async (result) => {
+        if (isPendingResponse(result)) {
+          this.success = 'Catégorie mise à jour localement. Synchronisation à la reconnexion.';
+          await this.loadLocalCategories();
+        } else {
+          this.categoryStore.updateCategory(this.editingId!, name);
+          this.success = 'Catégorie mise à jour.';
+        }
+        await this.loadCategories();
         this.editingId = null;
-        this.success = isPendingResponse(result) ? 'Catégorie mise à jour. Synchronisation à la reconnexion.' : 'Catégorie mise à jour.';
         this.submitting = false;
       },
       error: (err) => {
@@ -163,9 +225,11 @@ export class BusinessCategoriesComponent implements OnInit {
     });
   }
 
-  deleteCategory(cat: ProductCategoryDto): void {
+  async deleteCategory(cat: ProductCategoryDto & { isLocal?: boolean; operation?: string }): Promise<void> {
+    if (cat.isLocal && cat.operation === 'DELETE') return;
+    
     this.businessOps.getProductCategoryProductsCount(cat.id).subscribe({
-      next: (count) => {
+      next: async (count) => {
         const message = count > 0
           ? `ATTENTION : Supprimer la catégorie « ${cat.name} » supprimera définitivement ${count} produit${count > 1 ? 's' : ''} associé${count > 1 ? 's' : ''}.\n\nCette action est irréversible. Êtes-vous sûr de vouloir continuer ?`
           : `Supprimer la catégorie « ${cat.name} » ?`;
@@ -173,30 +237,35 @@ export class BusinessCategoriesComponent implements OnInit {
         if (!confirm(message)) return;
         
         this.businessOps.deleteProductCategory(cat.id).subscribe({
-          next: (result) => {
-            this.categoryStore.removeCategory(cat.id);
-            this.loadCategories();
-            const productMsg = count > 0 ? ` ainsi que ${count} produit${count > 1 ? 's' : ''}` : '';
-            this.success = isPendingResponse(result)
-              ? `Catégorie${productMsg} supprimée${count > 0 ? 's' : ''}. Synchronisation à la reconnexion.`
-              : `Catégorie${productMsg} supprimée${count > 0 ? 's' : ''}.`;
+          next: async (result) => {
+            if (isPendingResponse(result)) {
+              this.success = `Catégorie${count > 0 ? ` et ${count} produit${count > 1 ? 's' : ''}` : ''} marquée pour suppression. Synchronisation à la reconnexion.`;
+              await this.loadLocalCategories();
+            } else {
+              this.categoryStore.removeCategory(cat.id);
+              this.success = `Catégorie${count > 0 ? ` et ${count} produit${count > 1 ? 's' : ''}` : ''} supprimée${count > 0 ? 's' : ''}.`;
+            }
+            await this.loadCategories();
           },
           error: (err) => {
             this.error = extractErrorMessage(err, 'Erreur lors de la suppression.');
           }
         });
       },
-      error: (err) => {
+      error: async (err) => {
         const message = `Supprimer la catégorie « ${cat.name} » supprimera tous les produits associés.\n\nCette action est irréversible. Êtes-vous sûr de vouloir continuer ?`;
         if (!confirm(message)) return;
         
         this.businessOps.deleteProductCategory(cat.id).subscribe({
-          next: (result) => {
-            this.categoryStore.removeCategory(cat.id);
-            this.loadCategories();
-            this.success = isPendingResponse(result)
-              ? 'Catégorie supprimée. Synchronisation à la reconnexion.'
-              : 'Catégorie supprimée.';
+          next: async (result) => {
+            if (isPendingResponse(result)) {
+              this.success = 'Catégorie marquée pour suppression. Synchronisation à la reconnexion.';
+              await this.loadLocalCategories();
+            } else {
+              this.categoryStore.removeCategory(cat.id);
+              this.success = 'Catégorie supprimée.';
+            }
+            await this.loadCategories();
           },
           error: (deleteErr) => {
             this.error = extractErrorMessage(deleteErr, 'Erreur lors de la suppression.');
@@ -212,5 +281,14 @@ export class BusinessCategoriesComponent implements OnInit {
 
   setActiveMenu(menu: string): void {
     this.activeMenu = menu;
+  }
+
+  getCategoryBorderClass(cat: ProductCategoryDto & { isLocal?: boolean; operation?: string }): Record<string, boolean> {
+    if (cat.isLocal && cat.operation === 'DELETE') {
+      return { 'border-red-500/50': true };
+    } else if (cat.isLocal) {
+      return { 'border-yellow-500/50': true };
+    }
+    return { 'border-white/10': true };
   }
 }
