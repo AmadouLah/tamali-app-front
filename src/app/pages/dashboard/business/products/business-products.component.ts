@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 import { AuthService, UserDto } from '../../../../core/services/auth.service';
 import { BusinessOperationsService, isPendingResponse } from '../../../../core/services/business-operations.service';
 import { ProductCategoryStoreService } from '../../../../core/services/product-category-store.service';
+import { IndexedDbService } from '../../../../core/services/indexed-db.service';
 import {
   ProductDto,
   ProductCategoryDto,
@@ -39,11 +40,13 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
   private readonly categoryStore = inject(ProductCategoryStoreService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly dbService = inject(IndexedDbService);
   private categoryStoreSub?: Subscription;
 
   user: UserDto | null = null;
   businessId: string | null = null;
   products: ProductDto[] = [];
+  localProducts: ProductDto[] = [];
   categories: ProductCategoryDto[] = [];
   form!: FormGroup;
   editForm!: FormGroup;
@@ -160,42 +163,74 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
     });
   }
 
-  private loadCategories(): void {
+  private async loadCategories(): Promise<void> {
     if (!this.businessId) return;
     this.businessOps.getProductCategories(this.businessId).subscribe({
-      next: (list) => {
+      next: async (list) => {
         this.categories = list;
         this.categoryStore.setCategories(this.businessId!, list);
+        // Recharger les produits locaux pour mettre à jour les noms de catégories
+        await this.loadLocalProducts();
       }
     });
   }
 
-  private loadProducts(): void {
+  private async loadProducts(): Promise<void> {
     if (!this.businessId) return;
     this.businessOps.getProducts(this.businessId).subscribe({
-      next: (list) => {
+      next: async (list) => {
         this.products = list;
+        await this.loadLocalProducts();
         this.loading = false;
       },
-      error: () => {
+      error: async () => {
+        await this.loadLocalProducts();
         this.loading = false;
       }
     });
   }
 
-  get filteredProducts(): ProductDto[] {
+  private async loadLocalProducts(): Promise<void> {
+    if (!this.businessId) return;
+    
+    try {
+      const localProductsData = await this.dbService.getLocalProducts(this.businessId);
+      this.localProducts = localProductsData
+        .filter(lp => !lp.synced)
+        .map(lp => {
+          const product = lp.product as any;
+          // Trouver le nom de la catégorie si disponible
+          const category = this.categories.find(c => c.id === product.categoryId);
+          return {
+            ...product,
+            id: lp.id,
+            categoryName: category?.name,
+            isLocal: true
+          } as ProductDto & { isLocal?: boolean };
+        });
+    } catch (error) {
+      console.error('Erreur lors du chargement des produits locaux:', error);
+    }
+  }
+
+  get allProducts(): (ProductDto & { isLocal?: boolean })[] {
+    const combined = [...this.products, ...this.localProducts];
+    return combined.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  get filteredProducts(): (ProductDto & { isLocal?: boolean })[] {
     const q = this.searchQuery?.trim().toLowerCase() ?? '';
-    if (!q) return this.products;
+    if (!q) return this.allProducts;
     const nameFor = (p: ProductDto) => this.categoryStore.getCategoryName(p.categoryId) || p.categoryName || '';
-    return this.products.filter(p =>
+    return this.allProducts.filter(p =>
       p.name.toLowerCase().includes(q) ||
       p.reference?.toLowerCase().includes(q) ||
       nameFor(p).toLowerCase().includes(q)
     );
   }
 
-  get productsByCategory(): { category: string; products: ProductDto[] }[] {
-    const map = new Map<string, ProductDto[]>();
+  get productsByCategory(): { category: string; products: (ProductDto & { isLocal?: boolean })[] }[] {
+    const map = new Map<string, (ProductDto & { isLocal?: boolean })[]>();
     for (const p of this.filteredProducts) {
       const cat = (this.categoryStore.getCategoryName(p.categoryId) || p.categoryName?.trim() || '').trim() || 'Sans catégorie';
       if (!map.has(cat)) map.set(cat, []);
@@ -214,7 +249,7 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
     this.showAddModal = false;
   }
 
-  submitAdd(): void {
+  async submitAdd(): Promise<void> {
     if (!this.businessId || this.form.invalid || this.submitting) return;
     this.error = null;
     this.submitting = true;
@@ -229,10 +264,15 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
       initialQuantity: Math.max(0, Number(v.initialQuantity) || 0)
     };
     this.businessOps.createProduct(this.businessId, body).subscribe({
-      next: (result) => {
-        this.loadProducts();
+      next: async (result) => {
+        if (isPendingResponse(result)) {
+          this.success = 'Produit ajouté localement. Synchronisation à la reconnexion.';
+          await this.loadLocalProducts();
+        } else {
+          this.success = 'Produit ajouté.';
+        }
+        await this.loadProducts();
         this.closeAdd();
-        this.success = isPendingResponse(result) ? 'Produit ajouté. Synchronisation à la reconnexion.' : 'Produit ajouté.';
         this.submitting = false;
       },
       error: (err) => {

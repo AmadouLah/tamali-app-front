@@ -46,7 +46,10 @@ export class SyncService {
         return;
       }
 
-      for (const request of pendingRequests) {
+      // Éviter les duplications : regrouper les requêtes identiques par URL et body
+      const uniqueRequests = await this.deduplicateRequests(pendingRequests);
+
+      for (const request of uniqueRequests) {
         try {
           // Vérifier à nouveau la connexion avant chaque requête
           const stillOnline = await this.networkService.checkConnection();
@@ -75,6 +78,11 @@ export class SyncService {
           // Si c'est un mouvement de stock réussi, supprimer le mouvement local
           if (request.method === 'POST' && request.url.includes('/stock-movements') && response?.id) {
             await this.dbService.removeLocalStockMovementsByRequestId(request.id);
+          }
+          
+          // Si c'est une création de produit réussie, supprimer le produit local
+          if (request.method === 'POST' && request.url.includes('/products') && !request.url.includes('/stock-movements') && response?.id) {
+            await this.dbService.removeLocalProductByRequestId(request.id);
           }
           
           await this.dbService.removePendingRequest(request.id);
@@ -180,5 +188,45 @@ export class SyncService {
 
   generateRequestId(): string {
     return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+  }
+
+  private async deduplicateRequests(requests: Array<{
+    id: string;
+    method: string;
+    url: string;
+    body?: any;
+    headers?: Record<string, string>;
+    timestamp: number;
+  }>): Promise<Array<{
+    id: string;
+    method: string;
+    url: string;
+    body?: any;
+    headers?: Record<string, string>;
+    timestamp: number;
+  }>> {
+    const seen = new Map<string, string>();
+    const unique: typeof requests = [];
+    const duplicatesToRemove: string[] = [];
+
+    for (const request of requests) {
+      // Créer une clé unique basée sur l'URL et le body
+      const key = `${request.method}:${request.url}:${JSON.stringify(request.body || {})}`;
+      
+      if (!seen.has(key)) {
+        seen.set(key, request.id);
+        unique.push(request);
+      } else {
+        // Marquer les requêtes dupliquées pour suppression
+        duplicatesToRemove.push(request.id);
+      }
+    }
+
+    // Supprimer les requêtes dupliquées
+    for (const id of duplicatesToRemove) {
+      await this.dbService.removePendingRequest(id);
+    }
+
+    return unique;
   }
 }

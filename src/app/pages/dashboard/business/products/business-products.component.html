@@ -58,7 +58,7 @@
 
       @if (loading) {
         <div class="text-center py-16 text-gray-400">Chargement...</div>
-      } @else if (products.length === 0) {
+      } @else if (allProducts.length === 0) {
         <app-glass-card variant="strong" class="dashboard-card text-center py-8 sm:py-12">
           <p class="text-gray-400 mb-4 text-sm sm:text-base">Aucun produit.</p>
           @if (!isReadOnly) {
@@ -90,7 +90,7 @@
               }
             </div>
           </app-glass-card>
-          @if (productsByCategory.length === 0 && products.length > 0) {
+          @if (productsByCategory.length === 0 && allProducts.length > 0) {
             <app-glass-card variant="strong" class="dashboard-card text-center py-8 sm:py-12">
               <p class="text-gray-400 text-sm sm:text-base">Aucun produit ne correspond à votre recherche.</p>
             </app-glass-card>
@@ -132,12 +132,19 @@
                     } @else {
                       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                         <div class="min-w-0">
-                          <p class="font-semibold text-white truncate">{{ p.name }}</p>
+                          <div class="flex items-center gap-2">
+                            <p class="font-semibold text-white truncate">{{ p.name }}</p>
+                            @if (p.isLocal) {
+                              <span class="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/30" title="En attente de synchronisation">Hors ligne</span>
+                            }
+                          </div>
                           <p class="text-gray-400 text-xs sm:text-sm mt-0.5">{{ formatMoney(p.unitPrice) }} · Stock : <span [class.text-green-400]="p.stockQuantity > 0" [class.text-red-400]="p.stockQuantity === 0">{{ p.stockQuantity }}</span></p>
                         </div>
                                         <div class="flex flex-wrap items-center gap-2 shrink-0">
-                          <a [routerLink]="['/dashboard/business/stock']" class="px-3 py-1.5 rounded-lg glass-effect-subtle border border-white/20 text-white text-sm hover:bg-white/10">Stock</a>
-                          @if (!isReadOnly) {
+                          @if (!p.isLocal) {
+                            <a [routerLink]="['/dashboard/business/stock']" class="px-3 py-1.5 rounded-lg glass-effect-subtle border border-white/20 text-white text-sm hover:bg-white/10">Stock</a>
+                          }
+                          @if (!isReadOnly && !p.isLocal) {
                             <button type="button" (click)="startEdit(p)" class="px-3 py-1.5 rounded-lg glass-effect-subtle border border-white/20 text-white text-sm hover:bg-white/10">Modifier</button>
                             <button type="button" (click)="deleteProduct(p)" class="px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/50 text-red-300 text-sm hover:bg-red-500/30">Supprimer</button>
                           }

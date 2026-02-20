@@ -61,6 +61,22 @@ interface TamaliDB extends DBSchema {
       requestId: string;
     };
   };
+  localProducts: {
+    key: string;
+    value: {
+      id: string;
+      businessId: string;
+      product: Record<string, unknown>;
+      requestId: string;
+      timestamp: number;
+      synced: boolean;
+    };
+    indexes: {
+      businessId: string;
+      timestamp: number;
+      requestId: string;
+    };
+  };
 }
 
 @Injectable({
@@ -69,7 +85,7 @@ interface TamaliDB extends DBSchema {
 export class IndexedDbService {
   private db: IDBPDatabase<TamaliDB> | null = null;
   private readonly dbName = 'TamaliDB';
-  private readonly dbVersion = 3;
+  private readonly dbVersion = 4;
 
   async init(): Promise<void> {
     if (!this.db) {
@@ -107,6 +123,12 @@ export class IndexedDbService {
             stockMovementsStore.createIndex('productId', 'productId');
             stockMovementsStore.createIndex('timestamp', 'timestamp');
             stockMovementsStore.createIndex('requestId', 'requestId');
+          }
+          if (!db.objectStoreNames.contains('localProducts')) {
+            const localProductsStore = db.createObjectStore('localProducts', { keyPath: 'id' });
+            localProductsStore.createIndex('businessId', 'businessId');
+            localProductsStore.createIndex('timestamp', 'timestamp');
+            localProductsStore.createIndex('requestId', 'requestId');
           }
         }
       });
@@ -304,5 +326,47 @@ export class IndexedDbService {
     }, 0);
     
     return Math.max(0, currentStock + stockDelta);
+  }
+
+  async addLocalProduct(product: {
+    id: string;
+    businessId: string;
+    product: Record<string, unknown>;
+    requestId: string;
+  }): Promise<void> {
+    await this.init();
+    await this.db!.put('localProducts', {
+      ...product,
+      timestamp: Date.now(),
+      synced: false
+    });
+  }
+
+  async getLocalProducts(businessId: string): Promise<Array<{
+    id: string;
+    businessId: string;
+    product: Record<string, unknown>;
+    requestId: string;
+    timestamp: number;
+    synced: boolean;
+  }>> {
+    await this.init();
+    const index = this.db!.transaction('localProducts').store.index('businessId');
+    return await index.getAll(businessId);
+  }
+
+  async removeLocalProduct(id: string): Promise<void> {
+    await this.init();
+    await this.db!.delete('localProducts', id);
+  }
+
+  async removeLocalProductByRequestId(requestId: string): Promise<void> {
+    await this.init();
+    const index = this.db!.transaction('localProducts').store.index('requestId');
+    const products = await index.getAll(requestId);
+    
+    for (const product of products) {
+      await this.db!.delete('localProducts', product.id);
+    }
   }
 }

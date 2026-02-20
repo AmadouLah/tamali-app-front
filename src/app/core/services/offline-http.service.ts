@@ -186,6 +186,33 @@ export class OfflineHttpService {
             });
           }
         }
+        // Si c'est une création de produit, créer un produit local
+        if (req.method === 'POST' && req.url.includes('/products') && req.body) {
+          const businessIdMatch = req.url.match(/\/businesses\/([^/]+)\/products/);
+          if (businessIdMatch) {
+            const businessId = businessIdMatch[1];
+            const tempProductId = `local-product-${requestId}`;
+            const localProduct = {
+              id: tempProductId,
+              businessId,
+              name: req.body.name || '',
+              reference: req.body.reference || undefined,
+              categoryId: req.body.categoryId || undefined,
+              unitPrice: req.body.unitPrice || 0,
+              purchasePrice: req.body.purchasePrice || undefined,
+              taxable: req.body.taxable || false,
+              stockQuantity: req.body.initialQuantity || 0,
+              categoryName: undefined
+            };
+            
+            await this.dbService.addLocalProduct({
+              id: tempProductId,
+              businessId,
+              product: localProduct,
+              requestId
+            });
+          }
+        }
       })
     ).pipe(
       switchMap(() => {
