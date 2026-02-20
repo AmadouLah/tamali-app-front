@@ -1,8 +1,10 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
 import { NetworkService } from './network.service';
 import { IndexedDbService } from './indexed-db.service';
-import { Observable, firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom, timer } from 'rxjs';
+import { timeout, retry, catchError } from 'rxjs/operators';
+import { throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -12,17 +14,27 @@ export class SyncService {
   private readonly networkService = inject(NetworkService);
   private readonly dbService = inject(IndexedDbService);
   private isSyncing = false;
+  private readonly REQUEST_TIMEOUT = 10000; // 10 secondes
+  private readonly MAX_RETRIES = 3;
+  private readonly RETRY_DELAY = 2000; // 2 secondes
 
   constructor() {
     this.networkService.onlineStatus.subscribe(isOnline => {
       if (isOnline && !this.isSyncing) {
-        this.syncPendingRequests();
+        // Délai pour s'assurer que la connexion est stable
+        setTimeout(() => this.syncPendingRequests(), 1000);
       }
     });
   }
 
   async syncPendingRequests(): Promise<void> {
-    if (this.isSyncing || !this.networkService.isOnline) {
+    if (this.isSyncing) {
+      return;
+    }
+
+    // Vérifier la connexion réelle avant de synchroniser
+    const isReallyOnline = await this.networkService.checkConnection();
+    if (!isReallyOnline) {
       return;
     }
 
@@ -30,17 +42,86 @@ export class SyncService {
     try {
       const pendingRequests = await this.dbService.getPendingRequests();
       
+      if (pendingRequests.length === 0) {
+        return;
+      }
+
       for (const request of pendingRequests) {
         try {
-          await this.executeRequest(request);
+          // Vérifier à nouveau la connexion avant chaque requête
+          const stillOnline = await this.networkService.checkConnection();
+          if (!stillOnline) {
+            break;
+          }
+
+          const response = await this.executeRequestWithRetry(request);
+          
+          // Si c'est une création de vente réussie, supprimer la vente locale
+          // car elle sera maintenant disponible depuis le serveur avec le vrai ID
+          if (request.method === 'POST' && request.url.includes('/sales') && response?.id) {
+            const businessIdMatch = request.url.match(/\/businesses\/([^/]+)\/sales/);
+            if (businessIdMatch) {
+              const businessId = businessIdMatch[1];
+              const localSales = await this.dbService.getLocalSales(businessId);
+              const localSale = localSales.find(ls => ls.requestId === request.id);
+              if (localSale) {
+                await this.dbService.removeLocalSale(localSale.id);
+              }
+            }
+          }
+          
           await this.dbService.removePendingRequest(request.id);
         } catch (error) {
-          console.error(`Erreur lors de la synchronisation de la requête ${request.id}:`, error);
+          const httpError = error as HttpErrorResponse;
+          const isNetworkError = !httpError?.status || httpError.status === 0;
+          
+          if (isNetworkError) {
+            // Erreur réseau : garder la requête pour réessayer plus tard
+            console.warn(`Erreur réseau lors de la synchronisation de la requête ${request.id}. Réessai ultérieur.`);
+            // Mettre à jour le statut de connexion
+            await this.networkService.checkConnection();
+            break; // Arrêter la synchronisation si erreur réseau
+          } else {
+            // Erreur serveur (4xx, 5xx) : supprimer la requête pour éviter les boucles infinies
+            console.error(`Erreur serveur lors de la synchronisation de la requête ${request.id}:`, httpError);
+            await this.dbService.removePendingRequest(request.id);
+          }
         }
       }
     } finally {
       this.isSyncing = false;
     }
+  }
+
+  private async executeRequestWithRetry(request: {
+    method: string;
+    url: string;
+    body?: any;
+    headers?: Record<string, string>;
+  }): Promise<any> {
+    let lastError: any;
+    
+    for (let attempt = 0; attempt < this.MAX_RETRIES; attempt++) {
+      try {
+        return await this.executeRequest(request);
+      } catch (error) {
+        lastError = error;
+        const httpError = error as HttpErrorResponse;
+        const isNetworkError = !httpError?.status || httpError.status === 0;
+        
+        if (!isNetworkError) {
+          // Erreur serveur : ne pas réessayer
+          throw error;
+        }
+        
+        if (attempt < this.MAX_RETRIES - 1) {
+          // Attendre avant de réessayer avec délai exponentiel
+          await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY * (attempt + 1)));
+        }
+      }
+    }
+    
+    throw lastError;
   }
 
   private async executeRequest(request: {
@@ -73,7 +154,21 @@ export class SyncService {
         throw new Error(`Méthode HTTP non supportée: ${request.method}`);
     }
 
-    return firstValueFrom(httpRequest);
+    return firstValueFrom(
+      httpRequest.pipe(
+        timeout(this.REQUEST_TIMEOUT),
+        catchError(error => {
+          if (error.name === 'TimeoutError') {
+            return throwError(() => new HttpErrorResponse({
+              error: 'Timeout',
+              status: 0,
+              statusText: 'Request Timeout'
+            }));
+          }
+          return throwError(() => error);
+        })
+      )
+    );
   }
 
   generateRequestId(): string {

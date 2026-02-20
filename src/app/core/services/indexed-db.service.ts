@@ -28,6 +28,23 @@ interface TamaliDB extends DBSchema {
       expiresAt: number;
     };
   };
+  localSales: {
+    key: string;
+    value: {
+      id: string;
+      businessId: string;
+      sale: any;
+      requestId: string;
+      timestamp: number;
+      synced: boolean;
+    };
+    indexes: {
+      businessId: string;
+      timestamp: number;
+      synced: boolean;
+      requestId: string;
+    };
+  };
 }
 
 @Injectable({
@@ -36,12 +53,12 @@ interface TamaliDB extends DBSchema {
 export class IndexedDbService {
   private db: IDBPDatabase<TamaliDB> | null = null;
   private readonly dbName = 'TamaliDB';
-  private readonly dbVersion = 1;
+  private readonly dbVersion = 2;
 
   async init(): Promise<void> {
     if (!this.db) {
       this.db = await openDB<TamaliDB>(this.dbName, this.dbVersion, {
-        upgrade(db) {
+        upgrade(db, oldVersion) {
           if (!db.objectStoreNames.contains('pendingRequests')) {
             const pendingStore = db.createObjectStore('pendingRequests', { keyPath: 'id' });
             pendingStore.createIndex('timestamp', 'timestamp');
@@ -49,6 +66,13 @@ export class IndexedDbService {
           if (!db.objectStoreNames.contains('cache')) {
             const cacheStore = db.createObjectStore('cache', { keyPath: 'key' });
             cacheStore.createIndex('expiresAt', 'expiresAt');
+          }
+          if (!db.objectStoreNames.contains('localSales')) {
+            const localSalesStore = db.createObjectStore('localSales', { keyPath: 'id' });
+            localSalesStore.createIndex('businessId', 'businessId');
+            localSalesStore.createIndex('timestamp', 'timestamp');
+            localSalesStore.createIndex('synced', 'synced');
+            localSalesStore.createIndex('requestId', 'requestId');
           }
         }
       });
@@ -125,6 +149,62 @@ export class IndexedDbService {
     for (const item of allCache) {
       if (item.expiresAt < now) {
         await this.db!.delete('cache', item.key);
+      }
+    }
+  }
+
+  async addLocalSale(sale: {
+    id: string;
+    businessId: string;
+    sale: any;
+    requestId: string;
+  }): Promise<void> {
+    await this.init();
+    await this.db!.put('localSales', {
+      ...sale,
+      timestamp: Date.now(),
+      synced: false
+    });
+  }
+
+  async getLocalSales(businessId: string): Promise<Array<{
+    id: string;
+    businessId: string;
+    sale: any;
+    requestId: string;
+    timestamp: number;
+    synced: boolean;
+  }>> {
+    await this.init();
+    const index = this.db!.transaction('localSales').store.index('businessId');
+    return await index.getAll(businessId);
+  }
+
+  async markSaleAsSynced(requestId: string): Promise<void> {
+    await this.init();
+    const index = this.db!.transaction('localSales').store.index('requestId');
+    const localSale = await index.get(requestId);
+    if (localSale) {
+      await this.db!.put('localSales', {
+        ...localSale,
+        synced: true
+      });
+    }
+  }
+
+  async removeLocalSale(id: string): Promise<void> {
+    await this.init();
+    await this.db!.delete('localSales', id);
+  }
+
+  async clearSyncedLocalSales(businessId: string): Promise<void> {
+    await this.init();
+    const index = this.db!.transaction('localSales').store.index('businessId');
+    const sales = await index.getAll(businessId);
+    
+    for (const sale of sales) {
+      if (sale.synced) {
+        await this.db!.delete('localSales', sale.id);
       }
     }
   }

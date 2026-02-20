@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService, UserDto } from '../../../../core/services/auth.service';
 import { BusinessOperationsService, isPendingResponse } from '../../../../core/services/business-operations.service';
+import { IndexedDbService } from '../../../../core/services/indexed-db.service';
 import {
   ProductDto,
   SaleDto,
@@ -41,11 +42,13 @@ export class BusinessSalesComponent implements OnInit {
   private readonly businessOps = inject(BusinessOperationsService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly dbService = inject(IndexedDbService);
 
   user: UserDto | null = null;
   businessId: string | null = null;
   products: ProductDto[] = [];
   sales: SaleDto[] = [];
+  localSales: SaleDto[] = [];
   cart: CartLine[] = [];
   paymentMethod: PaymentMethod = 'CASH';
   productSearch = '';
@@ -79,9 +82,11 @@ export class BusinessSalesComponent implements OnInit {
   private loadProducts(): void {
     if (!this.businessId) return;
     this.businessOps.getProducts(this.businessId).subscribe({
-      next: (list) => {
+      next: async (list) => {
         this.products = list;
         this.loading = false;
+        // Recharger les ventes locales maintenant que les produits sont disponibles
+        await this.loadLocalSales();
       },
       error: () => {
         this.loading = false;
@@ -89,12 +94,71 @@ export class BusinessSalesComponent implements OnInit {
     });
   }
 
-  loadSales(): void {
+  async loadSales(): Promise<void> {
     if (!this.businessId) return;
+    
+    // Charger les ventes depuis le serveur
     this.businessOps.getSales(this.businessId, 0, 20).subscribe({
-      next: (list) => (this.sales = list),
-      error: () => {}
+      next: (list) => {
+        this.sales = list;
+        this.loadLocalSales();
+      },
+      error: () => {
+        this.loadLocalSales();
+      }
     });
+  }
+
+  private async loadLocalSales(): Promise<void> {
+    if (!this.businessId) return;
+    
+    try {
+      const localSalesData = await this.dbService.getLocalSales(this.businessId);
+      this.localSales = localSalesData
+        .filter(ls => !ls.synced)
+        .map(ls => {
+          const sale = ls.sale as any;
+          // Enrichir les items avec les informations des produits
+          const enrichedItems = sale.items?.map((item: any) => {
+            const product = this.products.find(p => p.id === item.productId);
+            return {
+              ...item,
+              productName: product?.name || 'Produit inconnu',
+              price: product?.unitPrice || 0
+            };
+          }) || [];
+          
+          // Calculer le totalAmount basé sur les produits
+          const totalAmount = enrichedItems.reduce((sum: number, item: any) => {
+            return sum + (item.price * item.quantity);
+          }, 0);
+          
+          return {
+            ...sale,
+            items: enrichedItems,
+            totalAmount,
+            id: ls.id,
+            isLocal: true
+          } as SaleDto & { isLocal?: boolean };
+        });
+      
+      // Nettoyer les ventes synchronisées anciennes (plus de 24h)
+      const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+      for (const ls of localSalesData) {
+        if (ls.synced && ls.timestamp < oneDayAgo) {
+          await this.dbService.removeLocalSale(ls.id);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des ventes locales:', error);
+    }
+  }
+
+  get allSales(): (SaleDto & { isLocal?: boolean })[] {
+    const combined = [...this.sales, ...this.localSales];
+    return combined.sort((a, b) => 
+      new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime()
+    );
   }
 
   get filteredProducts(): ProductDto[] {
@@ -154,13 +218,17 @@ export class BusinessSalesComponent implements OnInit {
       method: this.paymentMethod
     };
     this.businessOps.createSale(this.businessId, body).subscribe({
-      next: (result) => {
+      next: async (result) => {
         this.cart = [];
-        this.success = isPendingResponse(result)
-          ? 'Vente enregistrée. Elle sera synchronisée à la reconnexion.'
-          : 'Vente enregistrée.';
+        if (isPendingResponse(result)) {
+          this.success = 'Vente enregistrée localement. Elle sera synchronisée à la reconnexion.';
+          // Recharger les ventes locales immédiatement
+          await this.loadLocalSales();
+        } else {
+          this.success = 'Vente enregistrée.';
+        }
         this.loadProducts();
-        this.loadSales();
+        await this.loadSales();
         this.submitting = false;
       },
       error: (err) => {
@@ -172,8 +240,15 @@ export class BusinessSalesComponent implements OnInit {
 
   generatingReceiptId: string | null = null;
 
-  generateReceipt(sale: SaleDto): void {
+  generateReceipt(sale: SaleDto & { isLocal?: boolean }): void {
     if (this.generatingReceiptId) return;
+    
+    // Ne pas générer de reçu pour les ventes locales non synchronisées
+    if (sale.isLocal) {
+      this.error = 'Impossible de générer un reçu pour une vente non synchronisée.';
+      return;
+    }
+    
     this.generatingReceiptId = sale.id;
     this.businessOps.generateReceipt(sale.id).subscribe({
       next: (res) => {

@@ -139,6 +139,38 @@ export class OfflineHttpService {
         url: req.url,
         body: req.body,
         headers
+      }).then(async () => {
+        // Si c'est une création de vente, créer une vente locale
+        if (req.method === 'POST' && req.url.includes('/sales') && req.body) {
+          const businessIdMatch = req.url.match(/\/businesses\/([^/]+)\/sales/);
+          if (businessIdMatch) {
+            const businessId = businessIdMatch[1];
+            const tempSaleId = `local-${requestId}`;
+            // Créer les items avec les informations disponibles
+            const items = (req.body.items || []).map((item: any) => ({
+              id: `temp-${Date.now()}-${Math.random()}`,
+              productId: item.productId,
+              quantity: item.quantity,
+              price: 0 // Sera calculé lors de l'affichage avec les produits
+            }));
+            
+            const localSale = {
+              id: tempSaleId,
+              businessId,
+              cashierId: req.body.cashierId,
+              items,
+              totalAmount: 0, // Sera calculé lors de l'affichage avec les produits
+              saleDate: new Date().toISOString()
+            };
+            
+            await this.dbService.addLocalSale({
+              id: tempSaleId,
+              businessId,
+              sale: localSale,
+              requestId
+            });
+          }
+        }
       })
     ).pipe(
       switchMap(() => {
@@ -148,7 +180,7 @@ export class OfflineHttpService {
         return of(new HttpResponse({
           status: 202,
           statusText: 'Accepted - En attente de synchronisation',
-          body: { message: 'Requête mise en file d\'attente', requestId }
+          body: { requestId }
         }));
       })
     );
