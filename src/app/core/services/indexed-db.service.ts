@@ -33,16 +33,31 @@ interface TamaliDB extends DBSchema {
     value: {
       id: string;
       businessId: string;
-      sale: any;
+      sale: Record<string, unknown>;
       requestId: string;
       timestamp: number;
       synced: boolean;
     };
     indexes: {
-      byBusinessId: string;
-      byTimestamp: number;
-      bySynced: boolean;
-      byRequestId: string;
+      businessId: string;
+      timestamp: number;
+      requestId: string;
+    };
+  };
+  localStockMovements: {
+    key: string;
+    value: {
+      id: string;
+      productId: string;
+      quantity: number;
+      requestId: string;
+      timestamp: number;
+      synced: boolean;
+    };
+    indexes: {
+      productId: string;
+      timestamp: number;
+      requestId: string;
     };
   };
 }
@@ -53,7 +68,7 @@ interface TamaliDB extends DBSchema {
 export class IndexedDbService {
   private db: IDBPDatabase<TamaliDB> | null = null;
   private readonly dbName = 'TamaliDB';
-  private readonly dbVersion = 2;
+  private readonly dbVersion = 3;
 
   async init(): Promise<void> {
     if (!this.db) {
@@ -69,10 +84,28 @@ export class IndexedDbService {
           }
           if (!db.objectStoreNames.contains('localSales')) {
             const localSalesStore = db.createObjectStore('localSales', { keyPath: 'id' });
-            localSalesStore.createIndex('byBusinessId', 'businessId');
-            localSalesStore.createIndex('byTimestamp', 'timestamp');
-            localSalesStore.createIndex('bySynced', 'synced');
-            localSalesStore.createIndex('byRequestId', 'requestId');
+            localSalesStore.createIndex('businessId', 'businessId');
+            localSalesStore.createIndex('timestamp', 'timestamp');
+            localSalesStore.createIndex('requestId', 'requestId');
+          } else if (oldVersion < 2) {
+            // Migration depuis version 1: supprimer l'index 'synced' s'il existe
+            const tx = db.transaction('localSales', 'readwrite');
+            const localSalesStore = tx.objectStore('localSales') as any;
+            try {
+              // Vérifier si l'index existe en parcourant tous les index
+              const indexNames = Array.from(localSalesStore.indexNames) as string[];
+              if (indexNames.includes('synced')) {
+                localSalesStore.deleteIndex('synced');
+              }
+            } catch (e) {
+              // L'index n'existe peut-être pas, continuer
+            }
+          }
+          if (!db.objectStoreNames.contains('localStockMovements')) {
+            const stockMovementsStore = db.createObjectStore('localStockMovements', { keyPath: 'id' });
+            stockMovementsStore.createIndex('productId', 'productId');
+            stockMovementsStore.createIndex('timestamp', 'timestamp');
+            stockMovementsStore.createIndex('requestId', 'requestId');
           }
         }
       });
@@ -176,13 +209,13 @@ export class IndexedDbService {
     synced: boolean;
   }>> {
     await this.init();
-    const index = this.db!.transaction('localSales').store.index('byBusinessId');
+    const index = this.db!.transaction('localSales').store.index('businessId');
     return await index.getAll(businessId);
   }
 
   async markSaleAsSynced(requestId: string): Promise<void> {
     await this.init();
-    const index = this.db!.transaction('localSales').store.index('byRequestId');
+    const index = this.db!.transaction('localSales').store.index('requestId');
     const localSale = await index.get(requestId);
     if (localSale) {
       await this.db!.put('localSales', {
@@ -199,7 +232,7 @@ export class IndexedDbService {
 
   async clearSyncedLocalSales(businessId: string): Promise<void> {
     await this.init();
-    const index = this.db!.transaction('localSales').store.index('byBusinessId');
+    const index = this.db!.transaction('localSales').store.index('businessId');
     const sales = await index.getAll(businessId);
     
     for (const sale of sales) {
@@ -207,5 +240,55 @@ export class IndexedDbService {
         await this.db!.delete('localSales', sale.id);
       }
     }
+  }
+
+  async addLocalStockMovement(movement: {
+    id: string;
+    productId: string;
+    quantity: number;
+    requestId: string;
+  }): Promise<void> {
+    await this.init();
+    await this.db!.put('localStockMovements', {
+      ...movement,
+      timestamp: Date.now(),
+      synced: false
+    });
+  }
+
+  async getLocalStockMovements(productId: string): Promise<Array<{
+    id: string;
+    productId: string;
+    quantity: number;
+    requestId: string;
+    timestamp: number;
+    synced: boolean;
+  }>> {
+    await this.init();
+    const index = this.db!.transaction('localStockMovements').store.index('productId');
+    return await index.getAll(productId);
+  }
+
+  async removeLocalStockMovement(id: string): Promise<void> {
+    await this.init();
+    await this.db!.delete('localStockMovements', id);
+  }
+
+  async removeLocalStockMovementsByRequestId(requestId: string): Promise<void> {
+    await this.init();
+    const index = this.db!.transaction('localStockMovements').store.index('requestId');
+    const movements = await index.getAll(requestId);
+    
+    for (const movement of movements) {
+      await this.db!.delete('localStockMovements', movement.id);
+    }
+  }
+
+  async getAvailableStock(productId: string, currentStock: number): Promise<number> {
+    await this.init();
+    const movements = await this.getLocalStockMovements(productId);
+    const pendingMovements = movements.filter(m => !m.synced);
+    const totalReserved = pendingMovements.reduce((sum, m) => sum + m.quantity, 0);
+    return Math.max(0, currentStock - totalReserved);
   }
 }

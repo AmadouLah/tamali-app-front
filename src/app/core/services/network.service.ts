@@ -50,7 +50,7 @@ export class NetworkService {
       
       const baseUrl = this.apiConfig.getApiUrl().replace('/api', '');
       await fetch(`${baseUrl}/actuator/health`, {
-        method: 'HEAD',
+        method: 'GET',
         signal: controller.signal,
         cache: 'no-cache'
       }).catch(() => {
@@ -87,8 +87,9 @@ export class NetworkService {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.CHECK_TIMEOUT);
       
-      await fetch(`${this.apiConfig.getApiUrl()}/health`, {
-        method: 'HEAD',
+      const baseUrl = this.apiConfig.getApiUrl().replace('/api', '');
+      await fetch(`${baseUrl}/actuator/health`, {
+        method: 'GET',
         signal: controller.signal,
         cache: 'no-cache'
       });

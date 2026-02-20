@@ -58,6 +58,7 @@ export class BusinessSalesComponent implements OnInit {
   success: string | null = null;
   activeMenu = 'ventes';
   sidebarOpen = false;
+  availableStocks: Map<string, number> = new Map();
 
   menuItems = getBusinessMenuItems(null);
   readonly paymentLabels = PAYMENT_METHOD_LABELS;
@@ -79,11 +80,13 @@ export class BusinessSalesComponent implements OnInit {
     this.loadSales();
   }
 
-  private loadProducts(): void {
+  private async loadProducts(): Promise<void> {
     if (!this.businessId) return;
     this.businessOps.getProducts(this.businessId).subscribe({
       next: async (list) => {
         this.products = list;
+        // Calculer les stocks disponibles pour tous les produits
+        await this.updateAvailableStocks();
         this.loading = false;
         // Recharger les ventes locales maintenant que les produits sont disponibles
         await this.loadLocalSales();
@@ -92,6 +95,18 @@ export class BusinessSalesComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  private async updateAvailableStocks(): Promise<void> {
+    this.availableStocks.clear();
+    for (const product of this.products) {
+      const available = await this.getAvailableStock(product.id, product.stockQuantity);
+      this.availableStocks.set(product.id, available);
+    }
+  }
+
+  getAvailableStockForProduct(productId: string): number {
+    return this.availableStocks.get(productId) ?? 0;
   }
 
   async loadSales(): Promise<void> {
@@ -171,11 +186,18 @@ export class BusinessSalesComponent implements OnInit {
     );
   }
 
-  addToCart(product: ProductDto): void {
-    if (product.stockQuantity < 1) return;
+  async getProductAvailableStock(productId: string): Promise<number> {
+    const product = this.products.find(p => p.id === productId);
+    if (!product) return 0;
+    return await this.getAvailableStock(productId, product.stockQuantity);
+  }
+
+  async addToCart(product: ProductDto): Promise<void> {
+    const availableStock = this.getAvailableStockForProduct(product.id);
+    if (availableStock < 1) return;
     const existing = this.cart.find(l => l.productId === product.id);
     if (existing) {
-      if (existing.quantity >= product.stockQuantity) return;
+      if (existing.quantity >= availableStock) return;
       existing.quantity += 1;
     } else {
       this.cart.push({
@@ -185,30 +207,56 @@ export class BusinessSalesComponent implements OnInit {
         quantity: 1
       });
     }
+    // Mettre à jour le stock disponible après ajout au panier
+    await this.updateAvailableStocks();
   }
 
-  removeFromCart(index: number): void {
+  async removeFromCart(index: number): Promise<void> {
     this.cart.splice(index, 1);
+    await this.updateAvailableStocks();
   }
 
-  setCartQuantity(index: number, delta: number): void {
+  async setCartQuantity(index: number, delta: number): Promise<void> {
     const line = this.cart[index];
     const product = this.products.find(p => p.id === line.productId);
-    const max = product?.stockQuantity ?? line.quantity;
+    if (!product) return;
+    const availableStock = this.getAvailableStockForProduct(product.id);
+    const max = availableStock;
     const next = line.quantity + delta;
     if (next < 1) {
       this.cart.splice(index, 1);
+      await this.updateAvailableStocks();
       return;
     }
     line.quantity = Math.min(next, max);
+    await this.updateAvailableStocks();
+  }
+
+  private async getAvailableStock(productId: string, currentStock: number): Promise<number> {
+    return await this.dbService.getAvailableStock(productId, currentStock);
   }
 
   get cartTotal(): number {
     return this.cart.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
   }
 
-  validateSale(): void {
+  async validateSale(): Promise<void> {
     if (!this.businessId || !this.user?.id || this.cart.length === 0 || this.submitting) return;
+    
+    // Vérifier le stock disponible pour tous les produits du panier
+    for (const line of this.cart) {
+      const product = this.products.find(p => p.id === line.productId);
+      if (!product) {
+        this.error = `Produit ${line.productName} introuvable.`;
+        return;
+      }
+      const availableStock = this.getAvailableStockForProduct(product.id);
+      if (line.quantity > availableStock) {
+        this.error = `Stock insuffisant pour ${line.productName}. Stock disponible: ${availableStock}`;
+        return;
+      }
+    }
+    
     this.error = null;
     this.success = null;
     this.submitting = true;
@@ -222,12 +270,25 @@ export class BusinessSalesComponent implements OnInit {
         this.cart = [];
         if (isPendingResponse(result)) {
           this.success = 'Vente enregistrée localement. Elle sera synchronisée à la reconnexion.';
+          // Enregistrer les mouvements de stock locaux
+          const requestId = result.requestId;
+          for (const line of body.items) {
+            const movementId = `stock-${requestId}-${line.productId}`;
+            await this.dbService.addLocalStockMovement({
+              id: movementId,
+              productId: line.productId,
+              quantity: line.quantity,
+              requestId
+            });
+          }
+          // Mettre à jour les stocks disponibles
+          await this.updateAvailableStocks();
           // Recharger les ventes locales immédiatement
           await this.loadLocalSales();
         } else {
           this.success = 'Vente enregistrée.';
         }
-        this.loadProducts();
+        await this.loadProducts();
         await this.loadSales();
         this.submitting = false;
       },

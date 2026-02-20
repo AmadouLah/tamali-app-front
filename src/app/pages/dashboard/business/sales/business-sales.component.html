@@ -70,9 +70,10 @@
             } @else {
               <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 overflow-y-auto max-h-[280px] sm:max-h-[320px]">
                 @for (p of filteredProducts; track p.id) {
+                  @let availableStock = getAvailableStockForProduct(p.id);
                   <button
                     type="button"
-                    [disabled]="p.stockQuantity < 1"
+                    [disabled]="availableStock < 1"
                     (click)="addToCart(p)"
                     class="text-left p-4 rounded-xl border border-white/10 glass-effect-subtle hover:border-purple-400/40 hover:bg-white/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -81,7 +82,12 @@
                       <p class="text-xs text-gray-400 mt-0.5">{{ p.reference }}</p>
                     }
                     <p class="text-purple-300 font-medium text-sm mt-1">{{ formatMoney(p.unitPrice) }}</p>
-                    <p class="text-xs mt-1" [class.text-green-400]="p.stockQuantity > 0" [class.text-red-400]="p.stockQuantity === 0">Stock : {{ p.stockQuantity }}</p>
+                    <p class="text-xs mt-1" [class.text-green-400]="availableStock > 0" [class.text-red-400]="availableStock === 0">
+                      Stock : {{ availableStock }}
+                      @if (availableStock < p.stockQuantity) {
+                        <span class="text-yellow-400">({{ p.stockQuantity - availableStock }} réservé)</span>
+                      }
+                    </p>
                   </button>
                 }
               </div>
@@ -153,7 +159,7 @@
         } @else {
           <div class="space-y-2 max-h-[240px] sm:max-h-[280px] overflow-y-auto overflow-x-hidden">
             @for (sale of allSales; track sale.id) {
-              <div class="flex justify-between items-center gap-2 p-2.5 sm:p-3 rounded-lg glass-effect-subtle border min-w-0" [class.border-yellow-500\/50]="sale.isLocal" [class.border-white\/10]="!sale.isLocal">
+              <div class="flex justify-between items-center gap-2 p-2.5 sm:p-3 rounded-lg glass-effect-subtle border min-w-0" [ngClass]="{'border-yellow-500/50': sale.isLocal, 'border-white/10': !sale.isLocal}">
                 <div class="min-w-0 flex-1">
                   <div class="flex items-center gap-2">
                     <p class="font-medium text-white text-sm sm:text-base truncate">#{{ sale.id.substring(0, 8) }}</p>

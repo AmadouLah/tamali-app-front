@@ -67,6 +67,8 @@ export class SyncService {
               if (localSale) {
                 await this.dbService.removeLocalSale(localSale.id);
               }
+              // Supprimer aussi les mouvements de stock locaux associés
+              await this.dbService.removeLocalStockMovementsByRequestId(request.id);
             }
           }
           
