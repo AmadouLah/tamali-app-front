@@ -113,7 +113,7 @@
         } @else if (sectors.length === 0) {
           <p class="text-gray-300 text-center py-6 sm:py-8 text-sm sm:text-base">Aucun secteur d'activité créé</p>
         } @else {
-          <div class="space-y-3 sm:space-y-4 max-h-[600px] overflow-y-auto">
+          <div class="scroll-area space-y-3 sm:space-y-4 max-h-[600px] overflow-y-auto">
             @for (sector of sectors; track sector.id) {
               <div class="glass-effect-subtle border border-white/20 rounded-lg p-3 sm:p-4">
                 @if (editingId === sector.id) {

@@ -86,6 +86,74 @@
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
   }
+
+  /* Admin dashboard scroll layout - partagé entre admin-dashboard, account, add-business-owner, business-sectors */
+  .admin-dashboard-container .dashboard-main,
+  .account-container .dashboard-main,
+  .add-business-owner-container .dashboard-main {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+  }
+
+  .admin-dashboard-container .dashboard-content,
+  .account-container .dashboard-content,
+  .add-business-owner-container .dashboard-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0.75rem 1rem 1.5rem;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
+  }
+
+  .admin-dashboard-container .dashboard-content::-webkit-scrollbar,
+  .account-container .dashboard-content::-webkit-scrollbar,
+  .add-business-owner-container .dashboard-content::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .admin-dashboard-container .dashboard-content::-webkit-scrollbar-track,
+  .account-container .dashboard-content::-webkit-scrollbar-track,
+  .add-business-owner-container .dashboard-content::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .admin-dashboard-container .dashboard-content::-webkit-scrollbar-thumb,
+  .account-container .dashboard-content::-webkit-scrollbar-thumb,
+  .add-business-owner-container .dashboard-content::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.5);
+    border-radius: 4px;
+  }
+
+  .admin-dashboard-container .dashboard-content::-webkit-scrollbar-thumb:hover,
+  .account-container .dashboard-content::-webkit-scrollbar-thumb:hover,
+  .add-business-owner-container .dashboard-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.7);
+  }
+
+  /* Zone de liste scrollable (ex: secteurs) */
+  .scroll-area {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+  }
+  .scroll-area::-webkit-scrollbar { width: 6px; }
+  .scroll-area::-webkit-scrollbar-track { background: transparent; }
+  .scroll-area::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.4);
+    border-radius: 3px;
+  }
+  .scroll-area::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.6); }
   .dashboard-card {
     @apply p-4 md:p-6;
   }
