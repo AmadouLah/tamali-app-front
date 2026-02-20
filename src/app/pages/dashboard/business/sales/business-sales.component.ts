@@ -270,7 +270,7 @@ export class BusinessSalesComponent implements OnInit {
         this.cart = [];
         if (isPendingResponse(result)) {
           this.success = 'Vente enregistrée localement. Elle sera synchronisée à la reconnexion.';
-          // Enregistrer les mouvements de stock locaux
+          // Enregistrer les mouvements de stock locaux (type SALE pour les ventes)
           const requestId = result.requestId;
           for (const line of body.items) {
             const movementId = `stock-${requestId}-${line.productId}`;
@@ -278,6 +278,7 @@ export class BusinessSalesComponent implements OnInit {
               id: movementId,
               productId: line.productId,
               quantity: line.quantity,
+              type: 'SALE',
               requestId
             });
           }

@@ -50,6 +50,7 @@ interface TamaliDB extends DBSchema {
       id: string;
       productId: string;
       quantity: number;
+      type: string;
       requestId: string;
       timestamp: number;
       synced: boolean;
@@ -246,6 +247,7 @@ export class IndexedDbService {
     id: string;
     productId: string;
     quantity: number;
+    type: string;
     requestId: string;
   }): Promise<void> {
     await this.init();
@@ -260,6 +262,7 @@ export class IndexedDbService {
     id: string;
     productId: string;
     quantity: number;
+    type: string;
     requestId: string;
     timestamp: number;
     synced: boolean;
@@ -288,7 +291,18 @@ export class IndexedDbService {
     await this.init();
     const movements = await this.getLocalStockMovements(productId);
     const pendingMovements = movements.filter(m => !m.synced);
-    const totalReserved = pendingMovements.reduce((sum, m) => sum + m.quantity, 0);
-    return Math.max(0, currentStock - totalReserved);
+    
+    // Calculer l'impact des mouvements locaux sur le stock disponible
+    // IN : augmente le stock (quantité positive)
+    // OUT/SALE : diminue le stock (quantité négative)
+    const stockDelta = pendingMovements.reduce((sum, m) => {
+      if (m.type === 'IN') {
+        return sum + m.quantity; // Réapprovisionnement : augmente le stock
+      } else {
+        return sum - m.quantity; // Sortie/Vente : diminue le stock
+      }
+    }, 0);
+    
+    return Math.max(0, currentStock + stockDelta);
   }
 }

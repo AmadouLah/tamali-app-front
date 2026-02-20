@@ -171,6 +171,21 @@ export class OfflineHttpService {
             });
           }
         }
+        // Si c'est un mouvement de stock, créer un mouvement de stock local
+        if (req.method === 'POST' && req.url.includes('/stock-movements') && req.body) {
+          const productIdMatch = req.url.match(/\/products\/([^/]+)\/stock-movements/);
+          if (productIdMatch) {
+            const productId = productIdMatch[1];
+            const movementId = `stock-movement-${requestId}`;
+            await this.dbService.addLocalStockMovement({
+              id: movementId,
+              productId,
+              quantity: req.body.quantity || 0,
+              type: req.body.type || 'IN',
+              requestId
+            });
+          }
+        }
       })
     ).pipe(
       switchMap(() => {

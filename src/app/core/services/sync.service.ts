@@ -72,6 +72,11 @@ export class SyncService {
             }
           }
           
+          // Si c'est un mouvement de stock réussi, supprimer le mouvement local
+          if (request.method === 'POST' && request.url.includes('/stock-movements') && response?.id) {
+            await this.dbService.removeLocalStockMovementsByRequestId(request.id);
+          }
+          
           await this.dbService.removePendingRequest(request.id);
         } catch (error) {
           const httpError = error as HttpErrorResponse;
