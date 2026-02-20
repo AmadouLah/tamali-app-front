@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService, UserDto } from '../../../../core/services/auth.service';
@@ -10,18 +11,21 @@ import { AdminSidebarComponent, MenuItem } from '../../../../shared/components/a
 @Component({
   selector: 'app-account',
   standalone: true,
-  imports: [CommonModule, RouterModule, GlassCardComponent, AdminSidebarComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, GlassCardComponent, AdminSidebarComponent],
   templateUrl: './account.component.html',
   styleUrl: './account.component.css'
 })
 export class AccountComponent implements OnInit {
+  private readonly fb = inject(FormBuilder);
   private readonly http = inject(HttpClient);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly apiConfig = inject(ApiConfigService);
 
   user: UserDto | null = null;
+  passwordForm!: FormGroup;
   loading = false;
+  loadingPassword = false;
   error: string | null = null;
   success: string | null = null;
   showDisableConfirm = false;
@@ -48,6 +52,32 @@ export class AccountComponent implements OnInit {
       this.router.navigate(['/auth/login']);
       return;
     }
+    this.passwordForm = this.fb.group({
+      currentPassword: ['', [Validators.required]],
+      newPassword: ['', [Validators.required, Validators.minLength(6)]],
+      confirmPassword: ['', [Validators.required]]
+    }, { validators: (g) => g.get('newPassword')?.value === g.get('confirmPassword')?.value ? null : { passwordMismatch: true } });
+  }
+
+  changePassword(): void {
+    if (this.passwordForm.invalid || this.loadingPassword || !this.user?.id) return;
+    this.loadingPassword = true;
+    this.error = null;
+    this.authService.changePassword(
+      this.user.id,
+      this.passwordForm.value.currentPassword,
+      this.passwordForm.value.newPassword
+    ).subscribe({
+      next: () => {
+        this.success = 'Mot de passe modifié.';
+        this.passwordForm.reset();
+        this.loadingPassword = false;
+      },
+      error: (err) => {
+        this.error = err.error?.message ?? 'Erreur lors du changement de mot de passe.';
+        this.loadingPassword = false;
+      }
+    });
   }
 
   disableAccount(): void {

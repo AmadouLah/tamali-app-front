@@ -6,7 +6,7 @@ import { AuthService, UserDto } from '../../../core/services/auth.service';
 import { BusinessOperationsService } from '../../../core/services/business-operations.service';
 import { GlassCardComponent } from '../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent } from '../../../shared/components/admin-sidebar/admin-sidebar.component';
-import { BUSINESS_OWNER_MENU_ITEMS } from './business-menu.const';
+import { getBusinessMenuItems } from './business-menu.const';
 import { UserAvatarComponent } from '../../../shared/components/user-avatar/user-avatar.component';
 
 interface BusinessDto {
@@ -52,7 +52,7 @@ export class BusinessDashboardComponent implements OnInit {
   searchQuery = '';
   sidebarOpen = false;
 
-  menuItems = BUSINESS_OWNER_MENU_ITEMS;
+  menuItems = getBusinessMenuItems(null);
 
   kpiCards: KpiCard[] = [
     { title: 'Revenus', value: '0 FCFA', change: 0, changeLabel: 'Cette semaine', progress: 0, progressColor: 'bg-blue-500' },
@@ -63,6 +63,7 @@ export class BusinessDashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.user = this.authService.getUser();
+    this.menuItems = getBusinessMenuItems(this.user);
     if (!this.authService.canAccessBusinessDashboard(this.user)) {
       if (this.user && this.authService.shouldRedirectToSetup(this.user)) {
         this.router.navigate(['/business/setup'], { queryParams: { userId: this.user.id } });

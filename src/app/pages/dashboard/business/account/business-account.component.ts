@@ -7,7 +7,7 @@ import { AuthService, UserDto } from '../../../../core/services/auth.service';
 import { ApiConfigService } from '../../../../core/services/api-config.service';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
-import { BUSINESS_OWNER_MENU_ITEMS } from '../business-menu.const';
+import { getBusinessMenuItems } from '../business-menu.const';
 import { UserAvatarComponent } from '../../../../shared/components/user-avatar/user-avatar.component';
 
 interface BusinessDto {
@@ -38,10 +38,15 @@ export class BusinessAccountComponent implements OnInit {
   activeMenu = 'paramètres';
   sidebarOpen = false;
 
-  readonly menuItems = BUSINESS_OWNER_MENU_ITEMS;
+  menuItems = getBusinessMenuItems(null);
 
   ngOnInit(): void {
     this.user = this.authService.getUser();
+    this.menuItems = getBusinessMenuItems(this.user);
+    if (this.authService.isBusinessAssociate(this.user)) {
+      this.router.navigate(['/dashboard/business']);
+      return;
+    }
     if (!this.authService.canAccessBusinessDashboard(this.user)) {
       if (this.user && this.authService.shouldRedirectToSetup(this.user)) {
         this.router.navigate(['/business/setup'], { queryParams: { userId: this.user.id } });

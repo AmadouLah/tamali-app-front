@@ -90,13 +90,17 @@
     <div class="w-full max-w-sm glass-effect-strong rounded-2xl border border-white/20 p-4 sm:p-6 shadow-xl my-auto" (click)="$event.stopPropagation()">
       <h3 class="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4">Ajuster le stock</h3>
       <form [formGroup]="stockForm" (ngSubmit)="submitStock()" class="space-y-4">
-        <div>
-          <label class="block text-sm text-gray-300 mb-1">Type</label>
-          <select formControlName="type" class="input-field">
-            <option value="IN">Entrée (réception)</option>
-            <option value="OUT">Sortie (autre)</option>
-          </select>
-        </div>
+        @if (!isEntryOnly) {
+          <div>
+            <label class="block text-sm text-gray-300 mb-1">Type</label>
+            <select formControlName="type" class="input-field">
+              <option value="IN">Entrée (réception)</option>
+              <option value="OUT">Sortie (autre)</option>
+            </select>
+          </div>
+        } @else {
+          <p class="text-sm text-gray-400">Entrée (réception) uniquement</p>
+        }
         <div>
           <label class="block text-sm text-gray-300 mb-1">Quantité</label>
           <input type="number" formControlName="quantity" class="input-field" min="1" />

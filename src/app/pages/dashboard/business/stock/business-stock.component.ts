@@ -11,7 +11,7 @@ import {
 } from '../../../../core/models/product.model';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
-import { BUSINESS_OWNER_MENU_ITEMS } from '../business-menu.const';
+import { getBusinessMenuItems } from '../business-menu.const';
 import { UserAvatarComponent } from '../../../../shared/components/user-avatar/user-avatar.component';
 
 @Component({
@@ -46,10 +46,13 @@ export class BusinessStockComponent implements OnInit {
   activeMenu = 'stock';
   sidebarOpen = false;
 
-  readonly menuItems = BUSINESS_OWNER_MENU_ITEMS;
+  menuItems = getBusinessMenuItems(null);
+  isEntryOnly = false;
 
   ngOnInit(): void {
     this.user = this.authService.getUser();
+    this.menuItems = getBusinessMenuItems(this.user);
+    this.isEntryOnly = this.authService.isBusinessAssociate(this.user);
     if (!this.authService.canAccessBusinessDashboard(this.user)) {
       if (this.user && this.authService.shouldRedirectToSetup(this.user)) {
         this.router.navigate(['/business/setup'], { queryParams: { userId: this.user.id } });
@@ -86,6 +89,11 @@ export class BusinessStockComponent implements OnInit {
   openStock(p: ProductDto): void {
     this.stockProductId = p.id;
     this.stockForm.patchValue({ quantity: 1, type: 'IN' });
+    if (this.isEntryOnly) {
+      this.stockForm.get('type')?.disable();
+    } else {
+      this.stockForm.get('type')?.enable();
+    }
     this.error = null;
   }
 
@@ -95,10 +103,11 @@ export class BusinessStockComponent implements OnInit {
 
   submitStock(): void {
     if (!this.stockProductId || this.stockForm.invalid || this.submitting) return;
-    const v = this.stockForm.value as StockMovementCreateRequest;
+    const v = this.stockForm.getRawValue() as StockMovementCreateRequest;
     this.error = null;
     this.submitting = true;
-    const body = { quantity: Math.abs(v.quantity), type: v.type };
+    const type = this.isEntryOnly ? 'IN' : v.type;
+    const body = { quantity: Math.abs(v.quantity), type };
     this.businessOps.postStockMovement(this.stockProductId, body).subscribe({
       next: (result) => {
         this.loadProducts();

@@ -60,10 +60,12 @@
         <div class="text-center py-16 text-gray-400">Chargement...</div>
       } @else if (products.length === 0) {
         <app-glass-card variant="strong" class="dashboard-card text-center py-8 sm:py-12">
-          <p class="text-gray-400 mb-4 text-sm sm:text-base">Aucun produit. Ajoutez votre premier produit.</p>
-          <button type="button" (click)="openAdd()" class="px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-medium text-sm sm:text-base">
-            Ajouter un produit
-          </button>
+          <p class="text-gray-400 mb-4 text-sm sm:text-base">Aucun produit.</p>
+          @if (!isReadOnly) {
+            <button type="button" (click)="openAdd()" class="px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-medium text-sm sm:text-base">
+              Ajouter un produit
+            </button>
+          }
         </app-glass-card>
       } @else {
         <div class="space-y-4 sm:space-y-6">
@@ -73,17 +75,19 @@
                 <span class="w-2 h-5 sm:h-6 rounded-full bg-purple-500 shrink-0"></span>
                 <span>Produits</span>
               </h2>
-              <button
-                type="button"
-                (click)="openAdd()"
-                class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-medium text-sm transition-all flex items-center gap-2 shadow-lg hover:shadow-xl hover:scale-105"
-              >
-                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                </svg>
-                <span class="hidden sm:inline">Ajouter un produit</span>
-                <span class="sm:hidden">Ajouter</span>
-              </button>
+              @if (!isReadOnly) {
+                <button
+                  type="button"
+                  (click)="openAdd()"
+                  class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-medium text-sm transition-all flex items-center gap-2 shadow-lg hover:shadow-xl hover:scale-105"
+                >
+                  <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                  </svg>
+                  <span class="hidden sm:inline">Ajouter un produit</span>
+                  <span class="sm:hidden">Ajouter</span>
+                </button>
+              }
             </div>
           </app-glass-card>
           @if (productsByCategory.length === 0 && products.length > 0) {
@@ -131,10 +135,12 @@
                           <p class="font-semibold text-white truncate">{{ p.name }}</p>
                           <p class="text-gray-400 text-xs sm:text-sm mt-0.5">{{ formatMoney(p.unitPrice) }} · Stock : <span [class.text-green-400]="p.stockQuantity > 0" [class.text-red-400]="p.stockQuantity === 0">{{ p.stockQuantity }}</span></p>
                         </div>
-                        <div class="flex flex-wrap items-center gap-2 shrink-0">
+                                        <div class="flex flex-wrap items-center gap-2 shrink-0">
                           <a [routerLink]="['/dashboard/business/stock']" class="px-3 py-1.5 rounded-lg glass-effect-subtle border border-white/20 text-white text-sm hover:bg-white/10">Stock</a>
-                          <button type="button" (click)="startEdit(p)" class="px-3 py-1.5 rounded-lg glass-effect-subtle border border-white/20 text-white text-sm hover:bg-white/10">Modifier</button>
-                          <button type="button" (click)="deleteProduct(p)" class="px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/50 text-red-300 text-sm hover:bg-red-500/30">Supprimer</button>
+                          @if (!isReadOnly) {
+                            <button type="button" (click)="startEdit(p)" class="px-3 py-1.5 rounded-lg glass-effect-subtle border border-white/20 text-white text-sm hover:bg-white/10">Modifier</button>
+                            <button type="button" (click)="deleteProduct(p)" class="px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/50 text-red-300 text-sm hover:bg-red-500/30">Supprimer</button>
+                          }
                         </div>
                       </div>
                     }

@@ -17,7 +17,7 @@ import {
 } from '../../../../core/models/business.model';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
-import { BUSINESS_OWNER_MENU_ITEMS } from '../business-menu.const';
+import { getBusinessMenuItems } from '../business-menu.const';
 import { UserAvatarComponent } from '../../../../shared/components/user-avatar/user-avatar.component';
 
 @Component({
@@ -57,10 +57,15 @@ export class BusinessCompanyComponent implements OnInit, OnDestroy {
   logoPreview: string | null = null;
 
   readonly legalStatuses = LEGAL_STATUS_OPTIONS;
-  readonly menuItems = BUSINESS_OWNER_MENU_ITEMS;
+  menuItems = getBusinessMenuItems(null);
 
   ngOnInit(): void {
     this.user = this.authService.getUser();
+    this.menuItems = getBusinessMenuItems(this.user);
+    if (this.authService.isBusinessAssociate(this.user)) {
+      this.router.navigate(['/dashboard/business']);
+      return;
+    }
     if (!this.authService.canAccessBusinessDashboard(this.user)) {
       if (this.user && this.authService.shouldRedirectToSetup(this.user)) {
         this.router.navigate(['/business/setup'], { queryParams: { userId: this.user.id } });

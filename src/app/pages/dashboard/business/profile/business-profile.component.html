@@ -1,0 +1,82 @@
+<div class="business-profile-container min-h-screen relative overflow-x-hidden" data-theme="liquidGlace">
+  <div class="liquid-gradient fixed inset-0 -z-10"></div>
+  <div class="fixed inset-0 -z-10 bg-gradient-to-br from-slate-900/90 via-purple-900/80 to-slate-900/90"></div>
+  <div class="geometric-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
+
+  <app-admin-sidebar
+    [menuItems]="menuItems"
+    [activeMenu]="activeMenu"
+    [mobileOpen]="sidebarOpen"
+    (mobileOpenChange)="sidebarOpen = $event"
+    (menuClick)="setActiveMenu($event)"
+  ></app-admin-sidebar>
+
+  <div class="dashboard-main">
+    <header class="glass-effect-strong border-b border-white/20 dashboard-header sticky top-0 z-30">
+      <button
+        type="button"
+        class="lg:hidden shrink-0 p-2 rounded-lg glass-effect-subtle border border-white/20 text-white hover:bg-white/10 transition-colors"
+        (click)="sidebarOpen = !sidebarOpen"
+        aria-label="Ouvrir le menu"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </button>
+      <h1 class="dashboard-header-title text-lg sm:text-xl md:text-2xl font-bold text-white">Profil</h1>
+      <div class="dashboard-header-user">
+        <div class="text-right min-w-0 max-w-[100px] sm:max-w-none">
+          <div class="text-xs sm:text-sm font-semibold text-white truncate">{{ getDisplayName() }}</div>
+        </div>
+        <app-user-avatar [user]="user"></app-user-avatar>
+      </div>
+    </header>
+
+    <main class="dashboard-content">
+      <div class="max-w-xl mx-auto space-y-4 sm:space-y-6 w-full min-w-0">
+        @if (error) {
+          <div class="p-3 sm:p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-xs sm:text-sm">{{ error }}</div>
+        }
+        @if (success) {
+          <div class="p-3 sm:p-4 bg-green-500/20 border border-green-500/50 rounded-lg text-green-200 text-xs sm:text-sm">{{ success }}</div>
+        }
+
+        <app-glass-card variant="strong" class="dashboard-card">
+          <h2 class="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6">Changer le mot de passe</h2>
+          <p class="text-gray-300 text-xs sm:text-sm mb-3 sm:mb-4">Modifiez votre mot de passe en cas d'oubli ou pour plus de sécurité.</p>
+          <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
+            <div>
+              <label for="current" class="block text-sm font-medium text-gray-300 mb-1">Mot de passe actuel <span class="text-red-400">*</span></label>
+              <input id="current" type="password" formControlName="currentPassword"
+                class="w-full px-3 sm:px-4 py-2 glass-effect-subtle border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-sm sm:text-base"
+                placeholder="Mot de passe actuel" />
+            </div>
+            <div>
+              <label for="new" class="block text-sm font-medium text-gray-300 mb-1">Nouveau mot de passe <span class="text-red-400">*</span></label>
+              <input id="new" type="password" formControlName="newPassword"
+                class="w-full px-3 sm:px-4 py-2 glass-effect-subtle border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-sm sm:text-base"
+                placeholder="Minimum 6 caractères" />
+            </div>
+            <div>
+              <label for="confirm" class="block text-sm font-medium text-gray-300 mb-1">Confirmer le nouveau mot de passe <span class="text-red-400">*</span></label>
+              <input id="confirm" type="password" formControlName="confirmPassword"
+                class="w-full px-3 sm:px-4 py-2 glass-effect-subtle border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-sm sm:text-base"
+                placeholder="Répéter le mot de passe" />
+              @if (form.errors?.['passwordMismatch'] && form.get('confirmPassword')?.touched) {
+                <p class="mt-1 text-sm text-red-400">Les mots de passe ne correspondent pas</p>
+              }
+            </div>
+            <button type="submit" [disabled]="form.invalid || loading"
+              class="btn btn-primary rounded-lg w-full sm:w-auto px-6 py-2.5 disabled:opacity-50">
+              @if (loading) { Enregistrement... } @else { Modifier le mot de passe }
+            </button>
+          </form>
+        </app-glass-card>
+      </div>
+    </main>
+  </div>
+</div>

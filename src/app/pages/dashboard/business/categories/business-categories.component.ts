@@ -8,7 +8,7 @@ import { ProductCategoryStoreService } from '../../../../core/services/product-c
 import type { ProductCategoryDto } from '../../../../core/models/product.model';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
-import { BUSINESS_OWNER_MENU_ITEMS } from '../business-menu.const';
+import { getBusinessMenuItems } from '../business-menu.const';
 import { UserAvatarComponent } from '../../../../shared/components/user-avatar/user-avatar.component';
 import { extractErrorMessage } from '../../../../core/utils/error.utils';
 
@@ -49,7 +49,7 @@ export class BusinessCategoriesComponent implements OnInit {
   showAddModal = false;
   searchQuery = '';
 
-  readonly menuItems = BUSINESS_OWNER_MENU_ITEMS;
+  menuItems = getBusinessMenuItems(null);
 
   get filteredCategories(): ProductCategoryDto[] {
     const q = this.searchQuery?.trim().toLowerCase() ?? '';
@@ -59,6 +59,11 @@ export class BusinessCategoriesComponent implements OnInit {
 
   ngOnInit(): void {
     this.user = this.authService.getUser();
+    this.menuItems = getBusinessMenuItems(this.user);
+    if (this.authService.isBusinessAssociate(this.user)) {
+      this.router.navigate(['/dashboard/business']);
+      return;
+    }
     if (!this.authService.canAccessBusinessDashboard(this.user)) {
       if (this.user && this.authService.shouldRedirectToSetup(this.user)) {
         this.router.navigate(['/business/setup'], { queryParams: { userId: this.user.id } });

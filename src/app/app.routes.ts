@@ -54,6 +54,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/dashboard/business/account/business-account.component').then(m => m.BusinessAccountComponent)
   },
   {
+    path: 'dashboard/business/profile',
+    loadComponent: () => import('./pages/dashboard/business/profile/business-profile.component').then(m => m.BusinessProfileComponent)
+  },
+  {
     path: 'dashboard/business/company',
     loadComponent: () => import('./pages/dashboard/business/company/business-company.component').then(m => m.BusinessCompanyComponent)
   },

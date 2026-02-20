@@ -97,17 +97,35 @@ export class AuthService {
       newPassword
     }).pipe(
       tap(updatedUser => {
-        // Mettre à jour l'utilisateur dans le localStorage après changement de mot de passe
-        // Utiliser directement les données retournées par le backend pour s'assurer d'avoir toutes les informations à jour
-        if (updatedUser && updatedUser.id) {
-          const updatedUserData = {
-            ...updatedUser,
-            mustChangePassword: false
-          };
-          this.setUser(updatedUserData);
+        if (updatedUser?.id) {
+          this.setUser({ ...updatedUser, mustChangePassword: false });
         }
       })
     );
+  }
+
+  /**
+   * Change le mot de passe de l'utilisateur connecté (changement volontaire depuis Profil).
+   */
+  changePassword(userId: string, currentPassword: string, newPassword: string): Observable<UserDto> {
+    return this.http.post<UserDto>(`${this.apiConfig.getUsersUrl()}/${userId}/change-password`, {
+      currentPassword,
+      newPassword
+    }).pipe(tap(updatedUser => { if (updatedUser?.id) this.setUser(updatedUser); }));
+  }
+
+  /**
+   * Indique si l'utilisateur est un associé (BUSINESS_ASSOCIATE).
+   */
+  isBusinessAssociate(user: UserDto | null): boolean {
+    return !!user?.roles?.some(r => r.type === 'BUSINESS_ASSOCIATE');
+  }
+
+  /**
+   * Indique si l'utilisateur est propriétaire (BUSINESS_OWNER).
+   */
+  isBusinessOwner(user: UserDto | null): boolean {
+    return !!user?.roles?.some(r => r.type === 'BUSINESS_OWNER');
   }
 
   /**
