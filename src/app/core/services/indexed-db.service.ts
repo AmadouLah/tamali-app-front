@@ -39,10 +39,10 @@ interface TamaliDB extends DBSchema {
       synced: boolean;
     };
     indexes: {
-      businessId: string;
-      timestamp: number;
-      synced: boolean;
-      requestId: string;
+      byBusinessId: string;
+      byTimestamp: number;
+      bySynced: boolean;
+      byRequestId: string;
     };
   };
 }
@@ -69,10 +69,10 @@ export class IndexedDbService {
           }
           if (!db.objectStoreNames.contains('localSales')) {
             const localSalesStore = db.createObjectStore('localSales', { keyPath: 'id' });
-            localSalesStore.createIndex('businessId', 'businessId');
-            localSalesStore.createIndex('timestamp', 'timestamp');
-            localSalesStore.createIndex('synced', 'synced');
-            localSalesStore.createIndex('requestId', 'requestId');
+            localSalesStore.createIndex('byBusinessId', 'businessId');
+            localSalesStore.createIndex('byTimestamp', 'timestamp');
+            localSalesStore.createIndex('bySynced', 'synced');
+            localSalesStore.createIndex('byRequestId', 'requestId');
           }
         }
       });
@@ -176,13 +176,13 @@ export class IndexedDbService {
     synced: boolean;
   }>> {
     await this.init();
-    const index = this.db!.transaction('localSales').store.index('businessId');
+    const index = this.db!.transaction('localSales').store.index('byBusinessId');
     return await index.getAll(businessId);
   }
 
   async markSaleAsSynced(requestId: string): Promise<void> {
     await this.init();
-    const index = this.db!.transaction('localSales').store.index('requestId');
+    const index = this.db!.transaction('localSales').store.index('byRequestId');
     const localSale = await index.get(requestId);
     if (localSale) {
       await this.db!.put('localSales', {
@@ -199,7 +199,7 @@ export class IndexedDbService {
 
   async clearSyncedLocalSales(businessId: string): Promise<void> {
     await this.init();
-    const index = this.db!.transaction('localSales').store.index('businessId');
+    const index = this.db!.transaction('localSales').store.index('byBusinessId');
     const sales = await index.getAll(businessId);
     
     for (const sale of sales) {
