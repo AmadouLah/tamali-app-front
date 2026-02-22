@@ -99,7 +99,8 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
       categoryId: [''],
       unitPrice: [0, [Validators.required, Validators.min(0)]],
       purchasePrice: [0, [Validators.required, Validators.min(0)]],
-      taxable: [false]
+      taxable: [false],
+      initialQuantity: [0, [Validators.required, Validators.min(0)]]
     });
     
     // Appliquer la TVA de 18% quand taxable est activé
@@ -287,7 +288,7 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
   }
 
   openAdd(): void {
-    this.form.reset({ name: '', reference: '', categoryId: '', unitPrice: 0, purchasePrice: 0, taxable: false });
+    this.form.reset({ name: '', reference: '', categoryId: '', unitPrice: 0, purchasePrice: 0, taxable: false, initialQuantity: 0 });
     this.showAddModal = true;
     this.error = null;
   }
@@ -317,7 +318,7 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
       unitPrice: Number(v.unitPrice),
       purchasePrice: v.purchasePrice ? Number(v.purchasePrice) : undefined,
       taxable: !!v.taxable,
-      initialQuantity: 0
+      initialQuantity: Math.max(0, Number(v.initialQuantity) || 0)
     };
     this.businessOps.createProduct(this.businessId, body).subscribe({
       next: async (result) => {

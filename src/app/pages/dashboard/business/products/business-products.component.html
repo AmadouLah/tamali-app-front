@@ -217,6 +217,11 @@
           <input type="number" formControlName="unitPrice" class="input-field" placeholder="0" step="0.01" min="0" />
           <p class="text-xs text-gray-400 mt-1">Prix auquel vous vendez le produit</p>
         </div>
+        <div>
+          <label class="block text-sm text-gray-300 mb-1">Quantité initiale (stock)</label>
+          <input type="number" formControlName="initialQuantity" class="input-field" placeholder="0" min="0" />
+          <p class="text-xs text-gray-400 mt-1">Les mouvements de stock (ajouts, sorties) seront gérés dans la page Stock</p>
+        </div>
         <label class="flex items-center gap-2 text-gray-300 text-sm">
           <input type="checkbox" formControlName="taxable" />
           TTC / Taxable (TVA 18%)
