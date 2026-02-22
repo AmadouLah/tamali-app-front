@@ -1,12 +1,19 @@
-.toast-container {
+:host {
   position: fixed;
   top: 1rem;
   right: 1rem;
-  z-index: 9999;
+  bottom: auto;
+  left: auto;
+  z-index: 99999;
+  display: block;
+  width: min(420px, calc(100vw - 2rem));
+}
+
+.toast-container {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  max-width: min(420px, calc(100vw - 2rem));
+  width: 100%;
   pointer-events: none;
 }
 
