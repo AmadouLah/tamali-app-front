@@ -123,10 +123,6 @@
                             <input type="checkbox" formControlName="taxable" />
                             TTC / Taxable (TVA 18%)
                           </label>
-                          <p class="text-gray-400 text-sm sm:col-span-2">
-                            Stock : <span [class.text-green-400]="p.stockQuantity > 0" [class.text-red-400]="p.stockQuantity === 0">{{ p.stockQuantity }}</span>
-                            <span class="text-xs opacity-75 ml-1">(lecture seule · modifications dans la page Stock)</span>
-                          </p>
                         </div>
                         <div class="flex flex-col-reverse sm:flex-row gap-2">
                           <button type="button" (click)="cancelEdit()" class="w-full sm:w-auto px-4 py-2 rounded-lg glass-effect-subtle border border-white/20 text-white text-sm">Annuler</button>
