@@ -12,5 +12,6 @@ import { Observable } from 'rxjs';
 })
 export class OfflineIndicatorComponent {
   private readonly networkService = inject(NetworkService);
-  isOnline$: Observable<boolean> = this.networkService.onlineStatus;
+  readonly isOnline$: Observable<boolean> = this.networkService.onlineStatus;
+  readonly offlineTooltip = 'Mode hors ligne – Les modifications seront synchronisées automatiquement';
 }

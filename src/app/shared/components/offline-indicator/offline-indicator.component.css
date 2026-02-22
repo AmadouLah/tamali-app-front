@@ -1,14 +1,12 @@
 .offline-indicator {
-  @apply fixed top-0 left-0 right-0 z-50;
-  @apply bg-red-900/20 backdrop-blur-xl;
-  animation: slideDown 0.3s ease-out;
+  @apply fixed bottom-4 right-4 z-40;
+  @apply flex items-center gap-2 px-3 py-2 rounded-full;
+  @apply bg-red-900/30 backdrop-blur-md border border-red-500/40;
+  @apply shadow-lg;
+  animation: fadeIn 0.3s ease-out;
 }
 
-@keyframes slideDown {
-  from {
-    transform: translateY(-100%);
-  }
-  to {
-    transform: translateY(0);
-  }
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
