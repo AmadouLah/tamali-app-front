@@ -1,10 +1,11 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpRequest, HttpEvent, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpRequest, HttpEvent, HttpResponse } from '@angular/common/http';
 import { Observable, from, of } from 'rxjs';
 import { switchMap, catchError, map, tap, filter } from 'rxjs/operators';
 import { NetworkService } from './network.service';
 import { IndexedDbService } from './indexed-db.service';
 import { SyncService } from './sync.service';
+import { ApiConfigService } from './api-config.service';
 
 /**
  * Service HTTP offline-first qui gère automatiquement :
@@ -29,6 +30,8 @@ import { SyncService } from './sync.service';
  * }
  * ```
  */
+const TAX_RATE = 0.18;
+
 @Injectable({
   providedIn: 'root'
 })
@@ -37,6 +40,7 @@ export class OfflineHttpService {
   private readonly networkService = inject(NetworkService);
   private readonly dbService = inject(IndexedDbService);
   private readonly syncService = inject(SyncService);
+  private readonly apiConfig = inject(ApiConfigService);
 
   request<T>(req: HttpRequest<any>): Observable<HttpEvent<T>> {
     const shouldQueue = this.shouldQueueRequest(req.method);
@@ -140,29 +144,48 @@ export class OfflineHttpService {
         body: req.body,
         headers
       }).then(async () => {
-        // Si c'est une création de vente, créer une vente locale
+        // Si c'est une création de vente, créer une vente locale enrichie
         if (req.method === 'POST' && req.url.includes('/sales') && req.body) {
           const businessIdMatch = req.url.match(/\/businesses\/([^/]+)\/sales/);
           if (businessIdMatch) {
             const businessId = businessIdMatch[1];
             const tempSaleId = `local-${requestId}`;
-            // Créer les items avec les informations disponibles
-            const items = (req.body.items || []).map((item: any) => ({
-              id: `temp-${Date.now()}-${Math.random()}`,
-              productId: item.productId,
-              quantity: item.quantity,
-              price: 0 // Sera calculé lors de l'affichage avec les produits
-            }));
-            
+            const products = await this.dbService.getCache<any[]>(this.apiConfig.getProductsUrl(businessId)) ?? [];
+            const productMap = new Map(products.map((p: any) => [p.id, p]));
+
+            let totalAmount = 0;
+            let taxAmount = 0;
+            const items = (req.body.items || []).map((item: any) => {
+              const product = productMap.get(item.productId);
+              const unitPrice = product?.unitPrice ?? 0;
+              const taxable = product?.taxable ?? false;
+              const lineTTC = unitPrice * (item.quantity ?? 0);
+              let lineTax = 0;
+              if (taxable) {
+                const lineHT = lineTTC / (1 + TAX_RATE);
+                lineTax = lineTTC - lineHT;
+              }
+              totalAmount += lineTTC;
+              taxAmount += lineTax;
+              return {
+                id: `temp-${Date.now()}-${Math.random()}`,
+                productId: item.productId,
+                productName: product?.name ?? 'Produit',
+                quantity: item.quantity ?? 0,
+                price: unitPrice
+              };
+            });
+
             const localSale = {
               id: tempSaleId,
               businessId,
               cashierId: req.body.cashierId,
               items,
-              totalAmount: 0, // Sera calculé lors de l'affichage avec les produits
+              totalAmount,
+              taxAmount,
               saleDate: new Date().toISOString()
             };
-            
+
             await this.dbService.addLocalSale({
               id: tempSaleId,
               businessId,

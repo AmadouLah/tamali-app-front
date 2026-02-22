@@ -1,0 +1,41 @@
+<div class="receipt-page min-h-screen flex flex-col" data-theme="liquidGlace">
+  @if (unavailable) {
+    <div class="flex flex-col flex-1 items-center justify-center p-6 text-white">
+      <p class="text-center mb-6">Reçu non disponible.</p>
+      <button
+        type="button"
+        (click)="goBack()"
+        class="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-medium"
+      >
+        Retour aux ventes
+      </button>
+    </div>
+  } @else {
+    <div class="receipt-actions no-print flex flex-wrap gap-3 p-4 border-b border-white/20">
+      <button
+        type="button"
+        (click)="print()"
+        class="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium"
+      >
+        Imprimer
+      </button>
+      <button
+        type="button"
+        (click)="share()"
+        class="px-4 py-2 rounded-lg glass-effect-subtle border border-white/20 text-white hover:bg-white/10 text-sm font-medium"
+      >
+        Partager
+      </button>
+      <button
+        type="button"
+        (click)="goBack()"
+        class="px-4 py-2 rounded-lg glass-effect-subtle border border-white/20 text-white hover:bg-white/10 text-sm font-medium"
+      >
+        Nouvelle vente
+      </button>
+    </div>
+    <div class="receipt-container flex-1 p-4 print:p-0">
+      <div class="receipt-wrapper" [innerHTML]="receiptHtml"></div>
+    </div>
+  }
+</div>
