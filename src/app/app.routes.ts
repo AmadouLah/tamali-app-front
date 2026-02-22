@@ -38,6 +38,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/dashboard/business/sales/business-sales.component').then(m => m.BusinessSalesComponent)
   },
   {
+    path: 'dashboard/business/sales/receipt',
+    loadComponent: () => import('./pages/dashboard/business/sales/receipt/receipt.component').then(m => m.ReceiptComponent)
+  },
+  {
     path: 'dashboard/business/categories',
     loadComponent: () => import('./pages/dashboard/business/categories/business-categories.component').then(m => m.BusinessCategoriesComponent)
   },

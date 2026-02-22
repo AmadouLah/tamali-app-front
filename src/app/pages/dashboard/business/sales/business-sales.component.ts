@@ -1,10 +1,13 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { AuthService, UserDto } from '../../../../core/services/auth.service';
 import { BusinessOperationsService, isPendingResponse } from '../../../../core/services/business-operations.service';
 import { IndexedDbService } from '../../../../core/services/indexed-db.service';
+import { SyncService } from '../../../../core/services/sync.service';
 import {
   ProductDto,
   SaleDto,
@@ -38,11 +41,13 @@ interface CartLine {
   templateUrl: './business-sales.component.html',
   styleUrl: './business-sales.component.css'
 })
-export class BusinessSalesComponent implements OnInit {
+export class BusinessSalesComponent implements OnInit, OnDestroy {
   private readonly businessOps = inject(BusinessOperationsService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly dbService = inject(IndexedDbService);
+  private readonly syncService = inject(SyncService);
+  private syncSub?: Subscription;
 
   user: UserDto | null = null;
   businessId: string | null = null;
@@ -78,6 +83,14 @@ export class BusinessSalesComponent implements OnInit {
     this.businessId = this.user?.businessId ?? null;
     this.loadProducts();
     this.loadSales();
+    this.syncSub = this.syncService.syncComplete$.subscribe(() => {
+      this.loadSales();
+      this.loadProducts();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.syncSub?.unsubscribe();
   }
 
   private async loadProducts(): Promise<void> {
@@ -138,20 +151,17 @@ export class BusinessSalesComponent implements OnInit {
             const product = this.products.find(p => p.id === item.productId);
             return {
               ...item,
-              productName: product?.name || 'Produit inconnu',
-              price: product?.unitPrice || 0
+              productName: item.productName ?? product?.name ?? 'Produit inconnu',
+              price: item.price ?? product?.unitPrice ?? 0
             };
-          }) || [];
-          
-          // Calculer le totalAmount basé sur les produits
-          const totalAmount = enrichedItems.reduce((sum: number, item: any) => {
-            return sum + (item.price * item.quantity);
-          }, 0);
-          
+          }) ?? [];
+          const totalAmount = sale.totalAmount ?? enrichedItems.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+
           return {
             ...sale,
             items: enrichedItems,
             totalAmount,
+            taxAmount: sale.taxAmount ?? 0,
             id: ls.id,
             isLocal: true
           } as SaleDto & { isLocal?: boolean };
@@ -270,7 +280,6 @@ export class BusinessSalesComponent implements OnInit {
         this.cart = [];
         if (isPendingResponse(result)) {
           this.success = 'Vente enregistrée localement. Elle sera synchronisée à la reconnexion.';
-          // Enregistrer les mouvements de stock locaux (type SALE pour les ventes)
           const requestId = result.requestId;
           for (const line of body.items) {
             const movementId = `stock-${requestId}-${line.productId}`;
@@ -282,12 +291,17 @@ export class BusinessSalesComponent implements OnInit {
               requestId
             });
           }
-          // Mettre à jour les stocks disponibles
           await this.updateAvailableStocks();
-          // Recharger les ventes locales immédiatement
           await this.loadLocalSales();
+          const localSalesData = await this.dbService.getLocalSales(this.businessId!);
+          const localEntry = localSalesData.find(ls => ls.id === `local-${requestId}`);
+          const saleForReceipt: SaleDto | null = localEntry
+            ? { ...(localEntry.sale as SaleDto), id: localEntry.id } as SaleDto
+            : null;
+          await this.navigateToReceipt(saleForReceipt);
         } else {
           this.success = 'Vente enregistrée.';
+          await this.navigateToReceipt(result as SaleDto);
         }
         await this.loadProducts();
         await this.loadSales();
@@ -300,26 +314,30 @@ export class BusinessSalesComponent implements OnInit {
     });
   }
 
-  generatingReceiptId: string | null = null;
+  async navigateToReceipt(sale: SaleDto | null): Promise<void> {
+    if (!sale || !this.businessId) return;
+    try {
+      const business = await firstValueFrom(this.businessOps.getBusiness(this.businessId));
+      this.router.navigate(['/dashboard/business/sales/receipt'], {
+        state: { sale, business: business ?? {}, cashierName: this.getDisplayName() }
+      });
+    } catch {
+      this.router.navigate(['/dashboard/business/sales/receipt'], {
+        state: { sale, business: {}, cashierName: this.getDisplayName() }
+      });
+    }
+  }
 
   generateReceipt(sale: SaleDto & { isLocal?: boolean }): void {
-    if (this.generatingReceiptId) return;
-    
-    // Ne pas générer de reçu pour les ventes locales non synchronisées
-    if (sale.isLocal) {
-      this.error = 'Impossible de générer un reçu pour une vente non synchronisée.';
-      return;
-    }
-    
-    this.generatingReceiptId = sale.id;
-    this.businessOps.generateReceipt(sale.id).subscribe({
-      next: (res) => {
-        if (res?.receiptPdfUrl) window.open(res.receiptPdfUrl, '_blank');
-        this.generatingReceiptId = null;
-      },
-      error: () => {
-        this.generatingReceiptId = null;
-      }
+    if (!this.businessId) return;
+    firstValueFrom(this.businessOps.getBusiness(this.businessId)).then(business => {
+      this.router.navigate(['/dashboard/business/sales/receipt'], {
+        state: { sale, business: business ?? {}, cashierName: this.getDisplayName() }
+      });
+    }).catch(() => {
+      this.router.navigate(['/dashboard/business/sales/receipt'], {
+        state: { sale, business: {}, cashierName: this.getDisplayName() }
+      });
     });
   }
 
