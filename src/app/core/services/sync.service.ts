@@ -229,11 +229,37 @@ export class SyncService {
       }
     }
 
-    // Supprimer les requêtes dupliquées
-    for (const id of duplicatesToRemove) {
-      await this.dbService.removePendingRequest(id);
+    // Supprimer les requêtes dupliquées et leurs entités locales associées
+    const duplicateRequests = requests.filter(r => duplicatesToRemove.includes(r.id));
+    for (const req of duplicateRequests) {
+      await this.removeLocalDataForRequest(req);
+      await this.dbService.removePendingRequest(req.id);
     }
 
     return unique;
+  }
+
+  private async removeLocalDataForRequest(request: {
+    id: string;
+    method: string;
+    url: string;
+  }): Promise<void> {
+    const { id: requestId, url } = request;
+    if (url.includes('/sales')) {
+      const match = url.match(/\/businesses\/([^/]+)\/sales/);
+      if (match) {
+        const sales = await this.dbService.getLocalSales(match[1]);
+        const found = sales.find(s => s.requestId === requestId);
+        if (found) await this.dbService.removeLocalSale(found.id);
+      }
+      await this.dbService.removeLocalStockMovementsByRequestId(requestId);
+    } else if (url.includes('/stock-movements')) {
+      await this.dbService.removeLocalStockMovementsByRequestId(requestId);
+    } else if (url.includes('/products') && !url.includes('/stock-movements')) {
+      await this.dbService.removeLocalProductByRequestId(requestId);
+      await this.dbService.removeLocalEntityByRequestId(requestId); // PATCH/DELETE product
+    } else if (url.includes('/product-categories')) {
+      await this.dbService.removeLocalEntityByRequestId(requestId);
+    }
   }
 }

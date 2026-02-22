@@ -39,6 +39,30 @@ export class OfflineHttpService {
   private readonly syncService = inject(SyncService);
 
   request<T>(req: HttpRequest<any>): Observable<HttpEvent<T>> {
+    // Suppression d'une entité locale non synchronisée : annuler la création (en ligne ou hors ligne)
+    if (req.method === 'DELETE') {
+      const categoryMatch = req.url.match(/\/product-categories\/(local-category-[^/?#]+)/);
+      const productMatch = req.url.match(/\/products\/(local-product-[^/?#]+)/);
+      const localId = categoryMatch?.[1] || productMatch?.[1];
+      if (localId) {
+        const prefix = localId.startsWith('local-category-') ? 'local-category-' : 'local-product-';
+        const creationRequestId = localId.slice(prefix.length);
+        return from(
+          this.cancelLocalCreation(creationRequestId, prefix === 'local-category-' ? 'category' : 'product')
+            .then(() => new HttpResponse({
+              status: 202,
+              statusText: 'Accepted - Création annulée',
+              body: { requestId: creationRequestId }
+            }))
+        ).pipe(
+          switchMap(res => {
+            if (this.networkService.isOnline) this.syncService.syncPendingRequests();
+            return of(res as HttpEvent<T>);
+          })
+        );
+      }
+    }
+
     const shouldQueue = this.shouldQueueRequest(req.method);
     
     if (this.networkService.isOnline) {
@@ -297,5 +321,14 @@ export class OfflineHttpService {
 
   async cacheResponse(url: string, data: any, ttl: number = 3600000): Promise<void> {
     await this.dbService.setCache(url, data, ttl);
+  }
+
+  private async cancelLocalCreation(requestId: string, entityType: 'category' | 'product'): Promise<void> {
+    await this.dbService.removePendingRequest(requestId);
+    if (entityType === 'category') {
+      await this.dbService.removeLocalEntityByRequestId(requestId);
+    } else {
+      await this.dbService.removeLocalProductByRequestId(requestId);
+    }
   }
 }

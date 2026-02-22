@@ -170,6 +170,14 @@ export class BusinessCategoriesComponent implements OnInit {
     this.error = null;
     this.submitting = true;
     const name = this.form.value.name?.trim();
+    const existingNames = this.allCategories
+      .filter(c => (c as { operation?: string }).operation !== 'DELETE')
+      .map(c => c.name.trim().toLowerCase());
+    if (existingNames.includes(name.toLowerCase())) {
+      this.error = 'Une catégorie avec ce nom existe déjà.';
+      this.submitting = false;
+      return;
+    }
     this.businessOps.createProductCategory(this.businessId, name).subscribe({
       next: async (result) => {
         if (isPendingResponse(result)) {

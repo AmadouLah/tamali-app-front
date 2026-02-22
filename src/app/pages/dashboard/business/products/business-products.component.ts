@@ -302,6 +302,15 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
     this.error = null;
     this.submitting = true;
     const v = this.form.value as ProductCreateRequest;
+    const name = (v.name || '').trim();
+    const existingNames = this.allProducts
+      .filter(p => (p as ProductDto & { operation?: string }).operation !== 'DELETE')
+      .map(p => (p.name || '').trim().toLowerCase());
+    if (existingNames.includes(name.toLowerCase())) {
+      this.error = 'Un produit avec ce nom existe déjà.';
+      this.submitting = false;
+      return;
+    }
     const body = {
       name: v.name,
       reference: v.reference || undefined,
