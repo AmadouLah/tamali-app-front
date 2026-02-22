@@ -1,16 +1,19 @@
 import { Routes } from '@angular/router';
 import { HomeComponent } from './pages/home/home.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
+import { homeAccessGuard } from './core/guards/home-access.guard';
 
 export const routes: Routes = [
-  { path: '', component: HomeComponent },
+  { path: '', component: HomeComponent, canActivate: [homeAccessGuard] },
   {
     path: 'a-propos',
-    loadComponent: () => import('./pages/home/about/about.component').then(m => m.AboutComponent)
+    loadComponent: () => import('./pages/home/about/about.component').then(m => m.AboutComponent),
+    canActivate: [homeAccessGuard]
   },
   {
     path: 'fonctionnalites',
-    loadComponent: () => import('./pages/home/features/features.component').then(m => m.FeaturesComponent)
+    loadComponent: () => import('./pages/home/features/features.component').then(m => m.FeaturesComponent),
+    canActivate: [homeAccessGuard]
   },
   {
     path: 'auth/login',

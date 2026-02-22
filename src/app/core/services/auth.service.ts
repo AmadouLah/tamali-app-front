@@ -115,6 +115,16 @@ export class AuthService {
   }
 
   /**
+   * Indique si l'utilisateur peut accéder à la page d'accueil (home).
+   * Un associé ou propriétaire connecté doit rester dans son dashboard.
+   * Le super admin et les utilisateurs non connectés peuvent accéder à l'accueil.
+   */
+  canAccessHomePage(user: UserDto | null): boolean {
+    if (!user?.roles?.length) return true;
+    return user.roles.some(r => r.type === 'SUPER_ADMIN');
+  }
+
+  /**
    * Indique si l'utilisateur est un associé (BUSINESS_ASSOCIATE).
    */
   isBusinessAssociate(user: UserDto | null): boolean {
