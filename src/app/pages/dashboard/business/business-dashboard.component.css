@@ -68,3 +68,13 @@
   33% { transform: translate(50px, -50px) scale(1.1); }
   66% { transform: translate(-30px, 30px) scale(0.9); }
 }
+
+.revenue-bar {
+  @apply bg-blue-500;
+  background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,.15) 4px, rgba(255,255,255,.15) 8px);
+}
+
+.expenses-bar {
+  @apply bg-amber-500;
+  background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,.15) 4px, rgba(255,255,255,.15) 8px);
+}

@@ -23,6 +23,7 @@ export interface SaleItemDto {
   productName?: string;
   quantity: number;
   price: number;
+  purchasePrice?: number;
 }
 
 export interface SaleDto {
