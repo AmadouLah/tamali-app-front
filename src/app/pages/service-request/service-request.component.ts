@@ -4,6 +4,8 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { ApiConfigService } from '../../core/services/api-config.service';
+import { ToastService } from '../../core/services/toast.service';
+import { extractErrorMessage } from '../../core/utils/error.utils';
 import { GlassCardComponent } from '../../shared/components/glass-card/glass-card.component';
 
 @Component({
@@ -17,11 +19,10 @@ export class ServiceRequestComponent {
   private readonly http = inject(HttpClient);
   private readonly fb = inject(FormBuilder);
   private readonly apiConfig = inject(ApiConfigService);
+  private readonly toast = inject(ToastService);
 
   serviceRequestForm: FormGroup;
   loading = false;
-  success = false;
-  error: string | null = null;
 
   constructor() {
     this.serviceRequestForm = this.fb.group({
@@ -36,38 +37,15 @@ export class ServiceRequestComponent {
     }
 
     this.loading = true;
-    this.error = null;
-    this.success = false;
 
     this.http.post(this.apiConfig.getServiceRequestsUrl(), this.serviceRequestForm.value).subscribe({
       next: () => {
-        this.success = true;
+        this.toast.success('Demande envoyée avec succès ! Nous vous contacterons sous peu.');
         this.loading = false;
         this.serviceRequestForm.reset();
-        setTimeout(() => {
-          this.success = false;
-        }, 5000);
       },
       error: (err) => {
-        console.error('Erreur lors de l\'envoi de la demande:', err);
-        // Gérer différents formats de réponse d'erreur
-        let errorMessage = 'Erreur lors de l\'envoi de la demande. Veuillez réessayer.';
-        
-        if (err.error) {
-          // Format ErrorResponse du backend
-          if (err.error.message) {
-            errorMessage = err.error.message;
-          } else if (err.error.errors && Array.isArray(err.error.errors) && err.error.errors.length > 0) {
-            // Erreurs de validation multiples
-            errorMessage = err.error.errors.join(', ');
-          } else if (typeof err.error === 'string') {
-            errorMessage = err.error;
-          }
-        } else if (err.message) {
-          errorMessage = err.message;
-        }
-        
-        this.error = errorMessage;
+        this.toast.error(extractErrorMessage(err, 'Erreur lors de l\'envoi de la demande. Veuillez réessayer.'));
         this.loading = false;
       }
     });

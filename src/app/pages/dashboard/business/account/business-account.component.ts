@@ -5,6 +5,8 @@ import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService, UserDto } from '../../../../core/services/auth.service';
 import { ApiConfigService } from '../../../../core/services/api-config.service';
+import { ToastService } from '../../../../core/services/toast.service';
+import { extractErrorMessage } from '../../../../core/utils/error.utils';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
 import { getBusinessMenuItems } from '../business-menu.const';
@@ -27,14 +29,13 @@ export class BusinessAccountComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
   private readonly apiConfig = inject(ApiConfigService);
+  private readonly toast = inject(ToastService);
 
   user: UserDto | null = null;
   business: BusinessDto | null = null;
   firstname = '';
   lastname = '';
   loading = false;
-  error: string | null = null;
-  success: string | null = null;
   activeMenu = 'paramètres';
   sidebarOpen = false;
 
@@ -79,16 +80,14 @@ export class BusinessAccountComponent implements OnInit {
   saveProfile(): void {
     if (!this.user) return;
     this.loading = true;
-    this.error = null;
-    this.success = null;
     this.authService.updateUserProfile(this.firstname.trim(), this.lastname.trim()).subscribe({
       next: () => {
         this.user = this.authService.getUser();
-        this.success = 'Profil mis à jour.';
+        this.toast.success('Profil mis à jour.');
         this.loading = false;
       },
       error: (err) => {
-        this.error = err.error?.message ?? 'Erreur lors de la mise à jour.';
+        this.toast.error(extractErrorMessage(err, 'Erreur lors de la mise à jour.'));
         this.loading = false;
       }
     });

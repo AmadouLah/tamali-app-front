@@ -5,6 +5,8 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
 import { ApiConfigService } from '../../../../core/services/api-config.service';
+import { ToastService } from '../../../../core/services/toast.service';
+import { extractErrorMessage } from '../../../../core/utils/error.utils';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent, MenuItem } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
 import { UserDto } from '../../../../core/services/auth.service';
@@ -49,6 +51,7 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
   readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
   private readonly apiConfig = inject(ApiConfigService);
+  private readonly toast = inject(ToastService);
 
   @ViewChild('emailInput') emailInput!: ElementRef<HTMLInputElement>;
 
@@ -59,8 +62,6 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
   associates: Map<string, AssociateDto[]> = new Map();
   searchQuery: string = '';
   loading = false;
-  error: string | null = null;
-  success: string | null = null;
   showCreateModal = false;
   showAssociateModal = false;
   selectedOwnerId: string | null = null;
@@ -176,7 +177,6 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
 
   loadBusinessOwners(): void {
     this.loading = true;
-    this.error = null;
     this.http.get<BusinessOwnerDto[]>(`${this.apiConfig.getUsersUrl()}/business-owners`).subscribe({
       next: (owners) => {
         this.businessOwners = owners;
@@ -306,8 +306,6 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
   openCreateModal(): void {
     this.showCreateModal = true;
     this.form.reset();
-    this.error = null;
-    this.success = null;
     // Focus sur le champ email après l'ouverture de la modale
     setTimeout(() => {
       if (this.emailInput) {
@@ -319,8 +317,6 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
   closeCreateModal(): void {
     this.showCreateModal = false;
     this.form.reset();
-    this.error = null;
-    this.success = null;
   }
 
   getFullName(owner: BusinessOwnerDto | AssociateDto): string {
@@ -336,8 +332,6 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
     }
 
     this.loading = true;
-    this.error = null;
-    this.success = null;
     
     const action = owner.enabled 
       ? this.http.patch(`${this.apiConfig.getUsersUrl()}/${owner.id}/disable`, {})
@@ -345,10 +339,9 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
 
     action.subscribe({
       next: () => {
-        this.success = `Compte ${owner.enabled ? 'désactivé' : 'activé'} avec succès`;
+        this.toast.success(`Compte ${owner.enabled ? 'désactivé' : 'activé'} avec succès`);
         this.loading = false;
         this.loadBusinessOwners();
-        setTimeout(() => this.success = null, 3000);
       },
       error: (err) => {
         this.handleError(err);
@@ -362,15 +355,12 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
     }
 
     this.loading = true;
-    this.error = null;
-    this.success = null;
     
     this.http.delete(`${this.apiConfig.getUsersUrl()}/${owner.id}`).subscribe({
       next: () => {
-        this.success = 'Propriétaire supprimé avec succès';
+        this.toast.success('Propriétaire supprimé avec succès');
         this.loading = false;
         this.loadBusinessOwners();
-        setTimeout(() => this.success = null, 3000);
       },
       error: (err) => {
         this.handleError(err);
@@ -397,8 +387,6 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
     }
 
     this.loading = true;
-    this.error = null;
-    this.success = null;
 
     const request: CreateBusinessOwnerRequest = {
       email: this.form.value.email.trim()
@@ -406,14 +394,11 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
 
     this.http.post(`${this.apiConfig.getUsersUrl()}/business-owner`, request).subscribe({
       next: () => {
-        this.success = 'Propriétaire d\'entreprise créé avec succès !';
+        this.toast.success('Propriétaire d\'entreprise créé avec succès !');
         this.loading = false;
         this.form.reset();
         this.closeCreateModal();
         this.loadBusinessOwners();
-        setTimeout(() => {
-          this.success = null;
-        }, 3000);
       },
       error: (err) => {
         this.handleError(err);
@@ -423,10 +408,7 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
 
   private handleError(err: any): void {
     this.loading = false;
-    this.error = err.error?.message || 'Une erreur est survenue lors de la création.';
-    setTimeout(() => {
-      this.error = null;
-    }, 5000);
+    this.toast.error(extractErrorMessage(err, 'Une erreur est survenue'));
   }
 
   private markFormGroupTouched(formGroup: FormGroup): void {
@@ -456,15 +438,12 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
 
   openAssociateModal(owner: BusinessOwnerDto): void {
     if (!owner.businessId) {
-      this.error = 'Ce propriétaire n\'a pas d\'entreprise associée. Vous devez d\'abord compléter les 6 étapes de création d\'entreprise.';
-      setTimeout(() => this.error = null, 5000);
+      this.toast.error('Ce propriétaire n\'a pas d\'entreprise associée. Complétez d\'abord les 6 étapes de création d\'entreprise.');
       return;
     }
     this.selectedOwnerId = owner.id;
     this.showAssociateModal = true;
     this.associateForm.reset();
-    this.error = null;
-    this.success = null;
     // Attendre que la modale soit rendue avant de focus
     setTimeout(() => {
       const emailInput = document.querySelector('#associate-email-input') as HTMLInputElement;
@@ -478,8 +457,6 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
     this.showAssociateModal = false;
     this.selectedOwnerId = null;
     this.associateForm.reset();
-    this.error = null;
-    this.success = null;
   }
 
   onSubmitAssociate(): void {
@@ -489,8 +466,6 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
     }
 
     this.loading = true;
-    this.error = null;
-    this.success = null;
 
     const request: CreateAssociateRequest = {
       email: this.associateForm.value.email.trim()
@@ -503,33 +478,20 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
 
     this.http.post<UserDto>(`${this.apiConfig.getUsersUrl()}/${ownerId}/associate`, request).subscribe({
       next: (createdAssociate) => {
-        this.success = 'Associé créé avec succès !';
+        this.toast.success('Associé créé avec succès !');
         this.associateForm.reset();
         this.closeAssociateModal();
         
-        // Recharger directement les associés du propriétaire concerné
         if (ownerBusinessId && ownerId) {
-          // Attendre un peu pour s'assurer que le serveur a bien persisté les données
           setTimeout(() => {
             this.loadAssociates(ownerBusinessId, ownerId).then(() => {
               this.loading = false;
-              setTimeout(() => {
-                this.success = null;
-              }, 3000);
             }).catch(() => {
-              // En cas d'erreur, recharger tous les propriétaires
               this.loadBusinessOwners();
-              setTimeout(() => {
-                this.success = null;
-              }, 3000);
             });
           }, 500);
         } else {
-          // Si on n'a pas le businessId, recharger tous les propriétaires
           this.loadBusinessOwners();
-          setTimeout(() => {
-            this.success = null;
-          }, 3000);
         }
       },
       error: (err) => {
@@ -563,8 +525,6 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
     }
 
     this.loading = true;
-    this.error = null;
-    this.success = null;
     
     const action = associate.enabled 
       ? this.http.patch(`${this.apiConfig.getUsersUrl()}/${associate.id}/disable`, {})
@@ -572,17 +532,12 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
 
     action.subscribe({
       next: () => {
-        this.success = `Associé ${associate.enabled ? 'désactivé' : 'activé'} avec succès`;
+        this.toast.success(`Associé ${associate.enabled ? 'désactivé' : 'activé'} avec succès`);
         this.loading = false;
-        // Recharger les associés du propriétaire après un court délai
         const owner = this.businessOwners.find(o => o.id === ownerId);
         const businessId = owner?.businessId;
         if (businessId) {
-          setTimeout(() => {
-            this.loadAssociates(businessId, ownerId).then(() => {
-              setTimeout(() => this.success = null, 3000);
-            });
-          }, 500);
+          setTimeout(() => this.loadAssociates(businessId, ownerId), 500);
         }
       },
       error: (err) => {
@@ -597,22 +552,15 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
     }
 
     this.loading = true;
-    this.error = null;
-    this.success = null;
     
     this.http.delete(`${this.apiConfig.getUsersUrl()}/${associate.id}/associate`).subscribe({
       next: () => {
-        this.success = 'Associé retiré avec succès';
+        this.toast.success('Associé retiré avec succès');
         this.loading = false;
-        // Recharger les associés du propriétaire après un court délai
         const owner = this.businessOwners.find(o => o.id === ownerId);
         const businessId = owner?.businessId;
         if (businessId) {
-          setTimeout(() => {
-            this.loadAssociates(businessId, ownerId).then(() => {
-              setTimeout(() => this.success = null, 3000);
-            });
-          }, 500);
+          setTimeout(() => this.loadAssociates(businessId, ownerId), 500);
         }
       },
       error: (err) => {

@@ -17,6 +17,8 @@ import {
 } from '../../../../core/models/product.model';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
+import { ToastService } from '../../../../core/services/toast.service';
+import { extractErrorMessage } from '../../../../core/utils/error.utils';
 import { getBusinessMenuItems } from '../business-menu.const';
 import { UserAvatarComponent } from '../../../../shared/components/user-avatar/user-avatar.component';
 
@@ -47,6 +49,7 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly dbService = inject(IndexedDbService);
   private readonly syncService = inject(SyncService);
+  private readonly toast = inject(ToastService);
   private syncSub?: Subscription;
 
   user: UserDto | null = null;
@@ -59,8 +62,6 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
   productSearch = '';
   loading = true;
   submitting = false;
-  error: string | null = null;
-  success: string | null = null;
   activeMenu = 'ventes';
   sidebarOpen = false;
   availableStocks: Map<string, number> = new Map();
@@ -257,18 +258,16 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
     for (const line of this.cart) {
       const product = this.products.find(p => p.id === line.productId);
       if (!product) {
-        this.error = `Produit ${line.productName} introuvable.`;
+        this.toast.error(`Produit ${line.productName} introuvable.`);
         return;
       }
       const availableStock = this.getAvailableStockForProduct(product.id);
       if (line.quantity > availableStock) {
-        this.error = `Stock insuffisant pour ${line.productName}. Stock disponible: ${availableStock}`;
+        this.toast.error(`Stock insuffisant pour ${line.productName}. Stock disponible: ${availableStock}`);
         return;
       }
     }
     
-    this.error = null;
-    this.success = null;
     this.submitting = true;
     const body: SaleCreateRequest = {
       cashierId: this.user.id,
@@ -279,7 +278,7 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
       next: async (result) => {
         this.cart = [];
         if (isPendingResponse(result)) {
-          this.success = 'Vente enregistrée localement. Elle sera synchronisée à la reconnexion.';
+          this.toast.success('Vente enregistrée localement. Elle sera synchronisée à la reconnexion.');
           const requestId = result.requestId;
           for (const line of body.items) {
             const movementId = `stock-${requestId}-${line.productId}`;
@@ -300,7 +299,7 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
             : null;
           await this.navigateToReceipt(saleForReceipt);
         } else {
-          this.success = 'Vente enregistrée.';
+          this.toast.success('Vente enregistrée.');
           await this.navigateToReceipt(result as SaleDto);
         }
         await this.loadProducts();
@@ -308,7 +307,7 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
         this.submitting = false;
       },
       error: (err) => {
-        this.error = err.error?.message ?? 'Impossible d\'enregistrer la vente (vérifiez le stock).';
+        this.toast.error(extractErrorMessage(err, 'Impossible d\'enregistrer la vente (vérifiez le stock).'));
         this.submitting = false;
       }
     });

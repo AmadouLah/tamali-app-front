@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService, UserDto } from '../../../../core/services/auth.service';
+import { ToastService } from '../../../../core/services/toast.service';
+import { extractErrorMessage } from '../../../../core/utils/error.utils';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
 import { getBusinessMenuItems } from '../business-menu.const';
@@ -26,14 +28,13 @@ export class BusinessProfileComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly toast = inject(ToastService);
 
   user: UserDto | null = null;
   form!: FormGroup;
   identityForm!: FormGroup;
   loading = false;
   loadingIdentity = false;
-  error: string | null = null;
-  success: string | null = null;
   activeMenu = 'profil';
   sidebarOpen = false;
 
@@ -64,16 +65,14 @@ export class BusinessProfileComponent implements OnInit {
     const first = (this.identityForm.value.firstname ?? '').trim();
     const last = (this.identityForm.value.lastname ?? '').trim();
     this.loadingIdentity = true;
-    this.error = null;
-    this.success = null;
     this.authService.updateUserProfile(first, last).subscribe({
       next: () => {
         this.user = this.authService.getUser();
-        this.success = 'Profil mis à jour.';
+        this.toast.success('Profil mis à jour.');
         this.loadingIdentity = false;
       },
       error: (err) => {
-        this.error = err.error?.message ?? 'Erreur lors de la mise à jour.';
+        this.toast.error(extractErrorMessage(err, 'Erreur lors de la mise à jour.'));
         this.loadingIdentity = false;
       }
     });
@@ -82,20 +81,18 @@ export class BusinessProfileComponent implements OnInit {
   submit(): void {
     if (this.form.invalid || this.loading || !this.user?.id) return;
     this.loading = true;
-    this.error = null;
-    this.success = null;
     this.authService.changePassword(
       this.user.id,
       this.form.value.currentPassword,
       this.form.value.newPassword
     ).subscribe({
       next: () => {
-        this.success = 'Mot de passe modifié.';
+        this.toast.success('Mot de passe modifié.');
         this.form.reset();
         this.loading = false;
       },
       error: (err) => {
-        this.error = err.error?.message ?? 'Erreur lors du changement.';
+        this.toast.error(extractErrorMessage(err, 'Erreur lors du changement.'));
         this.loading = false;
       }
     });

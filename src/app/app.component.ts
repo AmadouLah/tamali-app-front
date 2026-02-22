@@ -4,10 +4,11 @@ import { IndexedDbService } from './core/services/indexed-db.service';
 import { SyncService } from './core/services/sync.service';
 import { NetworkService } from './core/services/network.service';
 import { OfflineIndicatorComponent } from './shared/components/offline-indicator/offline-indicator.component';
+import { ToastComponent } from './shared/components/toast/toast.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, OfflineIndicatorComponent],
+  imports: [RouterOutlet, OfflineIndicatorComponent, ToastComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })

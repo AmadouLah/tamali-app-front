@@ -5,6 +5,8 @@ import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService, UserDto } from '../../../../core/services/auth.service';
 import { ApiConfigService } from '../../../../core/services/api-config.service';
+import { ToastService } from '../../../../core/services/toast.service';
+import { extractErrorMessage } from '../../../../core/utils/error.utils';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent, MenuItem } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
 
@@ -21,13 +23,12 @@ export class AccountComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly apiConfig = inject(ApiConfigService);
+  private readonly toast = inject(ToastService);
 
   user: UserDto | null = null;
   passwordForm!: FormGroup;
   loading = false;
   loadingPassword = false;
-  error: string | null = null;
-  success: string | null = null;
   showDisableConfirm = false;
   showDeleteConfirm = false;
   activeMenu: string = 'mon compte';
@@ -62,19 +63,18 @@ export class AccountComponent implements OnInit {
   changePassword(): void {
     if (this.passwordForm.invalid || this.loadingPassword || !this.user?.id) return;
     this.loadingPassword = true;
-    this.error = null;
     this.authService.changePassword(
       this.user.id,
       this.passwordForm.value.currentPassword,
       this.passwordForm.value.newPassword
     ).subscribe({
       next: () => {
-        this.success = 'Mot de passe modifié.';
+        this.toast.success('Mot de passe modifié.');
         this.passwordForm.reset();
         this.loadingPassword = false;
       },
       error: (err) => {
-        this.error = err.error?.message ?? 'Erreur lors du changement de mot de passe.';
+        this.toast.error(extractErrorMessage(err, 'Erreur lors du changement de mot de passe.'));
         this.loadingPassword = false;
       }
     });
@@ -84,12 +84,10 @@ export class AccountComponent implements OnInit {
     if (!this.user) return;
     
     this.loading = true;
-    this.error = null;
-    this.success = null;
 
     this.http.patch<UserDto>(`${this.apiConfig.getUsersUrl()}/${this.user.id}/disable`, {}).subscribe({
       next: () => {
-        this.success = 'Votre compte a été désactivé avec succès.';
+        this.toast.success('Votre compte a été désactivé avec succès.');
         this.loading = false;
         this.showDisableConfirm = false;
         setTimeout(() => {
@@ -98,7 +96,7 @@ export class AccountComponent implements OnInit {
         }, 2000);
       },
       error: (err) => {
-        this.error = err.error?.message || 'Erreur lors de la désactivation du compte.';
+        this.toast.error(err.error?.message || 'Erreur lors de la désactivation du compte.');
         this.loading = false;
         this.showDisableConfirm = false;
       }
@@ -109,12 +107,10 @@ export class AccountComponent implements OnInit {
     if (!this.user) return;
     
     this.loading = true;
-    this.error = null;
-    this.success = null;
 
     this.http.delete(`${this.apiConfig.getUsersUrl()}/${this.user.id}`).subscribe({
       next: () => {
-        this.success = 'Votre compte a été supprimé avec succès.';
+        this.toast.success('Votre compte a été supprimé avec succès.');
         this.loading = false;
         this.showDeleteConfirm = false;
         setTimeout(() => {
@@ -123,7 +119,7 @@ export class AccountComponent implements OnInit {
         }, 2000);
       },
       error: (err) => {
-        this.error = err.error?.message || 'Erreur lors de la suppression du compte.';
+        this.toast.error(err.error?.message || 'Erreur lors de la suppression du compte.');
         this.loading = false;
         this.showDeleteConfirm = false;
       }

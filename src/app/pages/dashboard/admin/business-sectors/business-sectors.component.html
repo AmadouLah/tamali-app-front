@@ -41,19 +41,6 @@
 
     <!-- Content -->
     <main class="dashboard-content">
-      <!-- Messages -->
-    @if (success) {
-      <app-glass-card variant="strong" class="mb-6 p-4 bg-green-500/20 border-green-500/50">
-        <p class="text-green-300">{{ success }}</p>
-      </app-glass-card>
-    }
-
-    @if (error) {
-      <app-glass-card variant="strong" class="mb-6 p-4 bg-red-500/20 border-red-500/50">
-        <p class="text-red-300">{{ error }}</p>
-      </app-glass-card>
-    }
-
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
       <!-- Formulaire de création -->
       <app-glass-card variant="strong" class="p-4 sm:p-6">

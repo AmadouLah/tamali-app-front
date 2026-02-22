@@ -12,6 +12,8 @@ import {
 } from '../../../../core/models/product.model';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
+import { ToastService } from '../../../../core/services/toast.service';
+import { extractErrorMessage } from '../../../../core/utils/error.utils';
 import { getBusinessMenuItems } from '../business-menu.const';
 import { UserAvatarComponent } from '../../../../shared/components/user-avatar/user-avatar.component';
 
@@ -35,6 +37,7 @@ export class BusinessStockComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly dbService = inject(IndexedDbService);
+  private readonly toast = inject(ToastService);
 
   user: UserDto | null = null;
   businessId: string | null = null;
@@ -44,8 +47,6 @@ export class BusinessStockComponent implements OnInit {
   stockProductId: string | null = null;
   loading = true;
   submitting = false;
-  error: string | null = null;
-  success: string | null = null;
   activeMenu = 'stock';
   sidebarOpen = false;
 
@@ -110,7 +111,6 @@ export class BusinessStockComponent implements OnInit {
     } else {
       this.stockForm.get('type')?.enable();
     }
-    this.error = null;
   }
 
   closeStock(): void {
@@ -120,7 +120,6 @@ export class BusinessStockComponent implements OnInit {
   async submitStock(): Promise<void> {
     if (!this.stockProductId || this.stockForm.invalid || this.submitting) return;
     const v = this.stockForm.getRawValue() as StockMovementCreateRequest;
-    this.error = null;
     this.submitting = true;
     const type = this.isEntryOnly ? 'IN' : v.type;
     const body = { quantity: Math.abs(v.quantity), type };
@@ -129,7 +128,7 @@ export class BusinessStockComponent implements OnInit {
     if (type === 'OUT' || type === 'SALE') {
       const availableStock = this.getAvailableStockForProduct(this.stockProductId);
       if (body.quantity > availableStock) {
-        this.error = `Stock insuffisant. Stock disponible: ${availableStock}`;
+        this.toast.error(`Stock insuffisant. Stock disponible: ${availableStock}`);
         this.submitting = false;
         return;
       }
@@ -138,17 +137,17 @@ export class BusinessStockComponent implements OnInit {
     this.businessOps.postStockMovement(this.stockProductId, body).subscribe({
       next: async (result) => {
         if (isPendingResponse(result)) {
-          this.success = 'Stock mis à jour localement. Synchronisation à la reconnexion.';
+          this.toast.success('Stock mis à jour localement. Synchronisation à la reconnexion.');
           await this.updateAvailableStocks();
         } else {
-          this.success = 'Stock mis à jour.';
+          this.toast.success('Stock mis à jour.');
         }
         await this.loadProducts();
         this.closeStock();
         this.submitting = false;
       },
       error: (err) => {
-        this.error = err.error?.message ?? 'Stock insuffisant ou erreur.';
+        this.toast.error(extractErrorMessage(err, 'Stock insuffisant ou erreur.'));
         this.submitting = false;
       }
     });

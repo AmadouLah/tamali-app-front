@@ -1,0 +1,47 @@
+.toast-container {
+  @apply fixed top-4 right-4 z-[9999];
+  @apply flex flex-col gap-2 max-w-[min(420px,calc(100vw-2rem))];
+  pointer-events: none;
+}
+
+.toast {
+  @apply flex items-start gap-3 px-4 py-3 rounded-lg;
+  @apply backdrop-blur-md border shadow-lg;
+  @apply pointer-events-auto;
+  animation: toastIn 0.3s ease-out;
+}
+
+.toast-success {
+  @apply bg-green-900/40 border-green-500/50 text-green-100;
+}
+
+.toast-error {
+  @apply bg-red-900/40 border-red-500/50 text-red-100;
+}
+
+.toast-info {
+  @apply bg-blue-900/40 border-blue-500/50 text-blue-100;
+}
+
+.toast-icon {
+  @apply w-5 h-5 mt-0.5;
+}
+
+.toast-message {
+  @apply flex-1 text-sm font-medium leading-snug;
+}
+
+.toast-close {
+  @apply p-0.5 -mr-1 -mt-1 rounded hover:bg-white/10 transition-colors;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

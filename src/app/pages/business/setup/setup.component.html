@@ -26,13 +26,6 @@
         </div>
       </div>
 
-      <!-- Messages -->
-      @if (error) {
-        <app-glass-card variant="strong" class="mb-6 p-4 bg-red-500/20 border-red-500/50">
-          <p class="text-red-300">{{ error }}</p>
-        </app-glass-card>
-      }
-
       <!-- Step 1: Nom et secteur -->
       @if (currentStep === 1) {
         <app-glass-card variant="strong" class="p-8">

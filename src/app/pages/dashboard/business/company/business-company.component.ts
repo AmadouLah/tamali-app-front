@@ -17,6 +17,8 @@ import {
 } from '../../../../core/models/business.model';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
+import { ToastService } from '../../../../core/services/toast.service';
+import { extractErrorMessage } from '../../../../core/utils/error.utils';
 import { getBusinessMenuItems } from '../business-menu.const';
 import { UserAvatarComponent } from '../../../../shared/components/user-avatar/user-avatar.component';
 
@@ -41,6 +43,7 @@ export class BusinessCompanyComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly apiConfig = inject(ApiConfigService);
   private readonly sectorStore = inject(BusinessSectorStoreService);
+  private readonly toast = inject(ToastService);
   private sectorStoreSub?: Subscription;
 
   user = this.authService.getUser();
@@ -49,8 +52,6 @@ export class BusinessCompanyComponent implements OnInit, OnDestroy {
   templates: ReceiptTemplateDto[] = [];
   form!: FormGroup;
   loading = false;
-  error: string | null = null;
-  success: string | null = null;
   activeMenu = 'mon entreprise';
   sidebarOpen = false;
   logoFile: File | null = null;
@@ -185,8 +186,6 @@ export class BusinessCompanyComponent implements OnInit, OnDestroy {
       return;
     }
     this.loading = true;
-    this.error = null;
-    this.success = null;
 
     const v = this.form.value;
     const base = `${this.apiConfig.getBusinessesUrl()}/${this.user.businessId}/step`;
@@ -228,12 +227,12 @@ export class BusinessCompanyComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.business = { ...this.business, ...this.form.value };
-          this.success = 'Entreprise mise à jour.';
+          this.toast.success('Entreprise mise à jour.');
           this.loading = false;
           this.logoFile = null;
         },
         error: (err) => {
-          this.error = err.error?.message ?? 'Erreur lors de la mise à jour.';
+          this.toast.error(extractErrorMessage(err, 'Erreur lors de la mise à jour.'));
           this.loading = false;
         }
       });

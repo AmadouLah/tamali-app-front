@@ -6,6 +6,8 @@ import { Router, RouterModule } from '@angular/router';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { ApiConfigService } from '../../../../core/services/api-config.service';
 import { BusinessSectorStoreService } from '../../../../core/services/business-sector-store.service';
+import { ToastService } from '../../../../core/services/toast.service';
+import { extractErrorMessage } from '../../../../core/utils/error.utils';
 import { AdminSidebarComponent, MenuItem } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
 
 interface BusinessSectorDto {
@@ -40,6 +42,7 @@ export class BusinessSectorsComponent implements OnInit {
   readonly router = inject(Router);
   private readonly apiConfig = inject(ApiConfigService);
   private readonly sectorStore = inject(BusinessSectorStoreService);
+  private readonly toast = inject(ToastService);
 
   sectors: BusinessSectorDto[] = [];
   form!: FormGroup;
@@ -47,8 +50,6 @@ export class BusinessSectorsComponent implements OnInit {
   editingId: string | null = null;
   sidebarOpen = false;
   loading = false;
-  error: string | null = null;
-  success: string | null = null;
   activeMenu: string = 'secteurs d\'activité';
 
   menuItems: MenuItem[] = [
@@ -107,8 +108,6 @@ export class BusinessSectorsComponent implements OnInit {
     }
 
     this.loading = true;
-    this.error = null;
-    this.success = null;
 
     const request: BusinessSectorCreateRequest = {
       name: this.form.value.name.trim(),
@@ -117,10 +116,9 @@ export class BusinessSectorsComponent implements OnInit {
 
     this.http.post<BusinessSectorDto>(this.apiConfig.getBusinessSectorsUrl(), request).subscribe({
       next: () => {
-        this.success = 'Secteur d\'activité créé avec succès';
+        this.toast.success('Secteur d\'activité créé avec succès');
         this.form.reset();
         this.loadSectors();
-        setTimeout(() => this.success = null, 3000);
       },
       error: (err) => {
         this.handleError(err);
@@ -149,8 +147,6 @@ export class BusinessSectorsComponent implements OnInit {
     }
 
     this.loading = true;
-    this.error = null;
-    this.success = null;
 
     const request: BusinessSectorUpdateRequest = {
       name: this.editForm.value.name.trim(),
@@ -161,10 +157,9 @@ export class BusinessSectorsComponent implements OnInit {
     this.http.patch<BusinessSectorDto>(`${this.apiConfig.getBusinessSectorsUrl()}/${sectorId}`, request).subscribe({
       next: () => {
         this.sectorStore.updateSector(sectorId, request.name || '', request.description, request.active);
-        this.success = 'Secteur d\'activité mis à jour avec succès';
+        this.toast.success('Secteur d\'activité mis à jour avec succès');
         this.editingId = null;
         this.loadSectors();
-        setTimeout(() => this.success = null, 3000);
       },
       error: (err) => {
         this.handleError(err);
@@ -178,13 +173,11 @@ export class BusinessSectorsComponent implements OnInit {
     }
 
     this.loading = true;
-    this.error = null;
 
     this.http.delete(`${this.apiConfig.getBusinessSectorsUrl()}/${sectorId}`).subscribe({
       next: () => {
-        this.success = 'Secteur d\'activité supprimé avec succès';
+        this.toast.success('Secteur d\'activité supprimé avec succès');
         this.loadSectors();
-        setTimeout(() => this.success = null, 3000);
       },
       error: (err) => {
         this.handleError(err);
@@ -216,13 +209,6 @@ export class BusinessSectorsComponent implements OnInit {
 
   private handleError(error: any): void {
     this.loading = false;
-    if (error.error?.message) {
-      this.error = error.error.message;
-    } else if (error.message) {
-      this.error = error.message;
-    } else {
-      this.error = 'Une erreur est survenue';
-    }
-    setTimeout(() => this.error = null, 5000);
+    this.toast.error(extractErrorMessage(error, 'Une erreur est survenue'));
   }
 }

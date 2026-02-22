@@ -6,6 +6,8 @@ import { HttpClient } from '@angular/common/http';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AuthService } from '../../../core/services/auth.service';
 import { ApiConfigService } from '../../../core/services/api-config.service';
+import { ToastService } from '../../../core/services/toast.service';
+import { extractErrorMessage } from '../../../core/utils/error.utils';
 import { GlassCardComponent } from '../../../shared/components/glass-card/glass-card.component';
 
 interface BusinessSectorDto {
@@ -58,13 +60,13 @@ export class SetupComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly apiConfig = inject(ApiConfigService);
+  private readonly toast = inject(ToastService);
 
   currentStep = 1;
   totalSteps = 6;
   userId: string | null = null;
   businessId: string | null = null;
   loading = false;
-  error: string | null = null;
 
   sectors: BusinessSectorDto[] = [];
   templates: ReceiptTemplateDto[] = [];
@@ -97,7 +99,7 @@ export class SetupComponent implements OnInit {
     this.route.queryParams.subscribe(params => {
       this.userId = params['userId'] || this.authService.getUser()?.id || null;
       if (!this.userId) {
-        this.error = 'Identifiant utilisateur manquant.';
+        this.toast.error('Identifiant utilisateur manquant.');
         return;
       }
       this.loadUserBusiness();
@@ -224,7 +226,6 @@ export class SetupComponent implements OnInit {
     }
 
     this.loading = true;
-    this.error = null;
 
     try {
       if (!this.businessId) {
@@ -263,7 +264,6 @@ export class SetupComponent implements OnInit {
     }
 
     this.loading = true;
-    this.error = null;
 
     try {
       await this.http.patch(`${this.apiConfig.getBusinessesUrl()}/${this.businessId}/step`, {
@@ -285,7 +285,6 @@ export class SetupComponent implements OnInit {
     if (!this.businessId) return;
 
     this.loading = true;
-    this.error = null;
 
     try {
       await this.http.patch(`${this.apiConfig.getBusinessesUrl()}/${this.businessId}/step`, {
@@ -309,7 +308,6 @@ export class SetupComponent implements OnInit {
     }
 
     this.loading = true;
-    this.error = null;
 
     try {
       await this.http.patch(`${this.apiConfig.getBusinessesUrl()}/${this.businessId}/step`, {
@@ -344,7 +342,6 @@ export class SetupComponent implements OnInit {
     if (!this.businessId) return;
 
     this.loading = true;
-    this.error = null;
 
     try {
       let logoUrl: string | null = null;
@@ -399,12 +396,11 @@ export class SetupComponent implements OnInit {
 
   async onStep6Submit(): Promise<void> {
     if (!this.businessId || !this.selectedTemplate) {
-      this.error = 'Veuillez sélectionner un template de reçu.';
+      this.toast.error('Veuillez sélectionner un template de reçu.');
       return;
     }
 
     this.loading = true;
-    this.error = null;
 
     try {
       await this.http.patch(`${this.apiConfig.getBusinessesUrl()}/${this.businessId}/step`, {
@@ -469,12 +465,6 @@ export class SetupComponent implements OnInit {
 
   private handleError(error: any): void {
     this.loading = false;
-    if (error.error?.message) {
-      this.error = error.error.message;
-    } else if (error.message) {
-      this.error = error.message;
-    } else {
-      this.error = 'Une erreur est survenue.';
-    }
+    this.toast.error(extractErrorMessage(error, 'Une erreur est survenue.'));
   }
 }

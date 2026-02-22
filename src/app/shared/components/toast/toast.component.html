@@ -1,0 +1,18 @@
+<div class="toast-container" aria-live="polite">
+  @for (t of toasts$ | async; track t.id) {
+    <div
+      class="toast toast-{{ t.type }}"
+      [attr.role]="t.type === 'error' ? 'alert' : 'status'"
+    >
+      <svg class="toast-icon shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="iconFor(t.type)"></path>
+      </svg>
+      <span class="toast-message">{{ t.message }}</span>
+      <button type="button" class="toast-close" (click)="remove(t.id)" aria-label="Fermer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+  }
+</div>

@@ -16,8 +16,9 @@ import {
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
 import { getBusinessMenuItems } from '../business-menu.const';
-import { UserAvatarComponent } from '../../../../shared/components/user-avatar/user-avatar.component';
+import { ToastService } from '../../../../core/services/toast.service';
 import { extractErrorMessage } from '../../../../core/utils/error.utils';
+import { UserAvatarComponent } from '../../../../shared/components/user-avatar/user-avatar.component';
 
 @Component({
   selector: 'app-business-products',
@@ -41,6 +42,7 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly dbService = inject(IndexedDbService);
+  private readonly toast = inject(ToastService);
   private categoryStoreSub?: Subscription;
 
   user: UserDto | null = null;
@@ -53,8 +55,6 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
   editingId: string | null = null;
   loading = true;
   submitting = false;
-  error: string | null = null;
-  success: string | null = null;
   activeMenu = 'produits';
   sidebarOpen = false;
   showAddModal = false;
@@ -290,7 +290,6 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
   openAdd(): void {
     this.form.reset({ name: '', reference: '', categoryId: '', unitPrice: 0, purchasePrice: 0, taxable: false, initialQuantity: 0 });
     this.showAddModal = true;
-    this.error = null;
   }
 
   closeAdd(): void {
@@ -299,7 +298,6 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
 
   async submitAdd(): Promise<void> {
     if (!this.businessId || this.form.invalid || this.submitting) return;
-    this.error = null;
     this.submitting = true;
     const v = this.form.value as ProductCreateRequest;
     const name = (v.name || '').trim();
@@ -307,7 +305,7 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
       .filter(p => (p as ProductDto & { operation?: string }).operation !== 'DELETE')
       .map(p => (p.name || '').trim().toLowerCase());
     if (existingNames.includes(name.toLowerCase())) {
-      this.error = 'Un produit avec ce nom existe déjà.';
+      this.toast.error('Un produit avec ce nom existe déjà.');
       this.submitting = false;
       return;
     }
@@ -323,17 +321,17 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
     this.businessOps.createProduct(this.businessId, body).subscribe({
       next: async (result) => {
         if (isPendingResponse(result)) {
-          this.success = 'Produit ajouté localement. Synchronisation à la reconnexion.';
+          this.toast.success('Produit ajouté localement. Synchronisation à la reconnexion.');
           await this.loadLocalProducts();
         } else {
-          this.success = 'Produit ajouté.';
+          this.toast.success('Produit ajouté.');
         }
         await this.loadProducts();
         this.closeAdd();
         this.submitting = false;
       },
       error: (err) => {
-        this.error = extractErrorMessage(err, 'Erreur lors de l\'ajout.');
+        this.toast.error(extractErrorMessage(err, 'Erreur lors de l\'ajout.'));
         this.submitting = false;
       }
     });
@@ -352,7 +350,6 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
       purchasePrice: p.purchasePrice ?? 0,
       taxable: p.taxable
     }, { emitEvent: false });
-    this.error = null;
   }
 
   cancelEdit(): void {
@@ -361,7 +358,6 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
 
   async submitEdit(): Promise<void> {
     if (!this.editingId || this.editForm.invalid || this.submitting) return;
-    this.error = null;
     this.submitting = true;
     const v = this.editForm.value as ProductUpdateRequest;
     const body = {
@@ -375,17 +371,17 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
     this.businessOps.updateProduct(this.editingId, body).subscribe({
       next: async (result) => {
         if (isPendingResponse(result)) {
-          this.success = 'Produit mis à jour localement. Synchronisation à la reconnexion.';
+          this.toast.success('Produit mis à jour localement. Synchronisation à la reconnexion.');
           await this.loadLocalProducts();
         } else {
-          this.success = 'Produit mis à jour.';
+          this.toast.success('Produit mis à jour.');
         }
         await this.loadProducts();
         this.editingId = null;
         this.submitting = false;
       },
       error: (err) => {
-        this.error = extractErrorMessage(err, 'Erreur lors de la mise à jour.');
+        this.toast.error(extractErrorMessage(err, 'Erreur lors de la mise à jour.'));
         this.submitting = false;
       }
     });
@@ -397,15 +393,15 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
     this.businessOps.deleteProduct(p.id).subscribe({
       next: async (result) => {
         if (isPendingResponse(result)) {
-          this.success = 'Produit marqué pour suppression. Synchronisation à la reconnexion.';
+          this.toast.success('Produit marqué pour suppression. Synchronisation à la reconnexion.');
           await this.loadLocalProducts();
         } else {
-          this.success = 'Produit supprimé.';
+          this.toast.success('Produit supprimé.');
         }
         await this.loadProducts();
       },
       error: (err) => {
-        this.error = extractErrorMessage(err, 'Erreur lors de la suppression.');
+        this.toast.error(extractErrorMessage(err, 'Erreur lors de la suppression.'));
       }
     });
   }
