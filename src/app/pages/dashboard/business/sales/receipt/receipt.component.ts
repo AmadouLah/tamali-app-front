@@ -41,7 +41,7 @@ export class ReceiptComponent implements OnInit {
         address: business.address,
         phone: business.phone,
         email: business.email,
-        commerceRegisterNumber: business.commerceRegisterNumber,
+        commerceRegisterNumber: business.commerceRegisterNumber ?? (business as any).commerce_register_number ?? '',
         logoUrl: business.logoUrl
       },
       sale: {
@@ -77,7 +77,9 @@ export class ReceiptComponent implements OnInit {
     const lines = (sale.items ?? [])
       .map((i: any) => `- ${i.productName ?? 'Produit'} x${i.quantity} : ${(i.price ?? 0) * (i.quantity ?? 0)} FCFA`)
       .join('\n');
-    const text = `${business.name ?? ''}\nReçu #${sale.id}\n${sale.saleDate ?? ''}\n\n${lines}\n\nTotal: ${sale.totalAmount ?? 0} FCFA`;
+    const commerceRegister = business.commerceRegisterNumber ?? (business as any).commerce_register_number;
+    const regLine = commerceRegister ? `Registre de commerce: ${commerceRegister}\n` : '';
+    const text = `${business.name ?? ''}\n${regLine}Reçu #${sale.id}\n${sale.saleDate ?? ''}\n\n${lines}\n\nTotal: ${sale.totalAmount ?? 0} FCFA`;
 
     if (navigator.share) {
       try {

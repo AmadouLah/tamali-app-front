@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { AuthService, UserDto } from '../../../core/services/auth.service';
 import { BusinessOperationsService } from '../../../core/services/business-operations.service';
 import { GlassCardComponent } from '../../../shared/components/glass-card/glass-card.component';
@@ -14,6 +15,9 @@ interface BusinessDto {
   name?: string;
   address?: string;
   phone?: string;
+  email?: string;
+  commerceRegisterNumber?: string;
+  logoUrl?: string;
 }
 
 interface SaleDto {
@@ -130,12 +134,15 @@ export class BusinessDashboardComponent implements OnInit {
   }
 
   generateReceipt(sale: SaleDto & { items?: Array<{ productId: string; productName?: string; quantity: number; price: number }> }): void {
-    this.router.navigate(['/dashboard/business/sales/receipt'], {
-      state: {
-        sale,
-        business: this.business ?? {},
-        cashierName: this.getDisplayName()
-      }
+    if (!this.user?.businessId) return;
+    firstValueFrom(this.businessOps.getBusiness(this.user.businessId)).then(business => {
+      this.router.navigate(['/dashboard/business/sales/receipt'], {
+        state: { sale, business: business ?? {}, cashierName: this.getDisplayName() }
+      });
+    }).catch(() => {
+      this.router.navigate(['/dashboard/business/sales/receipt'], {
+        state: { sale, business: this.business ?? {}, cashierName: this.getDisplayName() }
+      });
     });
   }
 

@@ -61,8 +61,9 @@ export class ReceiptBuilderService {
       ? `<div class="receipt-logo-wrap"><img src="${this.escapeAttr(b.logoUrl.trim())}" alt="Logo" class="receipt-logo" onerror="this.style.display='none';var f=this.nextElementSibling;if(f)f.style.display='flex'" /><div class="receipt-logo-fallback" style="display:none">${this.escapeHtml(initials)}</div></div>`
       : `<div class="receipt-logo-wrap"><div class="receipt-logo-fallback">${this.escapeHtml(initials)}</div></div>`;
 
-    const commerceRegisterHtml = b.commerceRegisterNumber?.trim()
-      ? `<p class="receipt-register">Registre de commerce : ${this.escapeHtml(b.commerceRegisterNumber.trim())}</p>`
+    const regNum = (b.commerceRegisterNumber ?? '').trim();
+    const commerceRegisterHtml = regNum
+      ? `<p class="receipt-register">Registre de commerce : ${this.escapeHtml(regNum)}</p>`
       : '';
 
     const itemsHtml = (s.items ?? [])
