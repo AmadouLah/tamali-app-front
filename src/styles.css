@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Toast : coin haut-droite de l'écran, hors du flux */
+.toast-overlay {
+  position: fixed !important;
+  top: 1rem !important;
+  right: 1rem !important;
+  bottom: auto !important;
+  left: auto !important;
+  z-index: 99999 !important;
+  pointer-events: none;
+}
+.toast-overlay app-toast {
+  pointer-events: auto;
+}
+
 @layer base {
   body {
     @apply bg-slate-900 text-white;
