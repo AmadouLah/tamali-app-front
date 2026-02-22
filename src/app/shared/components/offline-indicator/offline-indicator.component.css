@@ -1,5 +1,11 @@
+/* Bas-droite uniquement (les toasts sont en haut-droite) */
 .offline-indicator {
-  @apply fixed bottom-4 right-4 z-40;
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  top: auto;
+  left: auto;
+  z-index: 9999;
   @apply flex items-center gap-2 px-3 py-2 rounded-full;
   @apply bg-red-900/30 backdrop-blur-md border border-red-500/40;
   @apply shadow-lg;

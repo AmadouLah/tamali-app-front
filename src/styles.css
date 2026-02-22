@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Toast : coin haut-droite de l'écran, hors du flux */
+/* Toast : HAUT-droite uniquement (hors-ligne = bas-droite) */
 .toast-overlay {
   position: fixed !important;
   top: 1rem !important;
