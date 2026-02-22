@@ -2,11 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
 import { NetworkService } from './network.service';
 import { IndexedDbService } from './indexed-db.service';
-<<<<<<< HEAD
-import { Observable, firstValueFrom } from 'rxjs';
-=======
-import { Observable, firstValueFrom, timer, Subject } from 'rxjs';
->>>>>>> nouveaute
+import { Observable, firstValueFrom, Subject } from 'rxjs';
 import { timeout, retry, catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';
 
@@ -26,16 +22,11 @@ export class SyncService {
   private readonly http = inject(HttpClient);
   private readonly networkService = inject(NetworkService);
   private readonly dbService = inject(IndexedDbService);
-<<<<<<< HEAD
   private syncPromise: Promise<void> | null = null;
-  private readonly REQUEST_TIMEOUT = 10000;
-=======
-  private isSyncing = false;
 
   /** Émet à la fin de chaque synchronisation (succès ou échec) pour rafraîchir l'UI */
   readonly syncComplete$ = new Subject<void>();
-  private readonly REQUEST_TIMEOUT = 10000; // 10 secondes
->>>>>>> nouveaute
+  private readonly REQUEST_TIMEOUT = 10000;
   private readonly MAX_RETRIES = 3;
   private readonly RETRY_DELAY = 2000;
   private readonly CREATE_PRODUCT_REGEX = /\/businesses\/([^/]+)\/products$/;
@@ -59,6 +50,7 @@ export class SyncService {
       await this.syncPromise;
     } finally {
       this.syncPromise = null;
+      this.syncComplete$.next();
     }
   }
 
@@ -112,12 +104,6 @@ export class SyncService {
           await this.dbService.removePendingRequest(request.id);
         }
       }
-<<<<<<< HEAD
-=======
-    } finally {
-      this.isSyncing = false;
-      this.syncComplete$.next();
->>>>>>> nouveaute
     }
   }
 
