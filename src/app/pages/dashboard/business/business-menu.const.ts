@@ -12,7 +12,7 @@ const ALL_MENU_ITEMS: MenuItem[] = [
   { label: 'Profil', icon: 'user', route: '/dashboard/business/profile' }
 ];
 
-const ASSOCIATE_HIDDEN_ROUTES = ['/dashboard/business/categories', '/dashboard/business/company', '/dashboard/business/account'];
+const ASSOCIATE_HIDDEN_ROUTES = ['/dashboard/business', '/dashboard/business/categories', '/dashboard/business/company', '/dashboard/business/account'];
 
 export const BUSINESS_OWNER_MENU_ITEMS: MenuItem[] = ALL_MENU_ITEMS;
 

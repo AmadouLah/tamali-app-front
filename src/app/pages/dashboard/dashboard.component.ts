@@ -55,13 +55,10 @@ export class DashboardComponent implements OnInit {
         }
         break;
       case 'BUSINESS_ASSOCIATE':
-        // Les associés accèdent au même dashboard que les propriétaires
-        // Ils n'ont pas besoin de créer une entreprise car ils sont déjà liés à une
         if (!user.businessId) {
-          // Cas improbable : un associé sans entreprise (erreur de configuration)
           this.router.navigate(['/auth/login']);
         } else {
-          this.router.navigate(['/dashboard/business']);
+          this.router.navigate(['/dashboard/business/sales']);
         }
         break;
       default:

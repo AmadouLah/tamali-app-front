@@ -93,6 +93,10 @@ export class BusinessDashboardComponent implements OnInit {
       }
       return;
     }
+    if (!this.authService.isBusinessOwner(this.user)) {
+      this.router.navigate(['/dashboard/business/sales']);
+      return;
+    }
     this.loadBusiness();
   }
 
