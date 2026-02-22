@@ -98,7 +98,7 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
       reference: [''],
       categoryId: [''],
       unitPrice: [0, [Validators.required, Validators.min(0)]],
-      purchasePrice: [0, [Validators.min(0)]],
+      purchasePrice: [0, [Validators.required, Validators.min(0)]],
       taxable: [false]
     });
     
@@ -133,7 +133,7 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
       reference: [''],
       categoryId: [''],
       unitPrice: [0, [Validators.required, Validators.min(0)]],
-      purchasePrice: [0, [Validators.min(0)]],
+      purchasePrice: [0, [Validators.required, Validators.min(0)]],
       taxable: [false]
     });
     
