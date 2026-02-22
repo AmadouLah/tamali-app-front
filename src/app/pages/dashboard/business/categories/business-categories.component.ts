@@ -128,12 +128,11 @@ export class BusinessCategoriesComponent implements OnInit {
     if (!this.businessId) return;
     
     try {
-      // Charger toutes les entités locales de type category (même sans businessId)
+      // Charger les entités locales : uniquement celles du business actuel (exclure les données orphelines)
       const allLocalEntities = await this.dbService.getLocalEntities('category', '');
-      // Filtrer celles qui appartiennent à ce businessId ou qui n'ont pas de businessId (seront vérifiées par ID)
-      const localEntities = allLocalEntities.filter(le => 
-        !le.businessId || le.businessId === this.businessId || 
-        this.categories.some(c => c.id === le.entityId)
+      const localEntities = allLocalEntities.filter(le =>
+        le.businessId === this.businessId ||
+        (!le.businessId && this.categories.some(c => c.id === le.entityId))
       );
       
       this.localCategories = localEntities.map(le => {

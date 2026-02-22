@@ -210,11 +210,11 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
           } as ProductDto & { isLocal?: boolean; operation?: string };
         });
       
-      // Charger les modifications/suppressions de produits
+      // Charger les modifications/suppressions : uniquement celles du business actuel (exclure les données orphelines)
       const allLocalEntities = await this.dbService.getLocalEntities('product', '');
-      const localEntities = allLocalEntities.filter(le => 
-        !le.businessId || le.businessId === this.businessId || 
-        this.products.some(p => p.id === le.entityId)
+      const localEntities = allLocalEntities.filter(le =>
+        le.businessId === this.businessId ||
+        (!le.businessId && this.products.some(p => p.id === le.entityId))
       );
       
       const modifiedProducts = localEntities
