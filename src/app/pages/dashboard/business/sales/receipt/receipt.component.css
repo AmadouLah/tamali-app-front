@@ -1,9 +1,23 @@
 .receipt-page {
   background: linear-gradient(135deg, rgb(15 23 42 / 0.95) 0%, rgb(88 28 135 / 0.8) 50%, rgb(15 23 42 / 0.95) 100%);
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
+.receipt-actions {
+  flex-shrink: 0;
+}
+
+.receipt-container {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .receipt-wrapper {
-  max-width: 420px;
+  max-width: min(420px, 95vw);
   margin: 0 auto;
   background: #fff;
   color: #1e293b;
@@ -11,6 +25,7 @@
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   overflow: hidden;
+  width: 100%;
 }
 
 .receipt-wrapper :deep(.receipt) {
@@ -24,15 +39,37 @@
   padding: 24px 20px;
 }
 
+.receipt-wrapper :deep(.receipt-logo-wrap) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 12px;
+  min-height: 72px;
+}
+
 .receipt-wrapper :deep(.receipt-logo) {
   display: block;
   max-width: 80px;
   max-height: 80px;
-  margin: 0 auto 12px;
   object-fit: contain;
   background: rgba(255,255,255,0.9);
   padding: 6px;
   border-radius: 8px;
+}
+
+.receipt-wrapper :deep(.receipt-logo-fallback) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  background: rgba(255,255,255,0.95);
+  color: #6366f1;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
 .receipt-wrapper :deep(.receipt-title) {
@@ -96,7 +133,15 @@
 .receipt-wrapper :deep(.receipt-table td) {
   padding: 12px 14px;
   border-bottom: 1px solid #f1f5f9;
-  font-size: 0.9rem;
+  font-size: clamp(0.8rem, 2.2vw, 0.9rem);
+}
+
+@media (max-width: 480px) {
+  .receipt-wrapper :deep(.receipt-table th),
+  .receipt-wrapper :deep(.receipt-table td) {
+    padding: 10px 8px;
+    font-size: 0.85rem;
+  }
 }
 
 .receipt-wrapper :deep(.col-article) {
@@ -126,12 +171,16 @@
 }
 
 .receipt-wrapper :deep(.total-row.total-final) {
-  margin-top: 8px;
-  padding-top: 12px;
+  margin-top: 12px;
+  padding: 14px 16px;
   border-top: 2px solid #6366f1;
-  font-size: 1.15rem;
+  font-size: clamp(1rem, 3vw, 1.2rem);
   font-weight: 700;
   color: #1e293b;
+  background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%);
+  border-radius: 8px;
+  margin-left: 4px;
+  margin-right: 4px;
 }
 
 .receipt-wrapper :deep(.receipt-footer) {
@@ -140,6 +189,24 @@
   font-size: 0.9rem;
   color: #64748b;
   font-style: italic;
+}
+
+@media (max-width: 480px) {
+  .receipt-actions {
+    padding: 12px;
+  }
+
+  .receipt-container {
+    padding: 12px;
+  }
+
+  .receipt-wrapper :deep(.receipt) {
+    overflow-x: auto;
+  }
+
+  .receipt-wrapper :deep(.receipt-table) {
+    min-width: 280px;
+  }
 }
 
 @media print {

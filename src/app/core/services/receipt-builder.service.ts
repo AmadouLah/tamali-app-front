@@ -56,9 +56,10 @@ export class ReceiptBuilderService {
     const subtotalLabel = taxAmount > 0 ? 'Sous-total HT' : 'Sous-total';
     const taxLabel = taxAmount > 0 ? 'TVA (18%)' : 'TVA';
 
+    const initials = this.getInitials(b.name ?? '');
     const logoHtml = b.logoUrl?.trim()
-      ? `<img src="${this.escapeAttr(b.logoUrl.trim())}" alt="Logo" class="receipt-logo" onerror="this.style.display='none'" />`
-      : '';
+      ? `<div class="receipt-logo-wrap"><img src="${this.escapeAttr(b.logoUrl.trim())}" alt="Logo" class="receipt-logo" onerror="this.style.display='none';var f=this.nextElementSibling;if(f)f.style.display='flex'" /><div class="receipt-logo-fallback" style="display:none">${this.escapeHtml(initials)}</div></div>`
+      : `<div class="receipt-logo-wrap"><div class="receipt-logo-fallback">${this.escapeHtml(initials)}</div></div>`;
 
     const commerceRegisterHtml = b.commerceRegisterNumber?.trim()
       ? `<p class="receipt-register">Registre de commerce : ${this.escapeHtml(b.commerceRegisterNumber.trim())}</p>`
@@ -113,5 +114,13 @@ export class ReceiptBuilderService {
 
   private escapeAttr(text: string): string {
     return text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  private getInitials(name: string): string {
+    const words = name.trim().split(/\s+/).filter(Boolean);
+    if (words.length >= 2) {
+      return (words[0][0] + words[words.length - 1][0]).toUpperCase().slice(0, 2);
+    }
+    return name.slice(0, 2).toUpperCase() || '??';
   }
 }

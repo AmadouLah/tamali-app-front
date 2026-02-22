@@ -1,11 +1,13 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { AuthService, UserDto } from '../../../../core/services/auth.service';
 import { BusinessOperationsService, isPendingResponse } from '../../../../core/services/business-operations.service';
 import { IndexedDbService } from '../../../../core/services/indexed-db.service';
+import { SyncService } from '../../../../core/services/sync.service';
 import {
   ProductDto,
   SaleDto,
@@ -39,11 +41,13 @@ interface CartLine {
   templateUrl: './business-sales.component.html',
   styleUrl: './business-sales.component.css'
 })
-export class BusinessSalesComponent implements OnInit {
+export class BusinessSalesComponent implements OnInit, OnDestroy {
   private readonly businessOps = inject(BusinessOperationsService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly dbService = inject(IndexedDbService);
+  private readonly syncService = inject(SyncService);
+  private syncSub?: Subscription;
 
   user: UserDto | null = null;
   businessId: string | null = null;
@@ -79,6 +83,14 @@ export class BusinessSalesComponent implements OnInit {
     this.businessId = this.user?.businessId ?? null;
     this.loadProducts();
     this.loadSales();
+    this.syncSub = this.syncService.syncComplete$.subscribe(() => {
+      this.loadSales();
+      this.loadProducts();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.syncSub?.unsubscribe();
   }
 
   private async loadProducts(): Promise<void> {
