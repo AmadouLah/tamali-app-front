@@ -1,11 +1,11 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
 import { AuthService, UserDto } from '../../../core/services/auth.service';
 import { BusinessOperationsService } from '../../../core/services/business-operations.service';
+import { BusinessDashboardCacheService } from '../../../core/services/business-dashboard-cache.service';
 import { GlassCardComponent } from '../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent } from '../../../shared/components/admin-sidebar/admin-sidebar.component';
 import { getBusinessMenuItems } from './business-menu.const';
@@ -47,7 +47,7 @@ interface PieSlice {
 @Component({
   selector: 'app-business-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, GlassCardComponent, AdminSidebarComponent, UserAvatarComponent],
+  imports: [CommonModule, RouterModule, GlassCardComponent, AdminSidebarComponent, UserAvatarComponent],
   templateUrl: './business-dashboard.component.html',
   styleUrl: './business-dashboard.component.css'
 })
@@ -55,14 +55,15 @@ export class BusinessDashboardComponent implements OnInit {
   private readonly businessOps = inject(BusinessOperationsService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly dashboardCache = inject(BusinessDashboardCacheService);
 
   user: UserDto | null = null;
   business: BusinessDto | null = null;
   sales: SaleDto[] = [];
   products: ProductDto[] = [];
   loading = true;
+  refreshing = false;
   activeMenu = 'dashboard';
-  searchQuery = '';
   sidebarOpen = false;
 
   menuItems = getBusinessMenuItems(null);
@@ -97,37 +98,52 @@ export class BusinessDashboardComponent implements OnInit {
 
   private loadBusiness(): void {
     if (!this.user?.businessId) return;
-    this.businessOps.getBusiness(this.user.businessId).subscribe({
-      next: (b) => {
-        this.business = b as unknown as BusinessDto;
-        this.loadDashboardData();
+    const cached = this.dashboardCache.get(this.user.businessId);
+    if (cached) {
+      this.applyData(cached);
+      this.loading = false;
+      return;
+    }
+    this.fetchAndApply();
+  }
+
+  /** Charge les données fraîches depuis l'API et met à jour le cache. */
+  refresh(): void {
+    if (!this.user?.businessId) return;
+    this.refreshing = true;
+    this.fetchAndApply(true);
+  }
+
+  private fetchAndApply(skipLoadingState = false): void {
+    if (!this.user?.businessId) {
+      this.loading = false;
+      this.refreshing = false;
+      return;
+    }
+    if (!skipLoadingState) this.loading = true;
+    forkJoin({
+      business: this.businessOps.getBusiness(this.user.businessId),
+      sales: this.businessOps.getSales(this.user.businessId, 0, 500),
+      products: this.businessOps.getProducts(this.user.businessId)
+    }).subscribe({
+      next: ({ business, sales, products }) => {
+        const data = { sales, products, business };
+        this.dashboardCache.set(this.user!.businessId!, data);
+        this.applyData(data);
       },
-      error: () => {
+      error: () => {},
+      complete: () => {
         this.loading = false;
+        this.refreshing = false;
       }
     });
   }
 
-  private loadDashboardData(): void {
-    if (!this.user?.businessId) {
-      this.loading = false;
-      return;
-    }
-    this.loading = true;
-    forkJoin({
-      sales: this.businessOps.getSales(this.user.businessId, 0, 500),
-      products: this.businessOps.getProducts(this.user.businessId)
-    }).subscribe({
-      next: ({ sales, products }) => {
-        this.sales = sales;
-        this.products = products;
-        this.computeAllStats();
-        this.loading = false;
-      },
-      error: () => {
-        this.loading = false;
-      }
-    });
+  private applyData(data: { sales: SaleDto[]; products: ProductDto[]; business: Record<string, unknown> | null }): void {
+    this.business = data.business as unknown as BusinessDto;
+    this.sales = data.sales;
+    this.products = data.products;
+    this.computeAllStats();
   }
 
   private computeExpenses(sales: SaleDto[]): number {
