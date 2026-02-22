@@ -1,6 +1,12 @@
 .toast-container {
-  @apply fixed top-4 right-4 z-[9999];
-  @apply flex flex-col gap-2 max-w-[min(420px,calc(100vw-2rem))];
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: min(420px, calc(100vw - 2rem));
   pointer-events: none;
 }
 
