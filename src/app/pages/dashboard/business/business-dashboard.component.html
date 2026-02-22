@@ -147,19 +147,30 @@
               <span class="flex items-center gap-2 text-sm text-gray-300"><span class="w-3 h-3 rounded bg-amber-500"></span> Dépenses</span>
               <span class="flex items-center gap-2 text-sm text-gray-300"><span class="w-3 h-3 rounded bg-emerald-500"></span> Bénéfice</span>
             </div>
-            <div class="h-48 sm:h-56">
-              <div class="flex items-end justify-between gap-1 sm:gap-2 h-full">
-                @for (point of barChartData; track point.label) {
-                  <div class="flex flex-col items-center gap-1.5 flex-1">
-                    <div class="w-full flex flex-col-reverse gap-0.5 h-full">
-                      <div class="w-full rounded-t transition-all duration-300 revenue-bar" [style.height.%]="getBarHeight(point.revenue)" [title]="'CA: ' + (point.revenue | number:'fr-FR')"></div>
-                      <div class="w-full rounded-t transition-all duration-300 expenses-bar" [style.height.%]="getBarHeight(point.expenses)" [title]="'Dépenses: ' + (point.expenses | number:'fr-FR')"></div>
-                      <div class="w-full rounded-t transition-all duration-300 bg-emerald-500" [style.height.%]="getBarHeight(point.profit)" [title]="'Bénéfice: ' + (point.profit | number:'fr-FR')"></div>
+            <div class="h-48 sm:h-56 relative">
+              @if (hasBarChartData) {
+                <div class="flex items-end justify-between gap-1 sm:gap-2 h-full">
+                  @for (point of barChartData; track point.label) {
+                    <div class="flex flex-col items-center gap-1.5 flex-1">
+                      <div class="w-full flex flex-col-reverse gap-0.5 h-full">
+                        <div class="w-full rounded-t transition-all duration-300 revenue-bar" [style.height.%]="getBarHeight(point.revenue)" [title]="'CA: ' + (point.revenue | number:'fr-FR')"></div>
+                        <div class="w-full rounded-t transition-all duration-300 expenses-bar" [style.height.%]="getBarHeight(point.expenses)" [title]="'Dépenses: ' + (point.expenses | number:'fr-FR')"></div>
+                        <div class="w-full rounded-t transition-all duration-300 bg-emerald-500" [style.height.%]="getBarHeight(point.profit)" [title]="'Bénéfice: ' + (point.profit | number:'fr-FR')"></div>
+                      </div>
+                      <span class="text-[10px] sm:text-xs text-gray-300 font-medium truncate max-w-full" [title]="point.label">{{ point.label }}</span>
                     </div>
-                    <span class="text-[10px] sm:text-xs text-gray-300 font-medium truncate max-w-full" [title]="point.label">{{ point.label }}</span>
-                  </div>
-                }
-              </div>
+                  }
+                </div>
+              } @else {
+                <div class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 text-sm text-center px-4">
+                  <svg class="w-12 h-12 mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                  </svg>
+                  <p class="font-medium">Aucune vente sur cette période</p>
+                  <p class="text-xs mt-1">Les données apparaîtront ici lorsque vous aurez des ventes sur les 7 derniers jours.</p>
+                  <p class="text-xs mt-2">Essayez «&#8239;Mois&#8239;» ou «&#8239;Année&#8239;» si vous avez des ventes plus anciennes.</p>
+                </div>
+              }
             </div>
           </app-glass-card>
 
@@ -196,18 +207,23 @@
             </div>
           </div>
           <div class="h-40 sm:h-52 relative">
-            @if (lineChartData.length > 0) {
+            @if (hasBarChartData) {
               <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="w-full h-full">
-                <path [attr.d]="getLinePath()" fill="none" stroke="url(#lineGradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-all duration-500"></path>
                 <defs>
-                  <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
+                  <linearGradient id="lineGradientBiz" x1="0" y1="0" x2="1" y2="0">
                     <stop offset="0%" stop-color="#8b5cf6"></stop>
                     <stop offset="100%" stop-color="#3b82f6"></stop>
                   </linearGradient>
                 </defs>
+                <path [attr.d]="getLinePath()" fill="none" stroke="url(#lineGradientBiz)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-all duration-500"></path>
               </svg>
             } @else {
-              <div class="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">Aucune donnée</div>
+              <div class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 text-sm text-center px-4">
+                <svg class="w-10 h-10 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+                </svg>
+                <p>Aucune donnée sur cette période</p>
+              </div>
             }
           </div>
         </app-glass-card>

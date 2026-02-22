@@ -258,15 +258,13 @@ export class BusinessDashboardComponent implements OnInit {
     if (this.chartPeriod === 'week') {
       const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
       for (let i = 6; i >= 0; i--) {
-        const d = new Date(now);
-        d.setDate(d.getDate() - i);
-        d.setHours(0, 0, 0, 0);
-        const next = new Date(d);
-        next.setDate(next.getDate() + 1);
+        const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i, 0, 0, 0, 0);
+        const next = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 0, 0, 0, 0);
         const daySales = this.sales.filter(
           s => {
             const sd = new Date(s.saleDate);
-            return sd >= d && sd < next;
+            const sdDay = new Date(sd.getFullYear(), sd.getMonth(), sd.getDate(), 0, 0, 0, 0);
+            return sdDay >= d && sdDay < next;
           }
         );
         const rev = daySales.reduce((s, x) => s + Number(x.totalAmount ?? 0), 0);
@@ -317,6 +315,11 @@ export class BusinessDashboardComponent implements OnInit {
   getBarHeight(value: number): number {
     const max = this.getBarMaxValue();
     return max > 0 ? (value / max) * 100 : 0;
+  }
+
+  /** Indique si le graphique bar a des données à afficher */
+  get hasBarChartData(): boolean {
+    return this.barChartData.some(d => d.revenue > 0 || d.expenses > 0 || d.profit > 0);
   }
 
   getLinePath(): string {
