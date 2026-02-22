@@ -2,9 +2,18 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
 import { NetworkService } from './network.service';
 import { IndexedDbService } from './indexed-db.service';
-import { Observable, firstValueFrom, timer } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import { timeout, retry, catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';
+
+type PendingRequest = {
+  id: string;
+  method: string;
+  url: string;
+  body?: any;
+  headers?: Record<string, string>;
+  timestamp: number;
+};
 
 @Injectable({
   providedIn: 'root'
@@ -13,106 +22,162 @@ export class SyncService {
   private readonly http = inject(HttpClient);
   private readonly networkService = inject(NetworkService);
   private readonly dbService = inject(IndexedDbService);
-  private isSyncing = false;
-  private readonly REQUEST_TIMEOUT = 10000; // 10 secondes
+  private syncPromise: Promise<void> | null = null;
+  private readonly REQUEST_TIMEOUT = 10000;
   private readonly MAX_RETRIES = 3;
-  private readonly RETRY_DELAY = 2000; // 2 secondes
+  private readonly RETRY_DELAY = 2000;
+  private readonly CREATE_PRODUCT_REGEX = /\/businesses\/([^/]+)\/products$/;
+  private readonly STOCK_MOVEMENT_REGEX = /\/products\/(local-product-[^/]+)\/stock-movements/;
+  private readonly PRODUCT_PATCH_REGEX = /\/products\/(local-product-[^/]+)/;
 
   constructor() {
     this.networkService.onlineStatus.subscribe(isOnline => {
-      if (isOnline && !this.isSyncing) {
-        // Délai pour s'assurer que la connexion est stable
+      if (isOnline) {
         setTimeout(() => this.syncPendingRequests(), 1000);
       }
     });
   }
 
   async syncPendingRequests(): Promise<void> {
-    if (this.isSyncing) {
-      return;
+    if (this.syncPromise) {
+      return this.syncPromise;
     }
-
-    // Vérifier la connexion réelle avant de synchroniser
-    const isReallyOnline = await this.networkService.checkConnection();
-    if (!isReallyOnline) {
-      return;
-    }
-
-    this.isSyncing = true;
+    this.syncPromise = this.doSync();
     try {
-      const pendingRequests = await this.dbService.getPendingRequests();
-      
-      if (pendingRequests.length === 0) {
-        return;
-      }
+      await this.syncPromise;
+    } finally {
+      this.syncPromise = null;
+    }
+  }
 
-      // Éviter les duplications : regrouper les requêtes identiques par URL et body
-      const uniqueRequests = await this.deduplicateRequests(pendingRequests);
+  private async doSync(): Promise<void> {
+    const isReallyOnline = await this.networkService.checkConnection();
+    if (!isReallyOnline) return;
 
-      for (const request of uniqueRequests) {
-        try {
-          // Vérifier à nouveau la connexion avant chaque requête
-          const stillOnline = await this.networkService.checkConnection();
-          if (!stillOnline) {
-            break;
-          }
+    const pendingRequests = await this.dbService.getPendingRequests();
+    if (pendingRequests.length === 0) return;
 
-          const response = await this.executeRequestWithRetry(request);
-          
-          // Si c'est une création de vente réussie, supprimer la vente locale
-          // car elle sera maintenant disponible depuis le serveur avec le vrai ID
-          if (request.method === 'POST' && request.url.includes('/sales') && response?.id) {
-            const businessIdMatch = request.url.match(/\/businesses\/([^/]+)\/sales/);
-            if (businessIdMatch) {
-              const businessId = businessIdMatch[1];
-              const localSales = await this.dbService.getLocalSales(businessId);
-              const localSale = localSales.find(ls => ls.requestId === request.id);
-              if (localSale) {
-                await this.dbService.removeLocalSale(localSale.id);
-              }
-              // Supprimer aussi les mouvements de stock locaux associés
-              await this.dbService.removeLocalStockMovementsByRequestId(request.id);
-            }
-          }
-          
-          // Si c'est un mouvement de stock réussi, supprimer le mouvement local
-          if (request.method === 'POST' && request.url.includes('/stock-movements') && response?.id) {
+    const consolidated = await this.consolidateProductCreateWithStockAndPatch(pendingRequests);
+    const uniqueRequests = await this.deduplicateRequests(consolidated);
+
+    for (const request of uniqueRequests) {
+      try {
+        const stillOnline = await this.networkService.checkConnection();
+        if (!stillOnline) break;
+
+        const response = await this.executeRequestWithRetry(request);
+
+        if (request.method === 'POST' && request.url.includes('/sales') && response?.id) {
+          const businessIdMatch = request.url.match(/\/businesses\/([^/]+)\/sales/);
+          if (businessIdMatch) {
+            const businessId = businessIdMatch[1];
+            const localSales = await this.dbService.getLocalSales(businessId);
+            const localSale = localSales.find(ls => ls.requestId === request.id);
+            if (localSale) await this.dbService.removeLocalSale(localSale.id);
             await this.dbService.removeLocalStockMovementsByRequestId(request.id);
           }
-          
-          // Si c'est une création de produit réussie, supprimer le produit local
-          if (request.method === 'POST' && request.url.includes('/products') && !request.url.includes('/stock-movements') && response?.id) {
-            await this.dbService.removeLocalProductByRequestId(request.id);
-          }
-          
-          // Si c'est une opération sur une entité générique (catégorie, modification produit, etc.)
-          if ((request.method === 'POST' || request.method === 'PATCH' || request.method === 'DELETE') && 
-              (request.url.includes('/product-categories') || 
-               (request.url.includes('/products/') && !request.url.includes('/stock-movements')))) {
-            await this.dbService.removeLocalEntityByRequestId(request.id);
-          }
-          
+        }
+        if (request.method === 'POST' && request.url.includes('/stock-movements') && response?.id) {
+          await this.dbService.removeLocalStockMovementsByRequestId(request.id);
+        }
+        if (request.method === 'POST' && request.url.includes('/products') && !request.url.includes('/stock-movements') && response?.id) {
+          await this.dbService.removeLocalProductByRequestId(request.id);
+        }
+        if ((request.method === 'POST' || request.method === 'PATCH' || request.method === 'DELETE') &&
+            (request.url.includes('/product-categories') || (request.url.includes('/products/') && !request.url.includes('/stock-movements')))) {
+          await this.dbService.removeLocalEntityByRequestId(request.id);
+        }
+        await this.dbService.removePendingRequest(request.id);
+      } catch (error) {
+        const httpError = error as HttpErrorResponse;
+        const isNetworkError = !httpError?.status || httpError.status === 0;
+        if (isNetworkError) {
+          console.warn(`Erreur réseau lors de la synchronisation de la requête ${request.id}. Réessai ultérieur.`);
+          await this.networkService.checkConnection();
+          break;
+        } else {
+          console.error(`Erreur serveur lors de la synchronisation de la requête ${request.id}:`, httpError);
           await this.dbService.removePendingRequest(request.id);
-        } catch (error) {
-          const httpError = error as HttpErrorResponse;
-          const isNetworkError = !httpError?.status || httpError.status === 0;
-          
-          if (isNetworkError) {
-            // Erreur réseau : garder la requête pour réessayer plus tard
-            console.warn(`Erreur réseau lors de la synchronisation de la requête ${request.id}. Réessai ultérieur.`);
-            // Mettre à jour le statut de connexion
-            await this.networkService.checkConnection();
-            break; // Arrêter la synchronisation si erreur réseau
-          } else {
-            // Erreur serveur (4xx, 5xx) : supprimer la requête pour éviter les boucles infinies
-            console.error(`Erreur serveur lors de la synchronisation de la requête ${request.id}:`, httpError);
-            await this.dbService.removePendingRequest(request.id);
-          }
         }
       }
-    } finally {
-      this.isSyncing = false;
     }
+  }
+
+  /**
+   * Fusionne les créations de produits avec leurs mouvements de stock et PATCH locaux.
+   * Un produit créé hors ligne avec id local-product-{requestId} peut avoir des stock-movements
+   * et des PATCH en attente ; on fusionne tout en un seul POST create avec initialQuantity correct.
+   */
+  private async consolidateProductCreateWithStockAndPatch(requests: PendingRequest[]): Promise<PendingRequest[]> {
+    const createByRequestId = new Map<string, PendingRequest>();
+    const stockMovementsByLocalProductId = new Map<string, PendingRequest[]>();
+    const patchesByLocalProductId = new Map<string, PendingRequest[]>();
+    const toRemove = new Set<string>();
+    const result: PendingRequest[] = [];
+
+    for (const req of requests) {
+      const createMatch = req.method === 'POST' ? req.url.match(this.CREATE_PRODUCT_REGEX) : null;
+      const stockMatch = req.method === 'POST' ? req.url.match(this.STOCK_MOVEMENT_REGEX) : null;
+      const patchMatch = req.method === 'PATCH' && !req.url.includes('/stock-movements')
+        ? req.url.match(this.PRODUCT_PATCH_REGEX) : null;
+
+      if (createMatch) {
+        createByRequestId.set(req.id, req);
+      } else if (stockMatch) {
+        const localProductId = stockMatch[1];
+        const list = stockMovementsByLocalProductId.get(localProductId) ?? [];
+        list.push(req);
+        stockMovementsByLocalProductId.set(localProductId, list);
+      } else if (patchMatch) {
+        const localProductId = patchMatch[1];
+        const list = patchesByLocalProductId.get(localProductId) ?? [];
+        list.push(req);
+        patchesByLocalProductId.set(localProductId, list);
+      }
+    }
+
+    for (const [createRequestId, createReq] of createByRequestId) {
+      const localProductId = `local-product-${createRequestId}`;
+      const stockMvts = stockMovementsByLocalProductId.get(localProductId) ?? [];
+      const patches = patchesByLocalProductId.get(localProductId) ?? [];
+      const sortedPatches = patches.sort((a, b) => a.timestamp - b.timestamp);
+      let initialQty = Number(createReq.body?.initialQuantity ?? 0);
+
+      for (const m of stockMvts) {
+        const q = Math.abs(Number(m.body?.quantity ?? 0));
+        const type = (m.body?.type ?? 'IN') as string;
+        if (type === 'IN') initialQty += q;
+        else initialQty = Math.max(0, initialQty - q);
+        toRemove.add(m.id);
+      }
+      for (const p of sortedPatches) {
+        toRemove.add(p.id);
+      }
+
+      const mergedBody = { ...createReq.body, initialQuantity: Math.max(0, Math.round(initialQty)) };
+      for (const p of sortedPatches) {
+        if (p.body && typeof p.body === 'object') {
+          Object.assign(mergedBody, p.body);
+        }
+      }
+      result.push({ ...createReq, body: mergedBody });
+    }
+
+    for (const req of requests) {
+      if (createByRequestId.has(req.id)) continue;
+      if (toRemove.has(req.id)) continue;
+      result.push(req);
+    }
+
+    for (const id of toRemove) {
+      const req = requests.find(r => r.id === id);
+      if (req) {
+        await this.removeLocalDataForRequest(req);
+        await this.dbService.removePendingRequest(id);
+      }
+    }
+
+    return result.sort((a, b) => a.timestamp - b.timestamp);
   }
 
   private async executeRequestWithRetry(request: {
