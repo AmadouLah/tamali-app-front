@@ -3,52 +3,143 @@
 }
 
 .receipt-wrapper {
-  max-width: 400px;
+  max-width: 420px;
   margin: 0 auto;
-  background: white;
-  color: #111;
-  padding: 24px;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  background: #fff;
+  color: #1e293b;
+  padding: 0;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
 }
 
 .receipt-wrapper :deep(.receipt) {
-  font-family: Arial, sans-serif;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
-.receipt-wrapper :deep(.header-section) {
+.receipt-wrapper :deep(.receipt-header) {
+  background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
+  color: #fff;
   text-align: center;
-  margin-bottom: 15px;
+  padding: 24px 20px;
 }
 
-.receipt-wrapper :deep(h2) {
-  margin: 0 0 10px;
-  font-size: 1.25rem;
+.receipt-wrapper :deep(.receipt-logo) {
+  display: block;
+  max-width: 80px;
+  max-height: 80px;
+  margin: 0 auto 12px;
+  object-fit: contain;
+  background: rgba(255,255,255,0.9);
+  padding: 6px;
+  border-radius: 8px;
 }
 
-.receipt-wrapper :deep(table) {
+.receipt-wrapper :deep(.receipt-title) {
+  margin: 0 0 8px;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.receipt-wrapper :deep(.receipt-address),
+.receipt-wrapper :deep(.receipt-contact) {
+  margin: 4px 0;
+  font-size: 0.9rem;
+  opacity: 0.95;
+}
+
+.receipt-wrapper :deep(.receipt-register) {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.receipt-wrapper :deep(.receipt-info) {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.receipt-wrapper :deep(.receipt-info p) {
+  margin: 4px 0;
+  font-size: 0.9rem;
+}
+
+.receipt-wrapper :deep(.receipt-info .label) {
+  color: #64748b;
+  margin-right: 6px;
+}
+
+.receipt-wrapper :deep(.receipt-info .value) {
+  font-weight: 600;
+}
+
+.receipt-wrapper :deep(.receipt-table) {
   width: 100%;
   border-collapse: collapse;
-  margin: 15px 0;
 }
 
-.receipt-wrapper :deep(th),
-.receipt-wrapper :deep(td) {
-  padding: 8px;
+.receipt-wrapper :deep(.receipt-table thead) {
+  background: #1e293b;
+  color: #fff;
+}
+
+.receipt-wrapper :deep(.receipt-table th) {
+  padding: 12px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
   text-align: left;
-  border-bottom: 1px solid #ddd;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.receipt-wrapper :deep(.footer) {
+.receipt-wrapper :deep(.receipt-table td) {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.9rem;
+}
+
+.receipt-wrapper :deep(.col-article) {
+  font-weight: 500;
+}
+
+.receipt-wrapper :deep(.col-qty) {
   text-align: center;
-  margin-top: 20px;
-  font-style: italic;
 }
 
-.receipt-wrapper :deep(hr) {
-  border: none;
-  border-top: 1px solid #ddd;
-  margin: 10px 0;
+.receipt-wrapper :deep(.col-pu),
+.receipt-wrapper :deep(.col-total) {
+  text-align: right;
+}
+
+.receipt-wrapper :deep(.receipt-totals) {
+  padding: 16px 20px;
+  background: #f8fafc;
+  border-top: 2px solid #e2e8f0;
+}
+
+.receipt-wrapper :deep(.total-row) {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 0.95rem;
+}
+
+.receipt-wrapper :deep(.total-row.total-final) {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 2px solid #6366f1;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.receipt-wrapper :deep(.receipt-footer) {
+  text-align: center;
+  padding: 16px 20px;
+  font-size: 0.9rem;
+  color: #64748b;
+  font-style: italic;
 }
 
 @media print {
@@ -57,7 +148,7 @@
   }
 
   .receipt-page {
-    background: none;
+    background: #fff;
   }
 
   .receipt-container {
@@ -67,6 +158,15 @@
   .receipt-wrapper {
     max-width: none;
     box-shadow: none;
-    padding: 0;
+  }
+
+  .receipt-wrapper :deep(.receipt-header) {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .receipt-wrapper :deep(.receipt-table thead) {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }

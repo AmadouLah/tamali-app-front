@@ -26,6 +26,16 @@
       >
         Partager
       </button>
+      @if (canDownloadPdf) {
+        <button
+          type="button"
+          (click)="downloadPdf()"
+          [disabled]="downloadingPdf"
+          class="px-4 py-2 rounded-lg glass-effect-subtle border border-white/20 text-white hover:bg-white/10 text-sm font-medium disabled:opacity-50"
+        >
+          {{ downloadingPdf ? 'Téléchargement...' : 'Télécharger PDF' }}
+        </button>
+      }
       <button
         type="button"
         (click)="goBack()"

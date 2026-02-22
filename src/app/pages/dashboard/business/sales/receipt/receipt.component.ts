@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ReceiptBuilderService, ReceiptData } from '../../../../../core/services/receipt-builder.service';
+import { NetworkService } from '../../../../../core/services/network.service';
+import { BusinessOperationsService } from '../../../../../core/services/business-operations.service';
 
 @Component({
   selector: 'app-receipt',
@@ -15,9 +17,14 @@ export class ReceiptComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly receiptBuilder = inject(ReceiptBuilderService);
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly networkService = inject(NetworkService);
+  private readonly businessOps = inject(BusinessOperationsService);
 
   receiptHtml: SafeHtml | null = null;
   unavailable = false;
+  canDownloadPdf = false;
+  downloadingPdf = false;
+  private saleId: string | null = null;
 
   ngOnInit(): void {
     const state = history.state;
@@ -34,7 +41,8 @@ export class ReceiptComponent implements OnInit {
         address: business.address,
         phone: business.phone,
         email: business.email,
-        commerceRegisterNumber: business.commerceRegisterNumber
+        commerceRegisterNumber: business.commerceRegisterNumber,
+        logoUrl: business.logoUrl
       },
       sale: {
         id: sale.id,
@@ -53,6 +61,8 @@ export class ReceiptComponent implements OnInit {
 
     const html = this.receiptBuilder.buildReceiptHtml(receiptData);
     this.receiptHtml = this.sanitizer.bypassSecurityTrustHtml(html);
+    this.saleId = sale.id;
+    this.canDownloadPdf = this.networkService.isOnline && !String(sale.id).startsWith('local-');
   }
 
   print(): void {
@@ -89,6 +99,33 @@ export class ReceiptComponent implements OnInit {
     } else {
       alert('Utilisez l\'impression pour enregistrer en PDF.');
     }
+  }
+
+  downloadPdf(): void {
+    if (!this.saleId || this.downloadingPdf) return;
+    this.downloadingPdf = true;
+    this.businessOps.generateReceipt(this.saleId).subscribe({
+      next: async (res) => {
+        if (res?.receiptPdfUrl) {
+          try {
+            const resp = await fetch(res.receiptPdfUrl);
+            const blob = await resp.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `recu-${this.saleId}.pdf`;
+            a.click();
+            URL.revokeObjectURL(url);
+          } catch {
+            window.open(res.receiptPdfUrl, '_blank', 'noopener');
+          }
+        }
+        this.downloadingPdf = false;
+      },
+      error: () => {
+        this.downloadingPdf = false;
+      }
+    });
   }
 
   goBack(): void {

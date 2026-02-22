@@ -21,6 +21,7 @@ export interface ReceiptBusinessDto {
   phone?: string;
   email?: string;
   commerceRegisterNumber?: string;
+  logoUrl?: string;
 }
 
 export interface ReceiptData {
@@ -52,34 +53,39 @@ export class ReceiptBuilderService {
     const s = data.sale;
     const subtotal = s.totalAmount - (s.taxAmount ?? 0);
     const taxAmount = s.taxAmount ?? 0;
-    const subtotalLabel = taxAmount > 0 ? 'Sous-total HT:' : 'Sous-total:';
-    const taxLabel = taxAmount > 0 ? 'TVA (18%):' : 'TVA:';
+    const subtotalLabel = taxAmount > 0 ? 'Sous-total HT' : 'Sous-total';
+    const taxLabel = taxAmount > 0 ? 'TVA (18%)' : 'TVA';
+
+    const logoHtml = b.logoUrl?.trim()
+      ? `<img src="${this.escapeAttr(b.logoUrl.trim())}" alt="Logo" class="receipt-logo" onerror="this.style.display='none'" />`
+      : '';
 
     const commerceRegisterHtml = b.commerceRegisterNumber?.trim()
-      ? `<p>Registre de commerce: ${this.escapeHtml(b.commerceRegisterNumber.trim())}</p>`
+      ? `<p class="receipt-register">Registre de commerce : ${this.escapeHtml(b.commerceRegisterNumber.trim())}</p>`
       : '';
 
     const itemsHtml = (s.items ?? [])
       .map(item => {
         const lineTotal = item.price * item.quantity;
-        return `<tr><td>${this.escapeHtml(item.productName)}</td><td>${item.quantity}</td><td>${this.formatMoney(item.price)}</td><td>${this.formatMoney(lineTotal)}</td></tr>`;
+        return `<tr><td class="col-article">${this.escapeHtml(item.productName)}</td><td class="col-qty">${item.quantity}</td><td class="col-pu">${this.formatMoney(item.price)}</td><td class="col-total">${this.formatMoney(lineTotal)}</td></tr>`;
       })
-      .join('') || '<tr><td colspan="4">Aucun article</td></tr>';
+      .join('') || '<tr><td colspan="4" class="text-center">Aucun article</td></tr>';
 
     return `
 <div class="receipt">
-  <div class="header-section">
-    <h2>${this.escapeHtml(b.name ?? '')}</h2>
-    <p>${this.escapeHtml(b.address ?? '')}</p>
-    <p>Tél: ${this.escapeHtml(b.phone ?? '')} | Email: ${this.escapeHtml(b.email ?? '')}</p>
+  <header class="receipt-header">
+    ${logoHtml}
+    <h1 class="receipt-title">${this.escapeHtml(b.name ?? '')}</h1>
+    <p class="receipt-address">${this.escapeHtml(b.address ?? '')}</p>
+    <p class="receipt-contact">Tél : ${this.escapeHtml(b.phone ?? '')} &nbsp;|&nbsp; Email : ${this.escapeHtml(b.email ?? '')}</p>
     ${commerceRegisterHtml}
-  </div>
-  <hr />
-  <p><strong>Reçu N°:</strong> ${this.escapeHtml(s.id)}</p>
-  <p><strong>Date:</strong> ${this.formatDate(s.saleDate)}</p>
-  <p><strong>Vendeur:</strong> ${this.escapeHtml(data.cashierName)}</p>
-  <hr />
-  <table>
+  </header>
+  <section class="receipt-info">
+    <p><span class="label">Reçu N°</span> <span class="value">${this.escapeHtml(String(s.id).substring(0, 12))}</span></p>
+    <p><span class="label">Date</span> <span class="value">${this.formatDate(s.saleDate)}</span></p>
+    <p><span class="label">Vendeur</span> <span class="value">${this.escapeHtml(data.cashierName)}</span></p>
+  </section>
+  <table class="receipt-table">
     <thead>
       <tr>
         <th>Article</th>
@@ -90,12 +96,12 @@ export class ReceiptBuilderService {
     </thead>
     <tbody>${itemsHtml}</tbody>
   </table>
-  <hr />
-  <p><strong>${subtotalLabel}</strong> ${this.formatMoney(subtotal)}</p>
-  <p><strong>${taxLabel}</strong> ${this.formatMoney(taxAmount)}</p>
-  <p><strong>Total:</strong> ${this.formatMoney(s.totalAmount)}</p>
-  <hr />
-  <p class="footer">Merci de votre visite !</p>
+  <section class="receipt-totals">
+    <div class="total-row"><span>${subtotalLabel}</span><span>${this.formatMoney(subtotal)}</span></div>
+    <div class="total-row"><span>${taxLabel}</span><span>${this.formatMoney(taxAmount)}</span></div>
+    <div class="total-row total-final"><span>Total</span><span>${this.formatMoney(s.totalAmount)}</span></div>
+  </section>
+  <footer class="receipt-footer">Merci de votre visite !</footer>
 </div>`;
   }
 
@@ -103,5 +109,9 @@ export class ReceiptBuilderService {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  private escapeAttr(text: string): string {
+    return text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 }
