@@ -282,15 +282,34 @@ export class SyncService {
   }
 
   /**
-   * Clé canonique pour une vente (POST /sales) : tri des items par productId
-   * pour que la même vente donne la même clé quel que soit l'ordre des lignes.
-   * Utilisé pour la déduplication et pour éviter de mettre en file deux fois la même vente.
+   * Clé canonique pour une vente (POST /sales) : tri des items par productId.
    */
   getSaleDedupKey(body: { cashierId?: string; method?: string; items?: Array<{ productId?: string; quantity?: number }> }): string {
     if (!body || typeof body !== 'object') return this.stableStringify(body);
     const items = Array.isArray(body.items) ? [...body.items] : [];
     items.sort((a, b) => (a?.productId ?? '').localeCompare(b?.productId ?? ''));
     return this.stableStringify({ ...body, items });
+  }
+
+  /**
+   * Clé canonique pour une création produit (POST /products) : champs métier uniquement
+   * pour que la même fiche produit ne soit synchronisée qu'une fois.
+   */
+  getProductCreateDedupKey(body: { name?: string; reference?: string; categoryId?: string; unitPrice?: number; purchasePrice?: number; taxable?: boolean }): string {
+    if (!body || typeof body !== 'object') return this.stableStringify(body);
+    const { name, reference, categoryId, unitPrice, purchasePrice, taxable } = body;
+    return this.stableStringify({ name, reference, categoryId, unitPrice, purchasePrice, taxable });
+  }
+
+  private buildDedupKey(request: PendingRequest): string {
+    const base = `${request.method}:${request.url}`;
+    if (request.method === 'POST' && request.url.includes('/sales') && !request.url.includes('/stock-movements')) {
+      return `${base}:${this.getSaleDedupKey(request.body || {})}`;
+    }
+    if (request.method === 'POST' && request.url.match(/\/businesses\/[^/]+\/products$/) && request.body) {
+      return `${base}:${this.getProductCreateDedupKey(request.body)}`;
+    }
+    return `${base}:${this.stableStringify(request.body || {})}`;
   }
 
   private async deduplicateRequests(requests: Array<{
@@ -313,9 +332,7 @@ export class SyncService {
     const duplicatesToRemove: string[] = [];
 
     for (const request of requests) {
-      const key = request.method === 'POST' && request.url.includes('/sales') && !request.url.includes('/stock-movements')
-        ? `${request.method}:${request.url}:${this.getSaleDedupKey(request.body || {})}`
-        : `${request.method}:${request.url}:${this.stableStringify(request.body || {})}`;
+      const key = this.buildDedupKey(request);
       if (!seen.has(key)) {
         seen.set(key, request.id);
         unique.push(request);

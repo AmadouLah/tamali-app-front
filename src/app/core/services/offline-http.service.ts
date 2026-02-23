@@ -153,22 +153,24 @@ export class OfflineHttpService {
     return ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase());
   }
 
-  /**
-   * Pour POST /sales : si une requête avec la même vente (même contenu) est déjà en file,
-   * retourne son requestId sans en ajouter une seconde. Sinon retourne null (il faut en ajouter une).
-   */
-  private async ensureSingleSaleInQueue(req: HttpRequest<any>): Promise<{ requestId: string; isNew: boolean }> {
-    if (req.method !== 'POST' || !req.url.includes('/sales') || !req.body) {
-      const requestId = this.syncService.generateRequestId();
-      return { requestId, isNew: true };
+  /** Une seule requête en file par "même" vente ou création produit (même contenu métier). */
+  private async ensureSingleInQueue(req: HttpRequest<any>): Promise<{ requestId: string; isNew: boolean }> {
+    if (req.method !== 'POST' || !req.body) {
+      return { requestId: this.syncService.generateRequestId(), isNew: true };
     }
-    const key = this.syncService.getSaleDedupKey(req.body);
     const pending = await this.dbService.getPendingRequests();
-    const existing = pending.find(
-      r => r.method === 'POST' && r.url.includes('/sales') && this.syncService.getSaleDedupKey(r.body) === key
-    );
-    if (existing) {
-      return { requestId: existing.id, isNew: false };
+    if (req.url.includes('/sales') && !req.url.includes('/stock-movements')) {
+      const key = this.syncService.getSaleDedupKey(req.body);
+      const existing = pending.find(
+        r => r.method === 'POST' && r.url.includes('/sales') && this.syncService.getSaleDedupKey(r.body) === key
+      );
+      if (existing) return { requestId: existing.id, isNew: false };
+    } else if (req.url.match(/\/businesses\/[^/]+\/products$/) && !req.url.includes('/stock-movements')) {
+      const key = this.syncService.getProductCreateDedupKey(req.body);
+      const existing = pending.find(
+        r => r.method === 'POST' && r.url.match(/\/businesses\/[^/]+\/products$/) && this.syncService.getProductCreateDedupKey(r.body) === key
+      );
+      if (existing) return { requestId: existing.id, isNew: false };
     }
     return { requestId: this.syncService.generateRequestId(), isNew: true };
   }
@@ -180,7 +182,7 @@ export class OfflineHttpService {
     });
 
     return from(
-      this.ensureSingleSaleInQueue(req).then(async ({ requestId, isNew }) => {
+      this.ensureSingleInQueue(req).then(async ({ requestId, isNew }) => {
         if (isNew) {
           await this.dbService.addPendingRequest({
             id: requestId,
@@ -240,8 +242,7 @@ export class OfflineHttpService {
             });
           }
         }
-        // Si c'est un mouvement de stock, créer un mouvement de stock local
-        if (req.method === 'POST' && req.url.includes('/stock-movements') && req.body) {
+        if (isNew && req.method === 'POST' && req.url.includes('/stock-movements') && req.body) {
           const productIdMatch = req.url.match(/\/products\/([^/]+)\/stock-movements/);
           if (productIdMatch) {
             const productId = productIdMatch[1];
@@ -255,8 +256,7 @@ export class OfflineHttpService {
             });
           }
         }
-        // Si c'est une création de produit, créer un produit local
-        if (req.method === 'POST' && req.url.includes('/products') && req.body) {
+        if (isNew && req.method === 'POST' && req.url.includes('/products') && !req.url.includes('/stock-movements') && req.body) {
           const businessIdMatch = req.url.match(/\/businesses\/([^/]+)\/products/);
           if (businessIdMatch) {
             const businessId = businessIdMatch[1];
