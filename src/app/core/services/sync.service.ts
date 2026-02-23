@@ -70,6 +70,9 @@ export class SyncService {
         const stillOnline = await this.networkService.checkConnection();
         if (!stillOnline) break;
 
+        // Retirer de la file avant d'exécuter pour qu'un autre run de sync ne renvoie pas la même requête
+        await this.dbService.removePendingRequest(request.id);
+
         const response = await this.executeRequestWithRetry(request);
 
         if (request.method === 'POST' && request.url.includes('/sales') && response?.id) {
@@ -95,20 +98,29 @@ export class SyncService {
             (request.url.includes('/product-categories') || (request.url.includes('/products/') && !request.url.includes('/stock-movements')))) {
           await this.dbService.removeLocalEntityByRequestId(request.id);
         }
-        await this.dbService.removePendingRequest(request.id);
       } catch (error) {
         const httpError = error as HttpErrorResponse;
         const isNetworkError = !httpError?.status || httpError.status === 0;
         if (isNetworkError) {
           console.warn(`Erreur réseau lors de la synchronisation de la requête ${request.id}. Réessai ultérieur.`);
+          await this.reEnqueueRequest(request);
           await this.networkService.checkConnection();
           break;
         } else {
           console.error(`Erreur serveur lors de la synchronisation de la requête ${request.id}:`, httpError);
-          await this.dbService.removePendingRequest(request.id);
         }
       }
     }
+  }
+
+  private async reEnqueueRequest(request: PendingRequest): Promise<void> {
+    await this.dbService.addPendingRequest({
+      id: request.id,
+      method: request.method,
+      url: request.url,
+      body: request.body,
+      headers: request.headers
+    });
   }
 
   /**

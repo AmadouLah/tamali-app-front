@@ -42,6 +42,10 @@ export class OfflineHttpService {
   private readonly syncService = inject(SyncService);
   private readonly apiConfig = inject(ApiConfigService);
 
+  /** File d'attente pour l'ajout des ventes en pending : évite les doublons en cas d'appels concurrents. */
+  private saleEnqueueLock: Promise<void> = Promise.resolve();
+  private releaseSaleLock: (() => void) | null = null;
+
   request<T>(req: HttpRequest<any>): Observable<HttpEvent<T>> {
     // Suppression d'une entité locale non synchronisée : annuler la création (en ligne ou hors ligne)
     if (req.method === 'DELETE') {
@@ -153,6 +157,19 @@ export class OfflineHttpService {
     return ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase());
   }
 
+  /** Exécute une opération sous le verrou d'ajout vente (évite doublons en cas de clics multiples). */
+  private async withSaleEnqueueLock<T>(fn: () => Promise<T>): Promise<T> {
+    const prev = this.saleEnqueueLock;
+    this.saleEnqueueLock = new Promise<void>(resolve => { this.releaseSaleLock = resolve; });
+    await prev;
+    try {
+      return await fn();
+    } finally {
+      this.releaseSaleLock?.();
+      this.releaseSaleLock = null;
+    }
+  }
+
   /** Une seule requête en file par "même" vente ou création produit (même contenu métier). */
   private async ensureSingleInQueue(req: HttpRequest<any>): Promise<{ requestId: string; isNew: boolean }> {
     if (req.method !== 'POST' || !req.body) {
@@ -181,7 +198,8 @@ export class OfflineHttpService {
       headers[key] = req.headers.get(key) || '';
     });
 
-    return from(
+    const isSalePost = req.method === 'POST' && req.url.includes('/sales') && !req.url.includes('/stock-movements');
+    const run = (): Promise<string> =>
       this.ensureSingleInQueue(req).then(async ({ requestId, isNew }) => {
         if (isNew) {
           await this.dbService.addPendingRequest({
@@ -335,8 +353,10 @@ export class OfflineHttpService {
           }
         }
         return requestId;
-      })
-    ).pipe(
+      });
+
+    const promise = isSalePost ? this.withSaleEnqueueLock(run) : run();
+    return from(promise).pipe(
       switchMap((requestId: string) => {
         if (this.networkService.isOnline) {
           this.syncService.syncPendingRequests();
