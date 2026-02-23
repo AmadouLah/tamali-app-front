@@ -7,6 +7,7 @@ import { AuthService, UserDto } from '../../../../core/services/auth.service';
 import { BusinessOperationsService, isPendingResponse } from '../../../../core/services/business-operations.service';
 import { ProductCategoryStoreService } from '../../../../core/services/product-category-store.service';
 import { IndexedDbService } from '../../../../core/services/indexed-db.service';
+import { SyncService } from '../../../../core/services/sync.service';
 import {
   ProductDto,
   ProductCategoryDto,
@@ -42,8 +43,10 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly dbService = inject(IndexedDbService);
+  private readonly syncService = inject(SyncService);
   private readonly toast = inject(ToastService);
   private categoryStoreSub?: Subscription;
+  private syncSub?: Subscription;
 
   user: UserDto | null = null;
   businessId: string | null = null;
@@ -83,10 +86,15 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
     });
     this.loadCategories();
     this.loadProducts();
+    this.syncSub = this.syncService.syncComplete$.subscribe(() => {
+      this.loadProducts();
+      this.loadCategories();
+    });
   }
 
   ngOnDestroy(): void {
     this.categoryStoreSub?.unsubscribe();
+    this.syncSub?.unsubscribe();
   }
 
   /** Incrémenté à chaque mise à jour du store pour forcer le recalcul de productsByCategory. */

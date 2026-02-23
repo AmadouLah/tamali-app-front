@@ -4,7 +4,7 @@ import { NetworkService } from './network.service';
 import { IndexedDbService } from './indexed-db.service';
 import { ApiConfigService } from './api-config.service';
 import { Observable, firstValueFrom, Subject } from 'rxjs';
-import { timeout, retry, catchError } from 'rxjs/operators';
+import { timeout, retry, catchError, filter, debounceTime } from 'rxjs/operators';
 import { throwError } from 'rxjs';
 
 type PendingRequest = {
@@ -36,11 +36,10 @@ export class SyncService {
   private readonly PRODUCT_PATCH_REGEX = /\/products\/(local-product-[^/]+)/;
 
   constructor() {
-    this.networkService.onlineStatus.subscribe(isOnline => {
-      if (isOnline) {
-        setTimeout(() => this.syncPendingRequests(), 1000);
-      }
-    });
+    this.networkService.onlineStatus.pipe(
+      filter(isOnline => isOnline === true),
+      debounceTime(1500)
+    ).subscribe(() => this.syncPendingRequests());
   }
 
   async syncPendingRequests(): Promise<void> {
@@ -89,6 +88,8 @@ export class SyncService {
         }
         if (request.method === 'POST' && request.url.includes('/products') && !request.url.includes('/stock-movements') && response?.id) {
           await this.dbService.removeLocalProductByRequestId(request.id);
+          const businessIdMatch = request.url.match(/\/businesses\/([^/]+)\/products/);
+          if (businessIdMatch) await this.invalidateProductsCache(businessIdMatch[1]);
         }
         if ((request.method === 'POST' || request.method === 'PATCH' || request.method === 'DELETE') &&
             (request.url.includes('/product-categories') || (request.url.includes('/products/') && !request.url.includes('/stock-movements')))) {
@@ -269,6 +270,18 @@ export class SyncService {
     return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
   }
 
+  /**
+   * Stringify stable (clés triées) pour que deux body identiques produisent la même clé
+   * et évitent la double exécution (ex. même vente enregistrée deux fois).
+   */
+  private stableStringify(value: unknown): string {
+    if (value === null || typeof value !== 'object') return JSON.stringify(value);
+    if (Array.isArray(value)) return '[' + value.map(v => this.stableStringify(v)).join(',') + ']';
+    const keys = Object.keys(value as object).sort();
+    const pairs = keys.map(k => JSON.stringify(k) + ':' + this.stableStringify((value as Record<string, unknown>)[k]));
+    return '{' + pairs.join(',') + '}';
+  }
+
   private async deduplicateRequests(requests: Array<{
     id: string;
     method: string;
@@ -289,19 +302,15 @@ export class SyncService {
     const duplicatesToRemove: string[] = [];
 
     for (const request of requests) {
-      // Créer une clé unique basée sur l'URL et le body
-      const key = `${request.method}:${request.url}:${JSON.stringify(request.body || {})}`;
-      
+      const key = `${request.method}:${request.url}:${this.stableStringify(request.body || {})}`;
       if (!seen.has(key)) {
         seen.set(key, request.id);
         unique.push(request);
       } else {
-        // Marquer les requêtes dupliquées pour suppression
         duplicatesToRemove.push(request.id);
       }
     }
 
-    // Supprimer les requêtes dupliquées et leurs entités locales associées
     const duplicateRequests = requests.filter(r => duplicatesToRemove.includes(r.id));
     for (const req of duplicateRequests) {
       await this.removeLocalDataForRequest(req);
@@ -314,6 +323,10 @@ export class SyncService {
   private async invalidateSalesCache(businessId: string): Promise<void> {
     const salesUrl = `${this.apiConfig.getSalesUrl(businessId)}?page=0&size=20`;
     await this.dbService.removeCache(salesUrl);
+  }
+
+  private async invalidateProductsCache(businessId: string): Promise<void> {
+    await this.dbService.removeCache(this.apiConfig.getProductsUrl(businessId));
   }
 
   private async removeLocalDataForRequest(request: {
