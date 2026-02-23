@@ -1,8 +1,10 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { DomSanitizer, SafeHtml, SafeResourceUrl } from '@angular/platform-browser';
+import { HttpClient } from '@angular/common/http';
 import { ReceiptBuilderService, ReceiptData } from '../../../../../core/services/receipt-builder.service';
+import { ApiConfigService } from '../../../../../core/services/api-config.service';
 import { NetworkService } from '../../../../../core/services/network.service';
 import { BusinessOperationsService } from '../../../../../core/services/business-operations.service';
 
@@ -13,18 +15,28 @@ import { BusinessOperationsService } from '../../../../../core/services/business
   templateUrl: './receipt.component.html',
   styleUrl: './receipt.component.css'
 })
-export class ReceiptComponent implements OnInit {
+export class ReceiptComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
   private readonly receiptBuilder = inject(ReceiptBuilderService);
+  private readonly apiConfig = inject(ApiConfigService);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly networkService = inject(NetworkService);
   private readonly businessOps = inject(BusinessOperationsService);
 
+  /** Rendu identique au PDF (HTML du backend) dans une iframe */
+  receiptFrameUrl: SafeResourceUrl | null = null;
+  /** Fallback : HTML construit côté front quand pas d’API (vente locale / hors ligne) */
   receiptHtml: SafeHtml | null = null;
   unavailable = false;
   canDownloadPdf = false;
   downloadingPdf = false;
+  loadingReceipt = true;
   private saleId: string | null = null;
+  private blobUrl: string | null = null;
+  private stateSale: any;
+  private stateBusiness: any;
+  private stateCashierName = '';
 
   ngOnInit(): void {
     const state = history.state;
@@ -32,9 +44,37 @@ export class ReceiptComponent implements OnInit {
 
     if (!sale || !business) {
       this.unavailable = true;
+      this.loadingReceipt = false;
       return;
     }
 
+    this.stateSale = sale;
+    this.stateBusiness = business;
+    this.stateCashierName = cashierName ?? 'Vendeur';
+    this.saleId = sale.id;
+    this.canDownloadPdf = this.networkService.isOnline && !String(sale.id).startsWith('local-');
+
+    const saleIdForApi = this.saleId && !String(this.saleId).startsWith('local-') ? this.saleId : null;
+    const useApi = this.networkService.isOnline && saleIdForApi;
+    if (useApi && saleIdForApi) {
+      this.http.get<{ html: string }>(this.apiConfig.getReceiptHtmlUrl(saleIdForApi)).subscribe({
+        next: (res) => {
+          if (res?.html) {
+            const blob = new Blob([res.html], { type: 'text/html;charset=utf-8' });
+            this.blobUrl = URL.createObjectURL(blob);
+            this.receiptFrameUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.blobUrl);
+          }
+          this.loadingReceipt = false;
+        },
+        error: () => this.buildFallbackReceipt(this.stateSale, this.stateBusiness, this.stateCashierName)
+      });
+    } else {
+      this.buildFallbackReceipt(this.stateSale, this.stateBusiness, this.stateCashierName);
+    }
+  }
+
+  private buildFallbackReceipt(sale: any, business: any, cashierName: string): void {
+    this.loadingReceipt = false;
     const receiptData: ReceiptData = {
       business: {
         name: business.name,
@@ -58,11 +98,15 @@ export class ReceiptComponent implements OnInit {
       },
       cashierName: cashierName ?? 'Vendeur'
     };
-
     const html = this.receiptBuilder.buildReceiptHtml(receiptData);
     this.receiptHtml = this.sanitizer.bypassSecurityTrustHtml(html);
-    this.saleId = sale.id;
-    this.canDownloadPdf = this.networkService.isOnline && !String(sale.id).startsWith('local-');
+  }
+
+  ngOnDestroy(): void {
+    if (this.blobUrl) {
+      URL.revokeObjectURL(this.blobUrl);
+      this.blobUrl = null;
+    }
   }
 
   print(): void {
@@ -83,10 +127,7 @@ export class ReceiptComponent implements OnInit {
 
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: `Reçu ${sale.id}`,
-          text
-        });
+        await navigator.share({ title: `Reçu ${sale.id}`, text });
       } catch (err) {
         if ((err as Error).name !== 'AbortError') this.fallbackShare(text);
       }
@@ -124,9 +165,7 @@ export class ReceiptComponent implements OnInit {
         }
         this.downloadingPdf = false;
       },
-      error: () => {
-        this.downloadingPdf = false;
-      }
+      error: () => { this.downloadingPdf = false; }
     });
   }
 

@@ -17,6 +17,19 @@
   padding: clamp(12px, 3vw, 24px);
 }
 
+.receipt-iframe {
+  width: 100%;
+  max-width: min(440px, 98vw);
+  min-height: 480px;
+  height: 80vh;
+  margin: 0 auto;
+  display: block;
+  border: none;
+  border-radius: clamp(12px, 2.5vw, 16px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  background: #fff;
+}
+
 .receipt-wrapper {
   --receipt-radius: clamp(12px, 2.5vw, 16px);
   --receipt-pad: clamp(16px, 4vw, 24px);
@@ -274,6 +287,14 @@
   .receipt-container {
     padding: 0;
     align-items: stretch;
+  }
+
+  .receipt-iframe {
+    max-width: none;
+    min-height: 0;
+    height: auto;
+    box-shadow: none;
+    border-radius: 0;
   }
 
   .receipt-wrapper {

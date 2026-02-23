@@ -45,7 +45,13 @@
       </button>
     </div>
     <div class="receipt-container flex-1 p-4 print:p-0">
-      <div class="receipt-wrapper" [innerHTML]="receiptHtml"></div>
+      @if (loadingReceipt) {
+        <div class="flex flex-1 items-center justify-center text-white/80">Chargement du reçu...</div>
+      } @else if (receiptFrameUrl) {
+        <iframe [src]="receiptFrameUrl" class="receipt-iframe" title="Reçu"></iframe>
+      } @else if (receiptHtml) {
+        <div class="receipt-wrapper" [innerHTML]="receiptHtml"></div>
+      }
     </div>
   }
 </div>

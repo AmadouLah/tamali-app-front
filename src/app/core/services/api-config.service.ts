@@ -43,6 +43,10 @@ export class ApiConfigService {
     return `${this.baseUrl}/sales/${saleId}/generate-receipt`;
   }
 
+  getReceiptHtmlUrl(saleId: string): string {
+    return `${this.baseUrl}/sales/${saleId}/receipt-html`;
+  }
+
   getProductsUrl(businessId: string): string {
     return `${this.baseUrl}/businesses/${businessId}/products`;
   }
