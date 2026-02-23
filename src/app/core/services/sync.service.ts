@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
 import { NetworkService } from './network.service';
 import { IndexedDbService } from './indexed-db.service';
+import { ApiConfigService } from './api-config.service';
 import { Observable, firstValueFrom, Subject } from 'rxjs';
 import { timeout, retry, catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';
@@ -22,6 +23,7 @@ export class SyncService {
   private readonly http = inject(HttpClient);
   private readonly networkService = inject(NetworkService);
   private readonly dbService = inject(IndexedDbService);
+  private readonly apiConfig = inject(ApiConfigService);
   private syncPromise: Promise<void> | null = null;
 
   /** Émet à la fin de chaque synchronisation (succès ou échec) pour rafraîchir l'UI */
@@ -79,6 +81,7 @@ export class SyncService {
             const localSale = localSales.find(ls => ls.requestId === request.id);
             if (localSale) await this.dbService.removeLocalSale(localSale.id);
             await this.dbService.removeLocalStockMovementsByRequestId(request.id);
+            await this.invalidateSalesCache(businessId);
           }
         }
         if (request.method === 'POST' && request.url.includes('/stock-movements') && response?.id) {
@@ -306,6 +309,11 @@ export class SyncService {
     }
 
     return unique;
+  }
+
+  private async invalidateSalesCache(businessId: string): Promise<void> {
+    const salesUrl = `${this.apiConfig.getSalesUrl(businessId)}?page=0&size=20`;
+    await this.dbService.removeCache(salesUrl);
   }
 
   private async removeLocalDataForRequest(request: {
