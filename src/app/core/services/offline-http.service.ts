@@ -334,9 +334,10 @@ export class OfflineHttpService {
             });
           }
         }
+        return requestId;
       })
     ).pipe(
-      switchMap(() => {
+      switchMap((requestId: string) => {
         if (this.networkService.isOnline) {
           this.syncService.syncPendingRequests();
         }
