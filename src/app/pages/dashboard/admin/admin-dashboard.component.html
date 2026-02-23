@@ -20,8 +20,20 @@
       <button type="button" class="lg:hidden shrink-0 p-2 rounded-lg glass-effect-subtle border border-white/20 text-white hover:bg-white/10 transition-colors" (click)="sidebarOpen = !sidebarOpen" aria-label="Ouvrir le menu">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
       </button>
-      <div class="flex-1 min-w-0 flex items-center">
+      <div class="flex-1 min-w-0 flex items-center gap-3">
         <span class="text-white font-semibold text-sm sm:text-base">Tableau de bord Super Admin</span>
+        <button
+          type="button"
+          (click)="refreshData()"
+          [disabled]="refreshing"
+          class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/30 text-white text-sm font-medium hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Actualiser les données"
+        >
+          <svg class="w-4 h-4" [class.animate-spin]="refreshing" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          {{ refreshing ? 'Actualisation...' : 'Actualiser' }}
+        </button>
       </div>
       <div class="flex items-center gap-2 md:gap-4 shrink-0">
         <div class="text-right hidden sm:block">

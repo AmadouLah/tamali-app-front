@@ -5,71 +5,16 @@ import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService, UserDto } from '../../../core/services/auth.service';
 import { ApiConfigService } from '../../../core/services/api-config.service';
+import { AdminDashboardStateService } from '../../../core/services/admin-dashboard-state.service';
+import type {
+  SuperAdminDashboard,
+  BusinessSummaryDto,
+  ServiceRequestDto
+} from '../../../core/models/super-admin-dashboard.types';
 import { GlassCardComponent } from '../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent, MenuItem } from '../../../shared/components/admin-sidebar/admin-sidebar.component';
 
-export interface ServiceRequestDto {
-  id: string;
-  email: string;
-  objective: string;
-  processed: boolean;
-  createdAt: string;
-}
-
-interface SuperAdminPlatformStats {
-  totalBusinesses: number;
-  totalUsers: number;
-  totalSalesCount: number;
-  totalTransactionVolume: number;
-  activeBusinessesToday: number;
-}
-
-interface BusinessActivitySummary {
-  id: string;
-  name: string;
-  saleCountOrDaysSinceLastSale: number;
-}
-
-interface SuperAdminRecentActivity {
-  newBusinessesCount: number;
-  newUsersCount: number;
-  mostActiveBusinesses: BusinessActivitySummary[];
-  inactiveBusinesses: BusinessActivitySummary[];
-}
-
-interface SalesPerDay {
-  date: string;
-  count: number;
-}
-
-interface SuperAdminUsageStats {
-  salesPerDay: SalesPerDay[];
-  peakActivityLabel: string;
-  usageRatePercent: number;
-}
-
-interface SuperAdminSystemMonitoring {
-  serverStatus: string;
-  criticalErrors: string[];
-  syncFailures: string[];
-  emailOrWhatsAppFailures: string[];
-}
-
-interface SuperAdminDashboard {
-  platformStats: SuperAdminPlatformStats;
-  recentActivity: SuperAdminRecentActivity;
-  usageStats: SuperAdminUsageStats;
-  systemMonitoring: SuperAdminSystemMonitoring;
-}
-
-export interface BusinessSummaryDto {
-  id: string;
-  name: string;
-  email: string | null;
-  active: boolean;
-  userCount: number;
-  createdAt: string;
-}
+export type { ServiceRequestDto, BusinessSummaryDto };
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -83,6 +28,7 @@ export class AdminDashboardComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly apiConfig = inject(ApiConfigService);
+  private readonly state = inject(AdminDashboardStateService);
 
   user: UserDto | null = null;
   dashboard: SuperAdminDashboard | null = null;
@@ -90,6 +36,7 @@ export class AdminDashboardComponent implements OnInit {
   serviceRequests: ServiceRequestDto[] = [];
   loading = false;
   loadingBusinesses = false;
+  refreshing = false;
   error: string | null = null;
 
   activeMenu = 'dashboard';
@@ -109,10 +56,14 @@ export class AdminDashboardComponent implements OnInit {
       this.router.navigate(['/auth/login']);
       return;
     }
-    this.loadDashboard();
-    this.loadBusinesses();
-    this.loadServiceRequests();
     this.updateActiveMenuFromRoute();
+    if (this.state.hasData()) {
+      this.dashboard = this.state.getDashboard();
+      this.businesses = this.state.getBusinesses();
+      this.serviceRequests = this.state.getServiceRequests();
+    } else {
+      this.loadAll();
+    }
   }
 
   private updateActiveMenuFromRoute(): void {
@@ -123,36 +74,67 @@ export class AdminDashboardComponent implements OnInit {
     else if (currentRoute.includes('admin')) this.activeMenu = 'dashboard';
   }
 
-  loadDashboard(): void {
-    this.loading = true;
+  /** Actualise toutes les données (bouton Actualiser). */
+  refreshData(): void {
+    this.refreshing = true;
     this.error = null;
+    this.loadAll(true);
+  }
+
+  private loadAll(fromRefresh = false): void {
+    if (!fromRefresh) this.loading = true;
+    this.loadingBusinesses = true;
+    this.error = null;
+    let pending = 3;
+
+    const onOneDone = (): void => {
+      pending--;
+      if (pending === 0) this.refreshing = false;
+    };
+
     this.http.get<SuperAdminDashboard>(this.apiConfig.getSuperAdminDashboardUrl()).subscribe({
       next: (data) => {
         this.dashboard = data;
+        this.state.setDashboard(data);
         this.loading = false;
+        onOneDone();
       },
       error: () => {
         this.error = 'Erreur lors du chargement du tableau de bord.';
         this.loading = false;
+        onOneDone();
       }
     });
-  }
 
-  loadBusinesses(): void {
-    this.loadingBusinesses = true;
     this.http.get<BusinessSummaryDto[]>(this.apiConfig.getSuperAdminBusinessesUrl()).subscribe({
       next: (list) => {
         this.businesses = list;
+        this.state.setBusinesses(list);
         this.loadingBusinesses = false;
+        onOneDone();
       },
-      error: () => { this.loadingBusinesses = false; }
+      error: () => {
+        this.loadingBusinesses = false;
+        onOneDone();
+      }
+    });
+
+    this.http.get<ServiceRequestDto[]>(this.apiConfig.getServiceRequestsUrl()).subscribe({
+      next: (requests) => {
+        this.serviceRequests = requests;
+        this.state.setServiceRequests(requests);
+        onOneDone();
+      },
+      error: () => onOneDone()
     });
   }
 
   loadServiceRequests(): void {
     this.http.get<ServiceRequestDto[]>(this.apiConfig.getServiceRequestsUrl()).subscribe({
-      next: (requests) => this.serviceRequests = requests,
-      error: () => { /* déjà géré par loadDashboard si besoin */ }
+      next: (requests) => {
+        this.serviceRequests = requests;
+        this.state.setServiceRequests(requests);
+      }
     });
   }
 
@@ -166,7 +148,10 @@ export class AdminDashboardComponent implements OnInit {
   deleteBusiness(b: BusinessSummaryDto): void {
     if (!confirm(`Supprimer l\'entreprise « ${b.name} » ?`)) return;
     this.http.delete(this.apiConfig.getBusinessesUrl() + '/' + b.id).subscribe({
-      next: () => { this.businesses = this.businesses.filter(x => x.id !== b.id); },
+      next: () => {
+        this.businesses = this.businesses.filter(x => x.id !== b.id);
+        this.state.setBusinesses(this.businesses);
+      },
       error: () => this.error = 'Erreur lors de la suppression.'
     });
   }
