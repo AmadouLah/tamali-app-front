@@ -271,8 +271,7 @@ export class SyncService {
   }
 
   /**
-   * Stringify stable (clés triées) pour que deux body identiques produisent la même clé
-   * et évitent la double exécution (ex. même vente enregistrée deux fois).
+   * Stringify stable (clés triées) pour que deux body identiques produisent la même clé.
    */
   private stableStringify(value: unknown): string {
     if (value === null || typeof value !== 'object') return JSON.stringify(value);
@@ -280,6 +279,18 @@ export class SyncService {
     const keys = Object.keys(value as object).sort();
     const pairs = keys.map(k => JSON.stringify(k) + ':' + this.stableStringify((value as Record<string, unknown>)[k]));
     return '{' + pairs.join(',') + '}';
+  }
+
+  /**
+   * Clé canonique pour une vente (POST /sales) : tri des items par productId
+   * pour que la même vente donne la même clé quel que soit l'ordre des lignes.
+   * Utilisé pour la déduplication et pour éviter de mettre en file deux fois la même vente.
+   */
+  getSaleDedupKey(body: { cashierId?: string; method?: string; items?: Array<{ productId?: string; quantity?: number }> }): string {
+    if (!body || typeof body !== 'object') return this.stableStringify(body);
+    const items = Array.isArray(body.items) ? [...body.items] : [];
+    items.sort((a, b) => (a?.productId ?? '').localeCompare(b?.productId ?? ''));
+    return this.stableStringify({ ...body, items });
   }
 
   private async deduplicateRequests(requests: Array<{
@@ -302,7 +313,9 @@ export class SyncService {
     const duplicatesToRemove: string[] = [];
 
     for (const request of requests) {
-      const key = `${request.method}:${request.url}:${this.stableStringify(request.body || {})}`;
+      const key = request.method === 'POST' && request.url.includes('/sales') && !request.url.includes('/stock-movements')
+        ? `${request.method}:${request.url}:${this.getSaleDedupKey(request.body || {})}`
+        : `${request.method}:${request.url}:${this.stableStringify(request.body || {})}`;
       if (!seen.has(key)) {
         seen.set(key, request.id);
         unique.push(request);

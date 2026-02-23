@@ -153,23 +153,45 @@ export class OfflineHttpService {
     return ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase());
   }
 
+  /**
+   * Pour POST /sales : si une requête avec la même vente (même contenu) est déjà en file,
+   * retourne son requestId sans en ajouter une seconde. Sinon retourne null (il faut en ajouter une).
+   */
+  private async ensureSingleSaleInQueue(req: HttpRequest<any>): Promise<{ requestId: string; isNew: boolean }> {
+    if (req.method !== 'POST' || !req.url.includes('/sales') || !req.body) {
+      const requestId = this.syncService.generateRequestId();
+      return { requestId, isNew: true };
+    }
+    const key = this.syncService.getSaleDedupKey(req.body);
+    const pending = await this.dbService.getPendingRequests();
+    const existing = pending.find(
+      r => r.method === 'POST' && r.url.includes('/sales') && this.syncService.getSaleDedupKey(r.body) === key
+    );
+    if (existing) {
+      return { requestId: existing.id, isNew: false };
+    }
+    return { requestId: this.syncService.generateRequestId(), isNew: true };
+  }
+
   private queueRequest(req: HttpRequest<any>): Observable<HttpEvent<any>> {
-    const requestId = this.syncService.generateRequestId();
     const headers: Record<string, string> = {};
     req.headers.keys().forEach(key => {
       headers[key] = req.headers.get(key) || '';
     });
 
     return from(
-      this.dbService.addPendingRequest({
-        id: requestId,
-        method: req.method,
-        url: req.url,
-        body: req.body,
-        headers
-      }).then(async () => {
-        // Si c'est une création de vente, créer une vente locale enrichie
-        if (req.method === 'POST' && req.url.includes('/sales') && req.body) {
+      this.ensureSingleSaleInQueue(req).then(async ({ requestId, isNew }) => {
+        if (isNew) {
+          await this.dbService.addPendingRequest({
+            id: requestId,
+            method: req.method,
+            url: req.url,
+            body: req.body,
+            headers
+          });
+        }
+        // Si c'est une création de vente *nouvelle*, créer une vente locale enrichie
+        if (isNew && req.method === 'POST' && req.url.includes('/sales') && req.body) {
           const businessIdMatch = req.url.match(/\/businesses\/([^/]+)\/sales/);
           if (businessIdMatch) {
             const businessId = businessIdMatch[1];
