@@ -71,7 +71,10 @@ export class ReceiptBuilderService {
         const lineTotal = item.price * item.quantity;
         return `<tr><td class="col-article">${this.escapeHtml(item.productName)}</td><td class="col-qty">${item.quantity}</td><td class="col-pu">${this.formatMoney(item.price)}</td><td class="col-total">${this.formatMoney(lineTotal)}</td></tr>`;
       })
-      .join('') || '<tr><td colspan="4" class="text-center">Aucun article</td></tr>';
+      .join('') || '<tr><td colspan="4" class="receipt-empty">Aucun article</td></tr>';
+
+    const infoRow = (label: string, value: string) =>
+      `<div class="receipt-info-row"><span class="receipt-label">${this.escapeHtml(label)}</span><span class="receipt-value">${value}</span></div>`;
 
     return `
 <div class="receipt">
@@ -83,25 +86,20 @@ export class ReceiptBuilderService {
     ${commerceRegisterHtml}
   </header>
   <section class="receipt-info">
-    <p><span class="label">Reçu N°</span> <span class="value">${this.escapeHtml(String(s.id).substring(0, 12))}</span></p>
-    <p><span class="label">Date</span> <span class="value">${this.formatDate(s.saleDate)}</span></p>
-    <p><span class="label">Vendeur</span> <span class="value">${this.escapeHtml(data.cashierName)}</span></p>
+    ${infoRow('Reçu N°', this.escapeHtml(String(s.id).substring(0, 12)))}
+    ${infoRow('Date', this.formatDate(s.saleDate))}
+    ${infoRow('Vendeur', this.escapeHtml(data.cashierName))}
   </section>
-  <table class="receipt-table">
-    <thead>
-      <tr>
-        <th>Article</th>
-        <th>Qté</th>
-        <th>P.U</th>
-        <th>Total</th>
-      </tr>
-    </thead>
-    <tbody>${itemsHtml}</tbody>
-  </table>
+  <div class="receipt-table-wrap">
+    <table class="receipt-table">
+      <thead><tr><th class="col-article">Article</th><th class="col-qty">Qté</th><th class="col-pu">P.U</th><th class="col-total">Total</th></tr></thead>
+      <tbody>${itemsHtml}</tbody>
+    </table>
+  </div>
   <section class="receipt-totals">
-    <div class="total-row"><span>${subtotalLabel}</span><span>${this.formatMoney(subtotal)}</span></div>
-    <div class="total-row"><span>${taxLabel}</span><span>${this.formatMoney(taxAmount)}</span></div>
-    <div class="total-row total-final"><span>Total</span><span>${this.formatMoney(s.totalAmount)}</span></div>
+    <div class="total-row"><span class="total-label">${subtotalLabel}</span><span class="total-amount">${this.formatMoney(subtotal)}</span></div>
+    <div class="total-row"><span class="total-label">${taxLabel}</span><span class="total-amount">${this.formatMoney(taxAmount)}</span></div>
+    <div class="total-row total-final"><span class="total-label">Total</span><span class="total-amount">${this.formatMoney(s.totalAmount)}</span></div>
   </section>
   <footer class="receipt-footer">Merci de votre visite !</footer>
 </div>`;
