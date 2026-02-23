@@ -66,4 +66,12 @@ export class ApiConfigService {
   getStockMovementUrl(productId: string): string {
     return `${this.baseUrl}/products/${productId}/stock-movements`;
   }
+
+  getSuperAdminDashboardUrl(): string {
+    return `${this.baseUrl}/super-admin/dashboard`;
+  }
+
+  getSuperAdminBusinessesUrl(): string {
+    return `${this.baseUrl}/super-admin/businesses`;
+  }
 }

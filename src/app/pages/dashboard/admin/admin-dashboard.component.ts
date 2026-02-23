@@ -16,20 +16,59 @@ export interface ServiceRequestDto {
   createdAt: string;
 }
 
-interface KpiCard {
-  title: string;
-  value: string;
-  change: number;
-  changeLabel: string;
-  progress: number;
-  progressColor: string;
+interface SuperAdminPlatformStats {
+  totalBusinesses: number;
+  totalUsers: number;
+  totalSalesCount: number;
+  totalTransactionVolume: number;
+  activeBusinessesToday: number;
 }
 
-interface ChartData {
-  day: string;
-  revenue: number;
-  expenses: number;
-  profit: number;
+interface BusinessActivitySummary {
+  id: string;
+  name: string;
+  saleCountOrDaysSinceLastSale: number;
+}
+
+interface SuperAdminRecentActivity {
+  newBusinessesCount: number;
+  newUsersCount: number;
+  mostActiveBusinesses: BusinessActivitySummary[];
+  inactiveBusinesses: BusinessActivitySummary[];
+}
+
+interface SalesPerDay {
+  date: string;
+  count: number;
+}
+
+interface SuperAdminUsageStats {
+  salesPerDay: SalesPerDay[];
+  peakActivityLabel: string;
+  usageRatePercent: number;
+}
+
+interface SuperAdminSystemMonitoring {
+  serverStatus: string;
+  criticalErrors: string[];
+  syncFailures: string[];
+  emailOrWhatsAppFailures: string[];
+}
+
+interface SuperAdminDashboard {
+  platformStats: SuperAdminPlatformStats;
+  recentActivity: SuperAdminRecentActivity;
+  usageStats: SuperAdminUsageStats;
+  systemMonitoring: SuperAdminSystemMonitoring;
+}
+
+export interface BusinessSummaryDto {
+  id: string;
+  name: string;
+  email: string | null;
+  active: boolean;
+  userCount: number;
+  createdAt: string;
 }
 
 @Component({
@@ -46,159 +85,131 @@ export class AdminDashboardComponent implements OnInit {
   private readonly apiConfig = inject(ApiConfigService);
 
   user: UserDto | null = null;
+  dashboard: SuperAdminDashboard | null = null;
+  businesses: BusinessSummaryDto[] = [];
   serviceRequests: ServiceRequestDto[] = [];
   loading = false;
+  loadingBusinesses = false;
   error: string | null = null;
 
-  activeMenu: string = 'dashboard';
-  searchQuery: string = '';
-  period: string = 'weekly';
+  activeMenu = 'dashboard';
+  searchQuery = '';
   sidebarOpen = false;
 
   menuItems: MenuItem[] = [
     { label: 'Dashboard', icon: 'grid', route: '/dashboard/admin' },
     { label: 'Ajouter Propriétaire', icon: 'user-plus', route: '/dashboard/admin/add-business-owner' },
     { label: 'Secteurs d\'activité', icon: 'briefcase', route: '/dashboard/admin/business-sectors' },
-    { label: 'Mon Compte', icon: 'user', route: '/dashboard/admin/account' },
-    { label: 'Performance', icon: 'chart-up' },
-    { label: 'Statistics', icon: 'bar-chart' },
-    { label: 'Analytics', icon: 'line-chart' },
-    { label: 'Payments', icon: 'credit-card', badge: 3 },
-    { label: 'Help', icon: 'help-circle' },
-    { label: 'Settings', icon: 'settings' }
+    { label: 'Mon Compte', icon: 'user', route: '/dashboard/admin/account' }
   ];
-
-  kpiCards: KpiCard[] = [
-    {
-      title: 'Total Revenue',
-      value: '$7,00,000',
-      change: 6,
-      changeLabel: 'From last week',
-      progress: 25,
-      progressColor: 'bg-blue-500'
-    },
-    {
-      title: 'Total Expenses',
-      value: '$5,00,000',
-      change: -6,
-      changeLabel: 'From last week',
-      progress: 50,
-      progressColor: 'bg-green-500'
-    },
-    {
-      title: 'New Profit',
-      value: '$2,00,000',
-      change: -6,
-      changeLabel: 'From last week',
-      progress: 60,
-      progressColor: 'bg-purple-500'
-    },
-    {
-      title: 'Cash Balance',
-      value: '$85,000',
-      change: 6,
-      changeLabel: 'From last week',
-      progress: 35,
-      progressColor: 'bg-yellow-500'
-    }
-  ];
-
-  chartData: ChartData[] = [
-    { day: 'Sun', revenue: 120000, expenses: 80000, profit: 40000 },
-    { day: 'Mon', revenue: 150000, expenses: 90000, profit: 60000 },
-    { day: 'Tue', revenue: 180000, expenses: 100000, profit: 80000 },
-    { day: 'Wed', revenue: 140000, expenses: 85000, profit: 55000 },
-    { day: 'Thu', revenue: 160000, expenses: 95000, profit: 65000 },
-    { day: 'Fri', revenue: 200000, expenses: 110000, profit: 90000 },
-    { day: 'Sat', revenue: 170000, expenses: 100000, profit: 70000 }
-  ];
-
-  paymentSuccessRate = 87;
-  paymentSuccessCount = 550;
-  paymentTotalCount = 650;
-  paymentSuccessChange = 26;
 
   ngOnInit(): void {
     this.user = this.authService.getUser();
-    if (!this.user || !this.user.roles?.some(r => r.type === 'SUPER_ADMIN')) {
+    if (!this.user?.roles?.some(r => r.type === 'SUPER_ADMIN')) {
       this.router.navigate(['/auth/login']);
       return;
     }
+    this.loadDashboard();
+    this.loadBusinesses();
     this.loadServiceRequests();
     this.updateActiveMenuFromRoute();
   }
 
   private updateActiveMenuFromRoute(): void {
     const currentRoute = this.router.url;
-    if (currentRoute.includes('add-business-owner')) {
-      this.activeMenu = 'ajouter propriétaire';
-    } else if (currentRoute.includes('business-sectors')) {
-      this.activeMenu = 'secteurs d\'activité';
-    } else if (currentRoute.includes('account')) {
-      this.activeMenu = 'mon compte';
-    } else if (currentRoute.includes('admin')) {
-      this.activeMenu = 'dashboard';
-    }
+    if (currentRoute.includes('add-business-owner')) this.activeMenu = 'ajouter propriétaire';
+    else if (currentRoute.includes('business-sectors')) this.activeMenu = 'secteurs d\'activité';
+    else if (currentRoute.includes('account')) this.activeMenu = 'mon compte';
+    else if (currentRoute.includes('admin')) this.activeMenu = 'dashboard';
+  }
+
+  loadDashboard(): void {
+    this.loading = true;
+    this.error = null;
+    this.http.get<SuperAdminDashboard>(this.apiConfig.getSuperAdminDashboardUrl()).subscribe({
+      next: (data) => {
+        this.dashboard = data;
+        this.loading = false;
+      },
+      error: () => {
+        this.error = 'Erreur lors du chargement du tableau de bord.';
+        this.loading = false;
+      }
+    });
+  }
+
+  loadBusinesses(): void {
+    this.loadingBusinesses = true;
+    this.http.get<BusinessSummaryDto[]>(this.apiConfig.getSuperAdminBusinessesUrl()).subscribe({
+      next: (list) => {
+        this.businesses = list;
+        this.loadingBusinesses = false;
+      },
+      error: () => { this.loadingBusinesses = false; }
+    });
   }
 
   loadServiceRequests(): void {
-    this.loading = true;
-    this.error = null;
     this.http.get<ServiceRequestDto[]>(this.apiConfig.getServiceRequestsUrl()).subscribe({
-      next: (requests) => {
-        this.serviceRequests = requests;
-        this.loading = false;
-      },
-      error: (err) => {
-        this.error = 'Erreur lors du chargement des demandes.';
-        this.loading = false;
-      }
+      next: (requests) => this.serviceRequests = requests,
+      error: () => { /* déjà géré par loadDashboard si besoin */ }
+    });
+  }
+
+  setBusinessActive(b: BusinessSummaryDto, active: boolean): void {
+    this.http.patch(this.apiConfig.getBusinessesUrl() + '/' + b.id, { active }).subscribe({
+      next: () => { b.active = active; },
+      error: () => this.error = 'Erreur lors de la mise à jour.'
+    });
+  }
+
+  deleteBusiness(b: BusinessSummaryDto): void {
+    if (!confirm(`Supprimer l\'entreprise « ${b.name} » ?`)) return;
+    this.http.delete(this.apiConfig.getBusinessesUrl() + '/' + b.id).subscribe({
+      next: () => { this.businesses = this.businesses.filter(x => x.id !== b.id); },
+      error: () => this.error = 'Erreur lors de la suppression.'
     });
   }
 
   markAsProcessed(id: string): void {
     this.http.patch<ServiceRequestDto>(`${this.apiConfig.getServiceRequestsUrl()}/${id}/process`, {}).subscribe({
-      next: () => {
-        this.loadServiceRequests();
-      },
-      error: () => {
-        this.error = 'Erreur lors du traitement de la demande.';
-      }
+      next: () => this.loadServiceRequests(),
+      error: () => this.error = 'Erreur lors du traitement de la demande.'
     });
   }
 
   formatDate(dateString: string): string {
     return new Date(dateString).toLocaleDateString('fr-FR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });
   }
 
-  setActiveMenu(menu: string): void {
-    this.activeMenu = menu;
+  formatVolume(value: number): string {
+    return new Intl.NumberFormat('fr-FR', { style: 'decimal', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
   }
 
+  formatShortDate(dateStr: string): string {
+    return new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+  }
+
+  setActiveMenu(menu: string): void { this.activeMenu = menu; }
   getUserDisplayName(): string {
     if (!this.user) return '';
-    return `${this.user.firstname} ${this.user.lastname}`.trim() || this.user.email;
+    return (`${this.user.firstname ?? ''} ${this.user.lastname ?? ''}`.trim() || this.user.email) ?? '';
   }
-
   getUserInitials(): string {
     if (!this.user) return '?';
-    const first = this.user.firstname?.charAt(0).toUpperCase() || '';
-    const last = this.user.lastname?.charAt(0).toUpperCase() || '';
-    return (first + last) || this.user.email?.charAt(0).toUpperCase() || '?';
+    const first = this.user.firstname?.charAt(0).toUpperCase() ?? '';
+    const last = this.user.lastname?.charAt(0).toUpperCase() ?? '';
+    return (first + last) || (this.user.email?.charAt(0).toUpperCase() ?? '?');
   }
 
-  getMaxChartValue(): number {
-    return Math.max(...this.chartData.map(d => d.revenue + d.expenses + d.profit));
+  getMaxSalesCount(): number {
+    const list = this.dashboard?.usageStats?.salesPerDay ?? [];
+    return list.length ? Math.max(...list.map(d => d.count)) : 0;
   }
-
-  getChartBarHeight(value: number): number {
-    const max = this.getMaxChartValue();
-    return (value / max) * 100;
+  getBarHeight(count: number): number {
+    const max = this.getMaxSalesCount();
+    return max > 0 ? (count / max) * 100 : 0;
   }
 }
