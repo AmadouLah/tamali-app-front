@@ -37,6 +37,10 @@ interface TamaliDB extends DBSchema {
       requestId: string;
       timestamp: number;
       synced: boolean;
+      /** Numéro de reçu : temporaire (TEMP-...) hors ligne, puis officiel (INV-...) après sync */
+      receiptNumber?: string;
+      /** ID serveur après synchronisation */
+      serverId?: string;
     };
     indexes: {
       businessId: string;
@@ -243,12 +247,27 @@ export class IndexedDbService {
     businessId: string;
     sale: any;
     requestId: string;
+    receiptNumber: string;
   }): Promise<void> {
     await this.init();
     await this.db!.put('localSales', {
       ...sale,
       timestamp: Date.now(),
-      synced: false
+      synced: false,
+      receiptNumber: sale.receiptNumber
+    });
+  }
+
+  /** Met à jour la vente locale après sync : même entrée, statut SYNCED + serverId + numéro officiel. */
+  async updateLocalSaleAfterSync(localId: string, payload: { serverId: string; receiptNumber: string }): Promise<void> {
+    await this.init();
+    const record = await this.db!.get('localSales', localId);
+    if (!record) return;
+    await this.db!.put('localSales', {
+      ...record,
+      synced: true,
+      serverId: payload.serverId,
+      receiptNumber: payload.receiptNumber
     });
   }
 
@@ -259,23 +278,14 @@ export class IndexedDbService {
     requestId: string;
     timestamp: number;
     synced: boolean;
+    receiptNumber?: string;
+    serverId?: string;
   }>> {
     await this.init();
     const index = this.db!.transaction('localSales').store.index('businessId');
     return await index.getAll(businessId);
   }
 
-  async markSaleAsSynced(requestId: string): Promise<void> {
-    await this.init();
-    const index = this.db!.transaction('localSales').store.index('requestId');
-    const localSale = await index.get(requestId);
-    if (localSale) {
-      await this.db!.put('localSales', {
-        ...localSale,
-        synced: true
-      });
-    }
-  }
 
   async removeLocalSale(id: string): Promise<void> {
     await this.init();

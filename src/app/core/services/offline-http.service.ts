@@ -32,6 +32,15 @@ import { ApiConfigService } from './api-config.service';
  */
 const TAX_RATE = 0.18;
 
+/** Génère un numéro de reçu temporaire unique (offline). Format: TEMP-YYYYMMDD-HHMMSS-XXXX */
+function generateTemporaryReceiptNumber(): string {
+  const now = new Date();
+  const date = now.toISOString().slice(0, 10).replace(/-/g, '');
+  const time = now.toTimeString().slice(0, 8).replace(/:/g, '');
+  const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `TEMP-${date}-${time}-${suffix}`;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -242,6 +251,7 @@ export class OfflineHttpService {
               };
             });
 
+            const receiptNumber = generateTemporaryReceiptNumber();
             const localSale = {
               id: tempSaleId,
               businessId,
@@ -249,14 +259,16 @@ export class OfflineHttpService {
               items,
               totalAmount,
               taxAmount,
-              saleDate: new Date().toISOString()
+              saleDate: new Date().toISOString(),
+              receiptNumber
             };
 
             await this.dbService.addLocalSale({
               id: tempSaleId,
               businessId,
               sale: localSale,
-              requestId
+              requestId,
+              receiptNumber
             });
           }
         }

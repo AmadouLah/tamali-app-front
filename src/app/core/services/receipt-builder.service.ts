@@ -13,6 +13,8 @@ export interface ReceiptSaleDto {
   items: ReceiptItemDto[];
   totalAmount: number;
   taxAmount?: number;
+  /** Numéro de reçu (temporaire TEMP-... ou officiel INV-...) */
+  receiptNumber?: string;
 }
 
 export interface ReceiptBusinessDto {
@@ -86,7 +88,7 @@ export class ReceiptBuilderService {
     ${commerceRegisterHtml}
   </header>
   <section class="receipt-info">
-    ${infoRow('Reçu N°', this.escapeHtml(String(s.id).substring(0, 12)))}
+    ${infoRow('Reçu N°', this.escapeHtml((s.receiptNumber ?? s.id).substring(0, 20)))}
     ${infoRow('Date', this.formatDate(s.saleDate))}
     ${infoRow('Vendeur', this.escapeHtml(data.cashierName))}
   </section>

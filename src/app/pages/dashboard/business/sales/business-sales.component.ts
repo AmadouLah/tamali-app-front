@@ -164,8 +164,9 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
             totalAmount,
             taxAmount: sale.taxAmount ?? 0,
             id: ls.id,
+            receiptNumber: ls.receiptNumber ?? (sale as any).receiptNumber ?? ls.id,
             isLocal: true
-          } as SaleDto & { isLocal?: boolean };
+          } as SaleDto & { isLocal?: boolean; receiptNumber?: string };
         });
       
       // Nettoyer les ventes synchronisées anciennes (plus de 24h)
@@ -180,7 +181,7 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
     }
   }
 
-  get allSales(): (SaleDto & { isLocal?: boolean })[] {
+  get allSales(): (SaleDto & { isLocal?: boolean; receiptNumber?: string })[] {
     const combined = [...this.sales, ...this.localSales];
     return combined.sort((a, b) => 
       new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime()

@@ -81,7 +81,11 @@ export class SyncService {
             const businessId = businessIdMatch[1];
             const localSales = await this.dbService.getLocalSales(businessId);
             const localSale = localSales.find(ls => ls.requestId === request.id);
-            if (localSale) await this.dbService.removeLocalSale(localSale.id);
+            if (localSale) {
+              const serverId = String(response.id);
+              const receiptNumber = `INV-${serverId.replace(/-/g, '').toUpperCase()}`;
+              await this.dbService.updateLocalSaleAfterSync(localSale.id, { serverId, receiptNumber });
+            }
             await this.dbService.removeLocalStockMovementsByRequestId(request.id);
             await this.invalidateSalesCache(businessId);
           }

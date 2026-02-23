@@ -94,7 +94,8 @@ export class ReceiptComponent implements OnInit, OnDestroy {
           price: i.price ?? 0
         })),
         totalAmount: sale.totalAmount ?? 0,
-        taxAmount: sale.taxAmount ?? 0
+        taxAmount: sale.taxAmount ?? 0,
+        receiptNumber: sale.receiptNumber
       },
       cashierName: cashierName ?? 'Vendeur'
     };
@@ -123,11 +124,12 @@ export class ReceiptComponent implements OnInit, OnDestroy {
       .join('\n');
     const commerceRegister = business.commerceRegisterNumber ?? (business as any).commerce_register_number;
     const regLine = commerceRegister ? `Registre de commerce: ${commerceRegister}\n` : '';
-    const text = `${business.name ?? ''}\n${regLine}Reçu #${sale.id}\n${sale.saleDate ?? ''}\n\n${lines}\n\nTotal: ${sale.totalAmount ?? 0} FCFA`;
+    const receiptNum = sale.receiptNumber ?? sale.id;
+const text = `${business.name ?? ''}\n${regLine}Reçu #${receiptNum}\n${sale.saleDate ?? ''}\n\n${lines}\n\nTotal: ${sale.totalAmount ?? 0} FCFA`;
 
     if (navigator.share) {
       try {
-        await navigator.share({ title: `Reçu ${sale.id}`, text });
+        await navigator.share({ title: `Reçu ${receiptNum}`, text });
       } catch (err) {
         if ((err as Error).name !== 'AbortError') this.fallbackShare(text);
       }

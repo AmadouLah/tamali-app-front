@@ -155,7 +155,7 @@
               <div class="flex justify-between items-center gap-2 p-2.5 sm:p-3 rounded-lg glass-effect-subtle border min-w-0" [ngClass]="{'border-yellow-500/50': sale.isLocal, 'border-white/10': !sale.isLocal}">
                 <div class="min-w-0 flex-1">
                   <div class="flex items-center gap-2">
-                    <p class="font-medium text-white text-sm sm:text-base truncate">#{{ sale.id.substring(0, 8) }}</p>
+                    <p class="font-medium text-white text-sm sm:text-base truncate">#{{ (sale.receiptNumber ?? sale.id).substring(0, 16) }}</p>
                     @if (sale.isLocal) {
                       <span class="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/30" title="En attente de synchronisation">Hors ligne</span>
                     }
