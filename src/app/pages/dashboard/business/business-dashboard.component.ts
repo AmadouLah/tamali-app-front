@@ -8,6 +8,8 @@ import { BusinessOperationsService } from '../../../core/services/business-opera
 import { BusinessDashboardCacheService } from '../../../core/services/business-dashboard-cache.service';
 import { GlassCardComponent } from '../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent } from '../../../shared/components/admin-sidebar/admin-sidebar.component';
+import { AnnouncementBannerComponent } from '../../../shared/components/announcement-banner/announcement-banner.component';
+import { AnnouncementService } from '../../../core/services/announcement.service';
 import { getBusinessMenuItems } from './business-menu.const';
 import { UserAvatarComponent } from '../../../shared/components/user-avatar/user-avatar.component';
 import type { SaleDto, SaleItemDto, ProductDto } from '../../../core/models/product.model';
@@ -47,7 +49,7 @@ interface PieSlice {
 @Component({
   selector: 'app-business-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, GlassCardComponent, AdminSidebarComponent, UserAvatarComponent],
+  imports: [CommonModule, RouterModule, GlassCardComponent, AdminSidebarComponent, UserAvatarComponent, AnnouncementBannerComponent],
   templateUrl: './business-dashboard.component.html',
   styleUrl: './business-dashboard.component.css'
 })
@@ -56,8 +58,10 @@ export class BusinessDashboardComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly dashboardCache = inject(BusinessDashboardCacheService);
+  private readonly announcementService = inject(AnnouncementService);
 
   user: UserDto | null = null;
+  currentAnnouncement: { id: string; message: string } | null = null;
   business: BusinessDto | null = null;
   sales: SaleDto[] = [];
   products: ProductDto[] = [];
@@ -97,7 +101,12 @@ export class BusinessDashboardComponent implements OnInit {
       this.router.navigate(['/dashboard/business/sales']);
       return;
     }
+    this.announcementService.getCurrent().subscribe(a => { this.currentAnnouncement = a; });
     this.loadBusiness();
+  }
+
+  onAnnouncementClosed(): void {
+    this.currentAnnouncement = null;
   }
 
   private loadBusiness(): void {

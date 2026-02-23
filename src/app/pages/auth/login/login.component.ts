@@ -3,12 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { AnnouncementService } from '../../../core/services/announcement.service';
 import { GlassCardComponent } from '../../../shared/components/glass-card/glass-card.component';
+import { AnnouncementBannerComponent } from '../../../shared/components/announcement-banner/announcement-banner.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, GlassCardComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, GlassCardComponent, AnnouncementBannerComponent],
   templateUrl: './login.component.html',
   styleUrl: './login.component.css'
 })
@@ -16,6 +18,7 @@ export class LoginComponent implements OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
+  private readonly announcementService = inject(AnnouncementService);
 
   loginForm: FormGroup;
   passwordForm: FormGroup;
@@ -30,6 +33,7 @@ export class LoginComponent implements OnDestroy {
   maxResendAttempts = 3;
   private resendTimer: any = null;
   mustChangePassword = false;
+  currentAnnouncement: { id: string; message: string } | null = null;
 
   constructor() {
     this.loginForm = this.fb.group({
@@ -45,6 +49,11 @@ export class LoginComponent implements OnDestroy {
     });
 
     // La vérification automatique est gérée dans onCodeInput pour éviter les doubles appels
+    this.announcementService.getCurrent().subscribe(a => { this.currentAnnouncement = a; });
+  }
+
+  onAnnouncementClosed(): void {
+    this.currentAnnouncement = null;
   }
 
   onSubmitEmail(): void {

@@ -16,6 +16,11 @@
   ></app-admin-sidebar>
 
   <div class="dashboard-main">
+    <app-announcement-banner
+      *ngIf="currentAnnouncement"
+      [announcement]="currentAnnouncement"
+      (closed)="onAnnouncementClosed()"
+    ></app-announcement-banner>
     <header class="glass-effect-strong border-b border-white/20 dashboard-header sticky top-0 z-30">
       <button
         type="button"

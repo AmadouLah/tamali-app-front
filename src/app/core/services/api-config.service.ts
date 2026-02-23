@@ -78,4 +78,12 @@ export class ApiConfigService {
   getSuperAdminBusinessesUrl(): string {
     return `${this.baseUrl}/super-admin/businesses`;
   }
+
+  getAnnouncementCurrentUrl(): string {
+    return `${this.baseUrl}/announcements/current`;
+  }
+
+  getSuperAdminAnnouncementsUrl(): string {
+    return `${this.baseUrl}/super-admin/announcements`;
+  }
 }

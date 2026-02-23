@@ -35,6 +35,8 @@ export class AdminSidebarComponent implements OnInit {
     const route = this.router.url;
     if (route.includes('add-business-owner')) {
       this.activeMenu = 'ajouter propriétaire';
+    } else if (route.includes('admin/announcements')) {
+      this.activeMenu = 'annonces';
     } else if (route.includes('business-sectors')) {
       this.activeMenu = 'secteurs d\'activité';
     } else if (route.includes('business/company')) {

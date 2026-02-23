@@ -1,0 +1,125 @@
+<div class="admin-dashboard-container min-h-screen relative overflow-x-hidden" data-theme="liquidGlace">
+  <div class="liquid-gradient fixed inset-0 -z-10"></div>
+  <div class="fixed inset-0 -z-10 bg-gradient-to-br from-slate-900/90 via-purple-900/80 to-slate-900/90"></div>
+  <div class="geometric-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
+
+  <app-admin-sidebar
+    [menuItems]="menuItems"
+    [activeMenu]="activeMenu"
+    [mobileOpen]="sidebarOpen"
+    (mobileOpenChange)="sidebarOpen = $event"
+    (menuClick)="activeMenu = $event"
+  ></app-admin-sidebar>
+
+  <div class="dashboard-main">
+    <header class="glass-effect-strong border-b border-white/20 dashboard-header sticky top-0 z-30">
+      <button
+        type="button"
+        class="lg:hidden shrink-0 p-2 rounded-lg glass-effect-subtle border border-white/20 text-white hover:bg-white/10 transition-colors"
+        (click)="sidebarOpen = !sidebarOpen"
+        aria-label="Ouvrir le menu"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <div class="min-w-0 flex-1">
+        <h1 class="text-xl md:text-2xl font-bold text-white truncate">Annonces & communication</h1>
+        <p class="text-gray-300 text-sm mt-0.5 hidden sm:block">Informer tous les utilisateurs en cas de problème ou maintenance</p>
+      </div>
+    </header>
+
+    <main class="dashboard-content">
+      <div class="max-w-3xl mx-auto space-y-6">
+        <!-- Message affiché sur l'application -->
+        <app-glass-card variant="strong" class="p-6">
+          <h2 class="text-lg font-bold text-white mb-2">Message affiché sur l'application</h2>
+          <p class="text-gray-400 text-sm mb-4">Ce message s'affiche sur la page de connexion et les tableaux de bord. Les utilisateurs peuvent le fermer (masqué jusqu'au prochain message).</p>
+          @if (loadingCurrent) {
+            <p class="text-gray-400 text-sm">Chargement...</p>
+          } @else {
+            <form [formGroup]="bannerForm" (ngSubmit)="saveBanner()" class="space-y-4">
+              <div>
+                <label for="banner-message" class="block text-sm font-medium text-gray-300 mb-2">Message</label>
+                <textarea
+                  id="banner-message"
+                  formControlName="message"
+                  rows="4"
+                  class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-y"
+                  placeholder="Ex. Maintenance prévue ce soir de 22h à 23h. Merci de votre compréhension."
+                ></textarea>
+                @if (bannerForm.get('message')?.invalid && bannerForm.get('message')?.touched) {
+                  <p class="mt-1 text-sm text-red-400">Le message est requis (max 2000 caractères).</p>
+                }
+              </div>
+              <div class="flex flex-wrap gap-3">
+                <button
+                  type="submit"
+                  [disabled]="bannerForm.invalid || loadingBanner"
+                  class="btn btn-primary rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {{ loadingBanner ? 'Enregistrement...' : 'Enregistrer le message' }}
+                </button>
+                @if (current) {
+                  <button
+                    type="button"
+                    [disabled]="loadingBanner"
+                    class="btn btn-outline border-amber-500/50 text-amber-300 hover:bg-amber-500/10 rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50"
+                    (click)="clearBanner()"
+                  >
+                    Retirer le message
+                  </button>
+                }
+              </div>
+            </form>
+          }
+        </app-glass-card>
+
+        <!-- Email à tous -->
+        <app-glass-card variant="strong" class="p-6">
+          <h2 class="text-lg font-bold text-white mb-2">Envoyer un email à tous les utilisateurs</h2>
+          <p class="text-gray-400 text-sm mb-4">Envoie un email à chaque utilisateur actif (propriétaires et associés). Utilisez cette option pour des informations importantes (incident, maintenance, etc.).</p>
+          <form [formGroup]="emailForm" (ngSubmit)="sendBroadcastEmail()" class="space-y-4">
+            <div>
+              <label for="email-subject" class="block text-sm font-medium text-gray-300 mb-2">Sujet</label>
+              <input
+                id="email-subject"
+                type="text"
+                formControlName="subject"
+                class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="Ex. Incident technique — Tamali"
+              />
+              @if (emailForm.get('subject')?.invalid && emailForm.get('subject')?.touched) {
+                <p class="mt-1 text-sm text-red-400">Le sujet est requis (max 200 caractères).</p>
+              }
+            </div>
+            <div>
+              <label for="email-message" class="block text-sm font-medium text-gray-300 mb-2">Message</label>
+              <textarea
+                id="email-message"
+                formControlName="message"
+                rows="5"
+                class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-y"
+                placeholder="Décrivez l'incident ou l'information à communiquer..."
+              ></textarea>
+              @if (emailForm.get('message')?.invalid && emailForm.get('message')?.touched) {
+                <p class="mt-1 text-sm text-red-400">Le message est requis (max 5000 caractères).</p>
+              }
+            </div>
+            <button
+              type="submit"
+              [disabled]="emailForm.invalid || loadingEmail"
+              class="btn btn-primary rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {{ loadingEmail ? 'Envoi en cours...' : 'Envoyer l\'email à tous' }}
+            </button>
+          </form>
+        </app-glass-card>
+      </div>
+    </main>
+  </div>
+</div>

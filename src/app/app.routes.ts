@@ -83,5 +83,9 @@ export const routes: Routes = [
   {
     path: 'dashboard/admin/account',
     loadComponent: () => import('./pages/dashboard/admin/account/account.component').then(m => m.AccountComponent)
+  },
+  {
+    path: 'dashboard/admin/announcements',
+    loadComponent: () => import('./pages/dashboard/admin/announcements/announcements.component').then(m => m.AnnouncementsComponent)
   }
 ];

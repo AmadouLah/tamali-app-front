@@ -13,13 +13,16 @@ import type {
 } from '../../../core/models/super-admin-dashboard.types';
 import { GlassCardComponent } from '../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent, MenuItem } from '../../../shared/components/admin-sidebar/admin-sidebar.component';
+import { AnnouncementBannerComponent } from '../../../shared/components/announcement-banner/announcement-banner.component';
+import { AnnouncementService } from '../../../core/services/announcement.service';
+import { ADMIN_MENU_ITEMS } from './admin-menu.const';
 
 export type { ServiceRequestDto, BusinessSummaryDto };
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, GlassCardComponent, AdminSidebarComponent],
+  imports: [CommonModule, FormsModule, RouterModule, GlassCardComponent, AdminSidebarComponent, AnnouncementBannerComponent],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.css'
 })
@@ -29,8 +32,10 @@ export class AdminDashboardComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly apiConfig = inject(ApiConfigService);
   private readonly state = inject(AdminDashboardStateService);
+  private readonly announcementService = inject(AnnouncementService);
 
   user: UserDto | null = null;
+  currentAnnouncement: { id: string; message: string } | null = null;
   dashboard: SuperAdminDashboard | null = null;
   businesses: BusinessSummaryDto[] = [];
   serviceRequests: ServiceRequestDto[] = [];
@@ -43,12 +48,7 @@ export class AdminDashboardComponent implements OnInit {
   searchQuery = '';
   sidebarOpen = false;
 
-  menuItems: MenuItem[] = [
-    { label: 'Dashboard', icon: 'grid', route: '/dashboard/admin' },
-    { label: 'Ajouter Propriétaire', icon: 'user-plus', route: '/dashboard/admin/add-business-owner' },
-    { label: 'Secteurs d\'activité', icon: 'briefcase', route: '/dashboard/admin/business-sectors' },
-    { label: 'Mon Compte', icon: 'user', route: '/dashboard/admin/account' }
-  ];
+  menuItems: MenuItem[] = ADMIN_MENU_ITEMS;
 
   ngOnInit(): void {
     this.user = this.authService.getUser();
@@ -57,6 +57,7 @@ export class AdminDashboardComponent implements OnInit {
       return;
     }
     this.updateActiveMenuFromRoute();
+    this.announcementService.getCurrent().subscribe(a => { this.currentAnnouncement = a; });
     if (this.state.hasData()) {
       this.dashboard = this.state.getDashboard();
       this.businesses = this.state.getBusinesses();
@@ -66,9 +67,14 @@ export class AdminDashboardComponent implements OnInit {
     }
   }
 
+  onAnnouncementClosed(): void {
+    this.currentAnnouncement = null;
+  }
+
   private updateActiveMenuFromRoute(): void {
     const currentRoute = this.router.url;
     if (currentRoute.includes('add-business-owner')) this.activeMenu = 'ajouter propriétaire';
+    else if (currentRoute.includes('announcements')) this.activeMenu = 'annonces';
     else if (currentRoute.includes('business-sectors')) this.activeMenu = 'secteurs d\'activité';
     else if (currentRoute.includes('account')) this.activeMenu = 'mon compte';
     else if (currentRoute.includes('admin')) this.activeMenu = 'dashboard';

@@ -9,6 +9,7 @@ import { ToastService } from '../../../../core/services/toast.service';
 import { extractErrorMessage } from '../../../../core/utils/error.utils';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent, MenuItem } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
+import { ADMIN_MENU_ITEMS } from '../admin-menu.const';
 import { UserDto } from '../../../../core/services/auth.service';
 
 interface CreateBusinessOwnerRequest {
@@ -77,18 +78,7 @@ export class AddBusinessOwnerComponent implements OnInit, OnDestroy {
   // Set pour tracker les restaurations en cours pour éviter les boucles infinies
   private restoringRoles = new Set<string>();
 
-  menuItems: MenuItem[] = [
-    { label: 'Dashboard', icon: 'grid', route: '/dashboard/admin' },
-    { label: 'Ajouter Propriétaire', icon: 'user-plus', route: '/dashboard/admin/add-business-owner' },
-    { label: 'Secteurs d\'activité', icon: 'briefcase', route: '/dashboard/admin/business-sectors' },
-    { label: 'Mon Compte', icon: 'user', route: '/dashboard/admin/account' },
-    { label: 'Performance', icon: 'chart-up' },
-    { label: 'Statistics', icon: 'bar-chart' },
-    { label: 'Analytics', icon: 'line-chart' },
-    { label: 'Payments', icon: 'credit-card', badge: 3 },
-    { label: 'Help', icon: 'help-circle' },
-    { label: 'Settings', icon: 'settings' }
-  ];
+  menuItems: MenuItem[] = ADMIN_MENU_ITEMS;
 
   ngOnInit(): void {
     this.initForm();
