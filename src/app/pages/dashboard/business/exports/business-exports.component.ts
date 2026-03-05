@@ -7,11 +7,7 @@ import { AuthService, UserDto } from '../../../../core/services/auth.service';
 import { BusinessExportService, ExportFormat, ExportPeriod } from '../../../../core/services/business-export.service';
 import { IndexedDbService } from '../../../../core/services/indexed-db.service';
 import { BusinessOperationsService } from '../../../../core/services/business-operations.service';
-import type {
-  SaleDto,
-  StockMovementDto,
-  BusinessActivityEntryDto
-} from '../../../../core/models/product.model';
+import type { SaleDto, StockMovementDto, BusinessActivityEntryDto } from '../../../../core/models/product.model';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
 import { UserAvatarComponent } from '../../../../shared/components/user-avatar/user-avatar.component';
@@ -104,6 +100,7 @@ export class BusinessExportsComponent implements OnInit {
         s.id,
         s.businessId,
         s.cashierId,
+        this.getActorRole(s.cashierId),
         s.totalAmount,
         s.taxAmount ?? 0,
         (s as any).status ?? 'SYNCHRONISÉ',
@@ -114,6 +111,7 @@ export class BusinessExportsComponent implements OnInit {
         'ID',
         'ID entreprise',
         'ID utilisateur',
+        'Rôle (propriétaire / associé)',
         'Montant total',
         'TVA',
         'Statut',
@@ -135,12 +133,19 @@ export class BusinessExportsComponent implements OnInit {
         this.exportService.getStockMovementsExport(this.businessId, this.period, custom)
       );
 
+      const actorId = this.user?.id ?? '';
+      const actorRole = this.getActorRole(actorId);
+      const actorName = this.authService.getDisplayName(this.user);
+
       const apiRows = movements.map((m: StockMovementDto) => [
         m.id,
         m.businessId,
         m.productId,
         m.quantity,
         m.type,
+        actorId,
+        actorRole,
+        actorName,
         'SYNCHRONISÉ',
         m.movementAt
       ]);
@@ -158,6 +163,9 @@ export class BusinessExportsComponent implements OnInit {
               product.id,
               m.quantity,
               m.type,
+              actorId,
+              actorRole,
+              actorName,
               'HORS_LIGNE',
               new Date(m.timestamp).toISOString()
             ]);
@@ -172,6 +180,9 @@ export class BusinessExportsComponent implements OnInit {
         'ID produit',
         'Quantité',
         'Type',
+        'ID utilisateur',
+        'Rôle (propriétaire / associé)',
+        'Nom utilisateur',
         'Statut',
         'Date mouvement'
       ];
@@ -197,6 +208,7 @@ export class BusinessExportsComponent implements OnInit {
         e.type,
         e.action,
         e.userId ?? '',
+        this.getActorRole(e.userId ?? undefined),
         e.userDisplayName ?? '',
         e.syncStatus,
         e.occurredAt
@@ -214,6 +226,7 @@ export class BusinessExportsComponent implements OnInit {
             'VENTE',
             'Création de vente (hors ligne)',
             sale?.cashierId ?? '',
+            this.getActorRole(sale?.cashierId),
             '',
             'HORS_LIGNE',
             saleDate
@@ -228,6 +241,7 @@ export class BusinessExportsComponent implements OnInit {
         'Type',
         'Action',
         'ID utilisateur',
+        'Rôle (propriétaire / associé)',
         'Nom utilisateur',
         'Statut',
         'Horodatage'
@@ -251,6 +265,18 @@ export class BusinessExportsComponent implements OnInit {
 
   getDisplayName(): string {
     return this.authService.getDisplayName(this.user);
+  }
+
+  private getActorRole(userId: string | null | undefined): string {
+    if (!userId || !this.user) return '';
+    if (userId === this.user.id && this.authService.isBusinessOwner(this.user)) {
+      return 'Propriétaire';
+    }
+    if (userId === this.user.id && this.authService.isBusinessAssociate(this.user)) {
+      return 'Associé';
+    }
+    // Pour les autres utilisateurs du même business, on les considère comme associés.
+    return 'Associé';
   }
 
   private getCustomRange(): { from?: Date | null; to?: Date | null } | undefined {
