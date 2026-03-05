@@ -282,7 +282,8 @@ export class OfflineHttpService {
               productId,
               quantity: req.body.quantity || 0,
               type: req.body.type || 'IN',
-              requestId
+              requestId,
+              userId: req.body.userId
             });
           }
         }

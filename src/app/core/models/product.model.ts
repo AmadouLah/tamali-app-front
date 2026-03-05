@@ -94,6 +94,7 @@ export interface SaleCreateRequest {
 export interface StockMovementCreateRequest {
   quantity: number;
   type: MovementType;
+  userId?: string;
 }
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {

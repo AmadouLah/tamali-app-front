@@ -122,7 +122,11 @@ export class BusinessStockComponent implements OnInit {
     const v = this.stockForm.getRawValue() as StockMovementCreateRequest;
     this.submitting = true;
     const type = this.isEntryOnly ? 'IN' : v.type;
-    const body = { quantity: Math.abs(v.quantity), type };
+    const body: StockMovementCreateRequest = {
+      quantity: Math.abs(v.quantity),
+      type,
+      userId: this.user?.id
+    };
     
     // Vérifier le stock disponible pour les sorties
     if (type === 'OUT' || type === 'SALE') {

@@ -310,6 +310,7 @@ export class IndexedDbService {
     quantity: number;
     type: string;
     requestId: string;
+    userId?: string;
   }): Promise<void> {
     await this.init();
     await this.db!.put('localStockMovements', {
@@ -327,6 +328,7 @@ export class IndexedDbService {
     requestId: string;
     timestamp: number;
     synced: boolean;
+    userId?: string;
   }>> {
     await this.init();
     const index = this.db!.transaction('localStockMovements').store.index('productId');

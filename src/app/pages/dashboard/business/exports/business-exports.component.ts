@@ -133,9 +133,9 @@ export class BusinessExportsComponent implements OnInit {
         this.exportService.getStockMovementsExport(this.businessId, this.period, custom)
       );
 
-      const actorId = this.user?.id ?? '';
-      const actorRole = this.getActorRole(actorId);
-      const actorName = this.authService.getDisplayName(this.user);
+      const currentUserId = this.user?.id ?? '';
+      const currentUserRole = this.getActorRole(currentUserId);
+      const currentUserName = this.authService.getDisplayName(this.user);
 
       const apiRows = movements.map((m: StockMovementDto) => [
         m.id,
@@ -143,9 +143,9 @@ export class BusinessExportsComponent implements OnInit {
         m.productId,
         m.quantity,
         m.type,
-        actorId,
-        actorRole,
-        actorName,
+        currentUserId,
+        currentUserRole,
+        currentUserName,
         'SYNCHRONISÉ',
         m.movementAt
       ]);
@@ -157,6 +157,9 @@ export class BusinessExportsComponent implements OnInit {
         locals
           .filter(m => !m.synced)
           .forEach(m => {
+            const actorId = m.userId || this.user?.id || '';
+            const actorRole = this.getActorRole(actorId);
+            const actorName = actorId === this.user?.id ? this.authService.getDisplayName(this.user) : '';
             localMovementsRows.push([
               m.id,
               product.businessId,
