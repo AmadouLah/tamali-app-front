@@ -133,19 +133,15 @@ export class BusinessExportsComponent implements OnInit {
         this.exportService.getStockMovementsExport(this.businessId, this.period, custom)
       );
 
-      const currentUserId = this.user?.id ?? '';
-      const currentUserRole = this.getActorRole(currentUserId);
-      const currentUserName = this.authService.getDisplayName(this.user);
-
       const apiRows = movements.map((m: StockMovementDto) => [
         m.id,
         m.businessId,
         m.productId,
         m.quantity,
         m.type,
-        currentUserId,
-        currentUserRole,
-        currentUserName,
+        m.userId ?? '',
+        this.getActorRole(m.userId ?? undefined),
+        m.userDisplayName ?? '',
         'SYNCHRONISÉ',
         m.movementAt
       ]);

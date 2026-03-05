@@ -43,6 +43,8 @@ export interface StockMovementDto {
   id: string;
   productId: string;
   businessId: string;
+  userId?: string | null;
+  userDisplayName?: string | null;
   quantity: number;
   type: MovementType;
   movementAt: string;
