@@ -1,0 +1,312 @@
+<div class="min-h-screen bg-slate-950 text-slate-100 flex">
+  <app-admin-sidebar
+    [menuItems]="menuItems"
+    [active]="activeMenu"
+    [open]="sidebarOpen"
+    (toggle)="sidebarOpen = !sidebarOpen"
+  ></app-admin-sidebar>
+
+  <div class="flex-1 flex flex-col">
+    <header
+      class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between px-4 md:px-6 py-4 border-b border-white/5 bg-slate-950/60 backdrop-blur"
+    >
+      <div class="flex items-start gap-3">
+        <div
+          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-600/20 text-violet-200 border border-violet-500/40"
+          aria-hidden="true"
+        >
+          <svg
+            class="h-5 w-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <h1 class="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight">
+            Exports d'activités
+          </h1>
+          <p class="mt-1 text-xs sm:text-sm text-slate-400 leading-snug">
+            Exportez les ventes, mouvements de stock et le journal d'activités pour vos contrôles,
+            votre comptabilité et vos besoins juridiques.
+          </p>
+        </div>
+      </div>
+      <div class="flex justify-end">
+        <app-user-avatar
+          [user]="user"
+          [displayName]="getDisplayName()"
+        ></app-user-avatar>
+      </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto px-4 md:px-8 py-6 space-y-6">
+      <section class="max-w-5xl mx-auto w-full">
+        <app-glass-card>
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h2 class="text-sm font-medium text-slate-200 uppercase tracking-wide">Période</h2>
+              <p class="text-xs text-slate-400">
+                Choisissez la période à exporter. Par défaut, toutes les données sont prises en compte.
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                class="px-3 py-1.5 rounded-full text-xs border transition
+                       hover:border-violet-500 hover:text-violet-200"
+                [class.bg-violet-600]="period === 'ALL'"
+                [class.text-white]="period === 'ALL'"
+                (click)="setPeriod('ALL')"
+              >
+                Depuis le début
+              </button>
+              <button
+                type="button"
+                class="px-3 py-1.5 rounded-full text-xs border transition
+                       hover:border-violet-500 hover:text-violet-200"
+                [class.bg-violet-600]="period === 'TODAY'"
+                [class.text-white]="period === 'TODAY'"
+                (click)="setPeriod('TODAY')"
+              >
+                Aujourd'hui
+              </button>
+              <button
+                type="button"
+                class="px-3 py-1.5 rounded-full text-xs border transition
+                       hover:border-violet-500 hover:text-violet-200"
+                [class.bg-violet-600]="period === 'THIS_WEEK'"
+                [class.text-white]="period === 'THIS_WEEK'"
+                (click)="setPeriod('THIS_WEEK')"
+              >
+                Cette semaine
+              </button>
+              <button
+                type="button"
+                class="px-3 py-1.5 rounded-full text-xs border transition
+                       hover:border-violet-500 hover:text-violet-200"
+                [class.bg-violet-600]="period === 'THIS_MONTH'"
+                [class.text-white]="period === 'THIS_MONTH'"
+                (click)="setPeriod('THIS_MONTH')"
+              >
+                Ce mois
+              </button>
+              <button
+                type="button"
+                class="px-3 py-1.5 rounded-full text-xs border transition
+                       hover:border-violet-500 hover:text-violet-200"
+                [class.bg-violet-600]="period === 'SIX_MONTHS'"
+                [class.text-white]="period === 'SIX_MONTHS'"
+                (click)="setPeriod('SIX_MONTHS')"
+              >
+                6 mois
+              </button>
+              <button
+                type="button"
+                class="px-3 py-1.5 rounded-full text-xs border transition
+                       hover:border-violet-500 hover:text-violet-200"
+                [class.bg-violet-600]="period === 'ONE_YEAR'"
+                [class.text-white]="period === 'ONE_YEAR'"
+                (click)="setPeriod('ONE_YEAR')"
+              >
+                1 an
+              </button>
+              <button
+                type="button"
+                class="px-3 py-1.5 rounded-full text-xs border transition
+                       hover:border-violet-500 hover:text-violet-200"
+                [class.bg-violet-600]="period === 'CUSTOM'"
+                [class.text-white]="period === 'CUSTOM'"
+                (click)="setPeriod('CUSTOM')"
+              >
+                Personnalisé
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4"
+            *ngIf="period === 'CUSTOM'"
+          >
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-slate-300">Du</label>
+              <input
+                type="datetime-local"
+                class="bg-slate-900/70 border border-slate-700 rounded-lg px-3 py-2 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-violet-500/70"
+                [(ngModel)]="customFrom"
+              />
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-slate-300">Au</label>
+              <input
+                type="datetime-local"
+                class="bg-slate-900/70 border border-slate-700 rounded-lg px-3 py-2 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-violet-500/70"
+                [(ngModel)]="customTo"
+              />
+            </div>
+          </div>
+        </app-glass-card>
+      </section>
+
+      <section class="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-5xl mx-auto w-full">
+        <app-glass-card>
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h3 class="text-base font-semibold">Export des ventes</h3>
+              <p class="text-xs text-slate-400 mt-1">
+                Détail de toutes les ventes (ID unique, montant, TVA, date). Parfait pour la comptabilité et les contrôles.
+              </p>
+            </div>
+          </div>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="btn-secondary"
+              [disabled]="loadingSales"
+              (click)="exportSales('CSV')"
+            >
+              CSV
+            </button>
+            <button
+              type="button"
+              class="btn-secondary"
+              [disabled]="loadingSales"
+              (click)="exportSales('EXCEL')"
+            >
+              Excel
+            </button>
+            <button
+              type="button"
+              class="btn-outline"
+              [disabled]="loadingSales"
+              (click)="exportSales('PDF')"
+            >
+              PDF
+            </button>
+          </div>
+        </app-glass-card>
+
+        <app-glass-card>
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h3 class="text-base font-semibold">Export des mouvements de stock</h3>
+              <p class="text-xs text-slate-400 mt-1">
+                Entrées, sorties et mouvements liés aux ventes, avec quantité, produit et date exacte.
+              </p>
+            </div>
+          </div>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="btn-secondary"
+              [disabled]="loadingStock"
+              (click)="exportStockMovements('CSV')"
+            >
+              CSV
+            </button>
+            <button
+              type="button"
+              class="btn-secondary"
+              [disabled]="loadingStock"
+              (click)="exportStockMovements('EXCEL')"
+            >
+              Excel
+            </button>
+            <button
+              type="button"
+              class="btn-outline"
+              [disabled]="loadingStock"
+              (click)="exportStockMovements('PDF')"
+            >
+              PDF
+            </button>
+          </div>
+        </app-glass-card>
+
+        <app-glass-card>
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h3 class="text-base font-semibold">Export du journal d'activités</h3>
+              <p class="text-xs text-slate-400 mt-1">
+                Qui a fait quoi et quand (propriétaire / associé), avec statut de synchronisation.
+              </p>
+            </div>
+          </div>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="btn-secondary"
+              [disabled]="loadingActivity"
+              (click)="exportActivityLog('CSV')"
+            >
+              CSV
+            </button>
+            <button
+              type="button"
+              class="btn-secondary"
+              [disabled]="loadingActivity"
+              (click)="exportActivityLog('EXCEL')"
+            >
+              Excel
+            </button>
+            <button
+              type="button"
+              class="btn-outline"
+              [disabled]="loadingActivity"
+              (click)="exportActivityLog('PDF')"
+            >
+              PDF
+            </button>
+          </div>
+        </app-glass-card>
+
+        <app-glass-card class="border-violet-500/50 border">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h3 class="text-base font-semibold">Exporter tout</h3>
+              <p class="text-xs text-slate-400 mt-1">
+                Génère en une fois les 3 exports (ventes, stock, journal). Idéal pour les contrôles fiscaux ou les audits.
+              </p>
+            </div>
+          </div>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="btn-primary"
+              [disabled]="loadingSales || loadingStock || loadingActivity"
+              (click)="exportAll('CSV')"
+            >
+              Tout en CSV
+            </button>
+            <button
+              type="button"
+              class="btn-primary"
+              [disabled]="loadingSales || loadingStock || loadingActivity"
+              (click)="exportAll('EXCEL')"
+            >
+              Tout en Excel
+            </button>
+            <button
+              type="button"
+              class="btn-outline"
+              [disabled]="loadingSales || loadingStock || loadingActivity"
+              (click)="exportAll('PDF')"
+            >
+              Tout en PDF
+            </button>
+          </div>
+        </app-glass-card>
+      </section>
+    </main>
+  </div>
+</div>
+

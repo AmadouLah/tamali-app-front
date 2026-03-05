@@ -39,6 +39,26 @@ export interface SaleDto {
 export type PaymentMethod = 'CASH' | 'ORANGE_MONEY' | 'CARD';
 export type MovementType = 'IN' | 'OUT' | 'SALE';
 
+export interface StockMovementDto {
+  id: string;
+  productId: string;
+  businessId: string;
+  quantity: number;
+  type: MovementType;
+  movementAt: string;
+}
+
+export interface BusinessActivityEntryDto {
+  type: 'VENTE' | 'MOUVEMENT_STOCK';
+  action: string;
+  id: string;
+  businessId: string;
+  userId?: string | null;
+  userDisplayName?: string | null;
+  occurredAt: string;
+  syncStatus: 'SYNCHRONISÉ' | 'HORS_LIGNE' | 'CORRIGÉ';
+}
+
 export interface ProductCreateRequest {
   name: string;
   reference?: string;

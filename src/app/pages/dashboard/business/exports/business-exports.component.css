@@ -1,0 +1,23 @@
+.btn-primary {
+  @apply inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-lg
+    bg-violet-600 text-white hover:bg-violet-500 transition w-full sm:w-auto;
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-lg
+    bg-slate-800 text-slate-100 hover:bg-slate-700 border border-slate-600/60 transition
+    w-full sm:w-auto;
+}
+
+.btn-outline {
+  @apply inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-lg
+    border border-slate-600 text-slate-200 hover:border-violet-400 hover:text-violet-100 transition
+    bg-transparent w-full sm:w-auto;
+}
+
+@media (max-width: 640px) {
+  :host {
+    display: block;
+  }
+}
+

@@ -71,6 +71,22 @@ export class ApiConfigService {
     return `${this.baseUrl}/products/${productId}/stock-movements`;
   }
 
+  getBusinessExportsBaseUrl(businessId: string): string {
+    return `${this.baseUrl}/businesses/${businessId}/exports`;
+  }
+
+  getBusinessSalesExportUrl(businessId: string): string {
+    return `${this.getBusinessExportsBaseUrl(businessId)}/sales`;
+  }
+
+  getStockMovementsExportUrl(businessId: string): string {
+    return `${this.getBusinessExportsBaseUrl(businessId)}/stock-movements`;
+  }
+
+  getActivityLogExportUrl(businessId: string): string {
+    return `${this.getBusinessExportsBaseUrl(businessId)}/activity-log`;
+  }
+
   getSuperAdminDashboardUrl(): string {
     return `${this.baseUrl}/super-admin/dashboard`;
   }
