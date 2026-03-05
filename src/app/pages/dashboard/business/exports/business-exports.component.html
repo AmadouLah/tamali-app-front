@@ -1,9 +1,8 @@
-<div class="min-h-screen bg-slate-950 text-slate-100 flex">
+<div class="min-h-screen bg-slate-950 text-slate-100 flex lg:pl-64">
   <app-admin-sidebar
     [menuItems]="menuItems"
-    [active]="activeMenu"
-    [open]="sidebarOpen"
-    (toggle)="sidebarOpen = !sidebarOpen"
+    [activeMenu]="activeMenu"
+    [(mobileOpen)]="sidebarOpen"
   ></app-admin-sidebar>
 
   <div class="flex-1 flex flex-col">
