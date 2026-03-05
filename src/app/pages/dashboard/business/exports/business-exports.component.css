@@ -15,6 +15,10 @@
     bg-transparent w-full sm:w-auto;
 }
 
+.export-grid app-glass-card {
+  @apply flex flex-col justify-between;
+}
+
 @media (max-width: 640px) {
   :host {
     display: block;
