@@ -1,174 +1,103 @@
-<div class="min-h-screen bg-slate-950 text-slate-100 flex lg:pl-64">
+<div class="exports-container min-h-screen relative overflow-x-hidden" data-theme="liquidGlace">
+  <div class="liquid-gradient fixed inset-0 -z-10"></div>
+  <div class="fixed inset-0 -z-10 bg-gradient-to-br from-slate-900/90 via-purple-900/80 to-slate-900/90"></div>
+  <div class="geometric-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
+
   <app-admin-sidebar
     [menuItems]="menuItems"
     [activeMenu]="activeMenu"
-    [(mobileOpen)]="sidebarOpen"
+    [mobileOpen]="sidebarOpen"
+    (mobileOpenChange)="sidebarOpen = $event"
+    (menuClick)="setActiveMenu($event)"
   ></app-admin-sidebar>
 
-  <div class="flex-1 flex flex-col">
-    <header
-      class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between px-4 md:px-6 py-4 border-b border-white/5 bg-slate-950/60 backdrop-blur"
-    >
-      <div class="flex items-start gap-3">
-        <div
-          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-600/20 text-violet-200 border border-violet-500/40"
-          aria-hidden="true"
-        >
-          <svg
-            class="h-5 w-5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" y1="3" x2="12" y2="15" />
-          </svg>
+  <div class="dashboard-main">
+    <header class="glass-effect-strong border-b border-white/20 dashboard-header sticky top-0 z-30">
+      <button
+        type="button"
+        class="lg:hidden shrink-0 p-2 rounded-lg glass-effect-subtle border border-white/20 text-white hover:bg-white/10 transition-colors"
+        (click)="sidebarOpen = !sidebarOpen"
+        aria-label="Ouvrir le menu"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </button>
+      <h1 class="dashboard-header-title text-lg sm:text-xl md:text-2xl font-bold text-white">Exports d'activités</h1>
+      <div class="dashboard-header-user">
+        <div class="text-right min-w-0 max-w-[100px] sm:max-w-none">
+          <div class="text-xs sm:text-sm font-semibold text-white truncate">{{ getDisplayName() }}</div>
+          <div class="text-xs text-gray-400 hidden sm:block">Export</div>
         </div>
-        <div class="min-w-0">
-          <h1 class="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight">
-            Exports d'activités
-          </h1>
-          <p class="mt-1 text-xs sm:text-sm text-slate-400 leading-snug">
-            Exportez les ventes, mouvements de stock et le journal d'activités pour vos contrôles,
-            votre comptabilité et vos besoins juridiques.
-          </p>
-        </div>
-      </div>
-      <div class="flex justify-end">
-        <app-user-avatar
-          [user]="user"
-        ></app-user-avatar>
+        <app-user-avatar [user]="user"></app-user-avatar>
       </div>
     </header>
 
-    <main class="flex-1 overflow-y-auto px-4 md:px-8 py-6 space-y-6">
-      <section class="max-w-6xl mx-auto w-full">
-        <app-glass-card>
-          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h2 class="text-sm font-medium text-slate-200 uppercase tracking-wide">Période</h2>
-              <p class="text-xs text-slate-400">
+    <main class="dashboard-content">
+      <section class="max-w-6xl mx-auto w-full min-w-0 space-y-3 sm:space-y-6">
+        <app-glass-card variant="strong" class="dashboard-card exports-period-card">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4">
+            <div class="min-w-0">
+              <h2 class="text-xs sm:text-sm font-medium text-gray-300 uppercase tracking-wide">Période</h2>
+              <p class="text-xs text-gray-400 mt-0.5 break-words">
                 Choisissez la période à exporter. Par défaut, toutes les données sont prises en compte.
               </p>
             </div>
-            <div class="flex flex-wrap gap-2">
-              <button
-                type="button"
-                class="px-3 py-1.5 rounded-full text-xs border transition
-                       hover:border-violet-500 hover:text-violet-200"
-                [class.bg-violet-600]="period === 'ALL'"
-                [class.text-white]="period === 'ALL'"
-                (click)="setPeriod('ALL')"
-              >
-                Depuis le début
-              </button>
-              <button
-                type="button"
-                class="px-3 py-1.5 rounded-full text-xs border transition
-                       hover:border-violet-500 hover:text-violet-200"
-                [class.bg-violet-600]="period === 'TODAY'"
-                [class.text-white]="period === 'TODAY'"
-                (click)="setPeriod('TODAY')"
-              >
-                Aujourd'hui
-              </button>
-              <button
-                type="button"
-                class="px-3 py-1.5 rounded-full text-xs border transition
-                       hover:border-violet-500 hover:text-violet-200"
-                [class.bg-violet-600]="period === 'THIS_WEEK'"
-                [class.text-white]="period === 'THIS_WEEK'"
-                (click)="setPeriod('THIS_WEEK')"
-              >
-                Cette semaine
-              </button>
-              <button
-                type="button"
-                class="px-3 py-1.5 rounded-full text-xs border transition
-                       hover:border-violet-500 hover:text-violet-200"
-                [class.bg-violet-600]="period === 'THIS_MONTH'"
-                [class.text-white]="period === 'THIS_MONTH'"
-                (click)="setPeriod('THIS_MONTH')"
-              >
-                Ce mois
-              </button>
-              <button
-                type="button"
-                class="px-3 py-1.5 rounded-full text-xs border transition
-                       hover:border-violet-500 hover:text-violet-200"
-                [class.bg-violet-600]="period === 'SIX_MONTHS'"
-                [class.text-white]="period === 'SIX_MONTHS'"
-                (click)="setPeriod('SIX_MONTHS')"
-              >
-                6 mois
-              </button>
-              <button
-                type="button"
-                class="px-3 py-1.5 rounded-full text-xs border transition
-                       hover:border-violet-500 hover:text-violet-200"
-                [class.bg-violet-600]="period === 'ONE_YEAR'"
-                [class.text-white]="period === 'ONE_YEAR'"
-                (click)="setPeriod('ONE_YEAR')"
-              >
-                1 an
-              </button>
-              <button
-                type="button"
-                class="px-3 py-1.5 rounded-full text-xs border transition
-                       hover:border-violet-500 hover:text-violet-200"
-                [class.bg-violet-600]="period === 'CUSTOM'"
-                [class.text-white]="period === 'CUSTOM'"
-                (click)="setPeriod('CUSTOM')"
-              >
-                Personnalisé
-              </button>
+            <div class="flex flex-wrap gap-1.5 sm:gap-2">
+              @for (p of periodOptions; track p.value) {
+                <button
+                  type="button"
+                  class="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors min-h-[2.25rem] sm:min-h-0 touch-manipulation"
+                  [ngClass]="getPeriodButtonClass(p.value)"
+                  (click)="setPeriod(p.value)"
+                >
+                  {{ p.label }}
+                </button>
+              }
             </div>
           </div>
 
-          <div
-            class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4"
-            *ngIf="period === 'CUSTOM'"
-          >
-            <div class="flex flex-col gap-1">
-              <label class="text-xs text-slate-300">Du</label>
-              <input
-                type="datetime-local"
-                class="bg-slate-900/70 border border-slate-700 rounded-lg px-3 py-2 text-sm
-                       focus:outline-none focus:ring-2 focus:ring-violet-500/70"
-                [(ngModel)]="customFrom"
-              />
+          @if (period === 'CUSTOM') {
+            <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div class="flex flex-col gap-1">
+                <label class="text-xs text-gray-300">Du</label>
+                <input
+                  type="datetime-local"
+                  class="w-full px-3 py-2 glass-effect-subtle border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-sm"
+                  [(ngModel)]="customFrom"
+                />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-xs text-gray-300">Au</label>
+                <input
+                  type="datetime-local"
+                  class="w-full px-3 py-2 glass-effect-subtle border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-sm"
+                  [(ngModel)]="customTo"
+                />
+              </div>
             </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-xs text-slate-300">Au</label>
-              <input
-                type="datetime-local"
-                class="bg-slate-900/70 border border-slate-700 rounded-lg px-3 py-2 text-sm
-                       focus:outline-none focus:ring-2 focus:ring-violet-500/70"
-                [(ngModel)]="customTo"
-              />
-            </div>
-          </div>
+          }
         </app-glass-card>
       </section>
 
-      <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-w-6xl mx-auto w-full">
-        <app-glass-card class="h-full">
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <h3 class="text-base font-semibold">Export des ventes</h3>
-              <p class="text-xs text-slate-400 mt-1">
+      <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 max-w-6xl mx-auto w-full min-w-0">
+        <app-glass-card variant="strong" class="dashboard-card exports-export-card h-full flex flex-col min-w-0">
+          <div class="flex items-start justify-between gap-3 min-w-0">
+            <div class="min-w-0 flex-1">
+              <h3 class="text-sm sm:text-base font-semibold text-white break-words">Export des ventes</h3>
+              <p class="text-xs text-gray-400 mt-1 break-words">
                 Détail de toutes les ventes (ID unique, montant, TVA, date). Parfait pour la comptabilité et les contrôles.
               </p>
             </div>
           </div>
-          <div class="mt-4 flex flex-wrap gap-2">
+          <div class="mt-3 sm:mt-4 flex flex-col sm:flex-row sm:flex-wrap gap-2">
             <button
               type="button"
-              class="btn-secondary"
+              class="btn-export w-full sm:w-auto"
               [disabled]="loadingSales"
               (click)="exportSales('CSV')"
             >
@@ -176,7 +105,7 @@
             </button>
             <button
               type="button"
-              class="btn-secondary"
+              class="btn-export w-full sm:w-auto"
               [disabled]="loadingSales"
               (click)="exportSales('EXCEL')"
             >
@@ -184,7 +113,7 @@
             </button>
             <button
               type="button"
-              class="btn-outline"
+              class="btn-export-outline w-full sm:w-auto"
               [disabled]="loadingSales"
               (click)="exportSales('PDF')"
             >
@@ -193,19 +122,19 @@
           </div>
         </app-glass-card>
 
-        <app-glass-card class="h-full">
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <h3 class="text-base font-semibold">Export des mouvements de stock</h3>
-              <p class="text-xs text-slate-400 mt-1">
+        <app-glass-card variant="strong" class="dashboard-card exports-export-card h-full flex flex-col min-w-0">
+          <div class="flex items-start justify-between gap-3 min-w-0">
+            <div class="min-w-0 flex-1">
+              <h3 class="text-sm sm:text-base font-semibold text-white break-words">Export des mouvements de stock</h3>
+              <p class="text-xs text-gray-400 mt-1 break-words">
                 Entrées, sorties et mouvements liés aux ventes, avec quantité, produit et date exacte.
               </p>
             </div>
           </div>
-          <div class="mt-4 flex flex-wrap gap-2">
+          <div class="mt-3 sm:mt-4 flex flex-col sm:flex-row sm:flex-wrap gap-2">
             <button
               type="button"
-              class="btn-secondary"
+              class="btn-export w-full sm:w-auto"
               [disabled]="loadingStock"
               (click)="exportStockMovements('CSV')"
             >
@@ -213,7 +142,7 @@
             </button>
             <button
               type="button"
-              class="btn-secondary"
+              class="btn-export w-full sm:w-auto"
               [disabled]="loadingStock"
               (click)="exportStockMovements('EXCEL')"
             >
@@ -221,7 +150,7 @@
             </button>
             <button
               type="button"
-              class="btn-outline"
+              class="btn-export-outline w-full sm:w-auto"
               [disabled]="loadingStock"
               (click)="exportStockMovements('PDF')"
             >
@@ -230,19 +159,19 @@
           </div>
         </app-glass-card>
 
-        <app-glass-card class="h-full">
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <h3 class="text-base font-semibold">Export du journal d'activités</h3>
-              <p class="text-xs text-slate-400 mt-1">
+        <app-glass-card variant="strong" class="dashboard-card exports-export-card h-full flex flex-col min-w-0">
+          <div class="flex items-start justify-between gap-3 min-w-0">
+            <div class="min-w-0 flex-1">
+              <h3 class="text-sm sm:text-base font-semibold text-white break-words">Export du journal d'activités</h3>
+              <p class="text-xs text-gray-400 mt-1 break-words">
                 Qui a fait quoi et quand (propriétaire / associé), avec statut de synchronisation.
               </p>
             </div>
           </div>
-          <div class="mt-4 flex flex-wrap gap-2">
+          <div class="mt-3 sm:mt-4 flex flex-col sm:flex-row sm:flex-wrap gap-2">
             <button
               type="button"
-              class="btn-secondary"
+              class="btn-export w-full sm:w-auto"
               [disabled]="loadingActivity"
               (click)="exportActivityLog('CSV')"
             >
@@ -250,7 +179,7 @@
             </button>
             <button
               type="button"
-              class="btn-secondary"
+              class="btn-export w-full sm:w-auto"
               [disabled]="loadingActivity"
               (click)="exportActivityLog('EXCEL')"
             >
@@ -258,7 +187,7 @@
             </button>
             <button
               type="button"
-              class="btn-outline"
+              class="btn-export-outline w-full sm:w-auto"
               [disabled]="loadingActivity"
               (click)="exportActivityLog('PDF')"
             >
@@ -267,19 +196,19 @@
           </div>
         </app-glass-card>
 
-        <app-glass-card class="border-violet-500/50 border h-full md:col-span-2 xl:col-span-1">
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <h3 class="text-base font-semibold">Exporter tout</h3>
-              <p class="text-xs text-slate-400 mt-1">
+        <app-glass-card variant="strong" class="dashboard-card exports-export-card exports-export-all h-full md:col-span-2 xl:col-span-1 border border-purple-400/40 min-w-0">
+          <div class="flex items-start justify-between gap-3 min-w-0">
+            <div class="min-w-0 flex-1">
+              <h3 class="text-sm sm:text-base font-semibold text-white break-words">Exporter tout</h3>
+              <p class="text-xs text-gray-400 mt-1 break-words">
                 Génère en une fois les 3 exports (ventes, stock, journal). Idéal pour les contrôles fiscaux ou les audits.
               </p>
             </div>
           </div>
-          <div class="mt-4 flex flex-wrap gap-2">
+          <div class="mt-3 sm:mt-4 flex flex-col sm:flex-row sm:flex-wrap gap-2">
             <button
               type="button"
-              class="btn-primary"
+              class="btn-export-primary w-full sm:w-auto"
               [disabled]="loadingSales || loadingStock || loadingActivity"
               (click)="exportAll('CSV')"
             >
@@ -287,7 +216,7 @@
             </button>
             <button
               type="button"
-              class="btn-primary"
+              class="btn-export-primary w-full sm:w-auto"
               [disabled]="loadingSales || loadingStock || loadingActivity"
               (click)="exportAll('EXCEL')"
             >
@@ -295,7 +224,7 @@
             </button>
             <button
               type="button"
-              class="btn-outline"
+              class="btn-export-outline w-full sm:w-auto"
               [disabled]="loadingSales || loadingStock || loadingActivity"
               (click)="exportAll('PDF')"
             >
@@ -307,4 +236,3 @@
     </main>
   </div>
 </div>
-

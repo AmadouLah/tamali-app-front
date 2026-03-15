@@ -1,27 +1,99 @@
-.btn-primary {
-  @apply inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-lg
-    bg-violet-600 text-white hover:bg-violet-500 transition w-full sm:w-auto;
+.exports-container {
+  @apply min-h-screen relative overflow-x-hidden;
 }
 
-.btn-secondary {
-  @apply inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-lg
-    bg-slate-800 text-slate-100 hover:bg-slate-700 border border-slate-600/60 transition
-    w-full sm:w-auto;
+.exports-container .dashboard-main {
+  @apply flex flex-col;
+  min-height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
 }
 
-.btn-outline {
-  @apply inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-lg
-    border border-slate-600 text-slate-200 hover:border-violet-400 hover:text-violet-100 transition
-    bg-transparent w-full sm:w-auto;
+.exports-container .dashboard-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
-.export-grid app-glass-card {
-  @apply flex flex-col justify-between;
+.geometric-shapes {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
 }
 
-@media (max-width: 640px) {
-  :host {
-    display: block;
+.shape {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.2;
+  animation: float-shape 20s ease-in-out infinite;
+}
+
+.shape-1 {
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  top: 10%;
+  left: 10%;
+}
+
+.shape-2 {
+  width: 250px;
+  height: 250px;
+  background: linear-gradient(135deg, #f093fb 0%, #4facfe 100%);
+  top: 60%;
+  right: 10%;
+  animation-delay: 7s;
+}
+
+.shape-3 {
+  width: 280px;
+  height: 280px;
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  bottom: 10%;
+  left: 50%;
+  animation-delay: 14s;
+}
+
+@keyframes float-shape {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -30px) scale(1.05); }
+  66% { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+/* Cartes et padding mobile */
+.exports-container .exports-period-card.dashboard-card,
+.exports-container .exports-export-card.dashboard-card {
+  padding: 0.75rem 1rem;
+}
+@media (min-width: 640px) {
+  .exports-container .exports-period-card.dashboard-card,
+  .exports-container .exports-export-card.dashboard-card {
+    padding: 1rem 1.25rem;
+  }
+}
+@media (min-width: 768px) {
+  .exports-container .exports-period-card.dashboard-card,
+  .exports-container .exports-export-card.dashboard-card {
+    padding: 1.5rem;
   }
 }
 
+/* Boutons export : pleine largeur sur mobile, zone de touch confortable */
+.btn-export {
+  @apply px-4 py-2.5 sm:py-2 rounded-lg glass-effect-subtle border border-white/20 text-white hover:bg-white/10 text-sm font-medium transition-colors disabled:opacity-50 touch-manipulation min-h-[2.75rem] sm:min-h-0;
+}
+.btn-export-primary {
+  @apply px-4 py-2.5 sm:py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation min-h-[2.75rem] sm:min-h-0;
+}
+.btn-export-outline {
+  @apply px-4 py-2.5 sm:py-2 rounded-lg border border-white/30 text-white hover:bg-white/10 text-sm font-medium transition-colors disabled:opacity-50 touch-manipulation min-h-[2.75rem] sm:min-h-0;
+}

@@ -49,6 +49,16 @@ export class BusinessExportsComponent implements OnInit {
   sidebarOpen = false;
   menuItems = getBusinessMenuItems(null);
 
+  readonly periodOptions: { value: ExportPeriod; label: string }[] = [
+    { value: 'ALL', label: 'Depuis le début' },
+    { value: 'TODAY', label: "Aujourd'hui" },
+    { value: 'THIS_WEEK', label: 'Cette semaine' },
+    { value: 'THIS_MONTH', label: 'Ce mois' },
+    { value: 'SIX_MONTHS', label: '6 mois' },
+    { value: 'ONE_YEAR', label: '1 an' },
+    { value: 'CUSTOM', label: 'Personnalisé' }
+  ];
+
   ngOnInit(): void {
     this.user = this.authService.getUser();
     this.menuItems = getBusinessMenuItems(this.user);
@@ -72,6 +82,12 @@ export class BusinessExportsComponent implements OnInit {
 
   setPeriod(p: ExportPeriod): void {
     this.period = p;
+  }
+
+  getPeriodButtonClass(p: ExportPeriod): string {
+    return this.period === p
+      ? 'bg-purple-500/30 text-purple-300 border border-purple-400/50'
+      : 'glass-effect-subtle text-gray-400 border border-white/20';
   }
 
   async exportSales(format: ExportFormat): Promise<void> {
