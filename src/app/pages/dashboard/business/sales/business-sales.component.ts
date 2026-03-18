@@ -62,6 +62,8 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
   sales: SaleDto[] = [];
   localSales: SaleDto[] = [];
   cart: CartLine[] = [];
+  /** Buffer de saisie pour les produits au poids (permet de vider le champ sans supprimer la ligne). */
+  weightDraft: Record<string, string | undefined> = {};
   paymentMethod: PaymentMethod = 'CASH';
   productSearch = '';
   loading = true;
@@ -227,13 +229,20 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
         productType: product.productType ?? 'UNIT',
         unit: product.unit ?? 'PIECE'
       });
+      if (!isUnit) {
+        this.weightDraft[product.id] = String(qty);
+      }
     }
     // Mettre à jour le stock disponible après ajout au panier
     await this.updateAvailableStocks();
   }
 
   async removeFromCart(index: number): Promise<void> {
+    const removed = this.cart[index];
     this.cart.splice(index, 1);
+    if (removed) {
+      delete this.weightDraft[removed.productId];
+    }
     await this.updateAvailableStocks();
   }
 
@@ -254,20 +263,30 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
     await this.updateAvailableStocks();
   }
 
-  async setCartWeightQuantity(index: number, raw: number): Promise<void> {
+  onWeightInputChange(index: number, raw: unknown): void {
+    const line = this.cart[index];
+    if (!line || (line.productType ?? 'UNIT') !== 'WEIGHT') return;
+    // On accepte le vide sans rien supprimer/valider immédiatement.
+    if (raw === null || raw === undefined || raw === '') {
+      this.weightDraft[line.productId] = '';
+      return;
+    }
+    this.weightDraft[line.productId] = String(raw);
+  }
+
+  async commitWeight(index: number): Promise<void> {
     const line = this.cart[index];
     if ((line.productType ?? 'UNIT') !== 'WEIGHT') return;
     const product = this.products.find(p => p.id === line.productId);
     if (!product) return;
     const availableStock = this.getAvailableStockForProduct(product.id);
     const min = this.minOrderQuantity(product);
-    const next = Number.isFinite(raw) ? raw : min;
-    if (next < min) {
-      this.cart.splice(index, 1);
-      await this.updateAvailableStocks();
-      return;
-    }
-    line.quantity = Math.min(next, availableStock);
+    const draft = this.weightDraft[line.productId];
+    const parsed = draft === '' || draft === undefined ? NaN : Number(draft);
+    const next = Number.isFinite(parsed) ? parsed : min;
+    const clamped = Math.min(Math.max(next, min), availableStock);
+    line.quantity = clamped;
+    this.weightDraft[line.productId] = String(clamped);
     await this.updateAvailableStocks();
   }
 
