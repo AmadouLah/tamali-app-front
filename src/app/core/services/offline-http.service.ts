@@ -300,6 +300,8 @@ export class OfflineHttpService {
               categoryId: req.body.categoryId || undefined,
               unitPrice: req.body.unitPrice || 0,
               purchasePrice: req.body.purchasePrice || undefined,
+              productType: req.body.productType || 'UNIT',
+              unit: req.body.unit || 'PIECE',
               taxable: req.body.taxable || false,
               stockQuantity: req.body.initialQuantity || 0,
               categoryName: undefined

@@ -4,12 +4,17 @@ export interface ProductCategoryDto {
   businessId: string;
 }
 
+export type ProductType = 'UNIT' | 'WEIGHT';
+export type ProductUnit = 'PIECE' | 'KG' | 'G';
+
 export interface ProductDto {
   id: string;
   name: string;
   reference?: string;
   unitPrice: number;
   purchasePrice?: number;
+  productType: ProductType;
+  unit: ProductUnit;
   businessId: string;
   categoryId?: string;
   categoryName?: string;
@@ -67,6 +72,8 @@ export interface ProductCreateRequest {
   categoryId?: string;
   unitPrice: number;
   purchasePrice?: number;
+  productType: ProductType;
+  unit: ProductUnit;
   taxable: boolean;
   initialQuantity: number;
 }
@@ -77,6 +84,8 @@ export interface ProductUpdateRequest {
   categoryId?: string;
   unitPrice?: number;
   purchasePrice?: number;
+  productType?: ProductType;
+  unit?: ProductUnit;
   taxable?: boolean;
 }
 

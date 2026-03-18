@@ -109,6 +109,16 @@
                               <option [value]="cat.id">{{ cat.name }}</option>
                             }
                           </select>
+                          <select formControlName="productType" class="input-field">
+                            @for (opt of productTypeOptions; track opt.value) {
+                              <option [value]="opt.value">{{ opt.label }}</option>
+                            }
+                          </select>
+                          <select formControlName="unit" class="input-field">
+                            @for (opt of editUnitOptions; track opt.value) {
+                              <option [value]="opt.value">{{ opt.label }}</option>
+                            }
+                          </select>
                           <input formControlName="reference" class="input-field" placeholder="Référence" />
                           <input type="number" formControlName="purchasePrice" class="input-field" placeholder="Prix d'achat (FCFA)" step="0.01" min="0" />
                           <input type="number" formControlName="unitPrice" class="input-field" placeholder="Prix de vente (FCFA)" step="0.01" min="0" />
@@ -129,7 +139,7 @@
                             <p class="font-semibold text-white truncate line-through opacity-60">{{ p.name }}</p>
                             <span class="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 shrink-0" title="Suppression en attente de synchronisation">Suppression en attente</span>
                           </div>
-                          <p class="text-gray-400 text-xs sm:text-sm mt-0.5 opacity-60">{{ formatMoney(p.unitPrice) }} · Stock : <span>{{ p.stockQuantity }}</span></p>
+                          <p class="text-gray-400 text-xs sm:text-sm mt-0.5 opacity-60">{{ formatUnitPrice(p) }} · Stock : <span>{{ formatStock(p) }}</span></p>
                         </div>
                       </div>
                     } @else {
@@ -147,7 +157,7 @@
                               </span>
                             }
                           </div>
-                          <p class="text-gray-400 text-xs sm:text-sm mt-0.5">{{ formatMoney(p.unitPrice) }} · Stock : <span [class.text-green-400]="p.stockQuantity > 0" [class.text-red-400]="p.stockQuantity === 0">{{ p.stockQuantity }}</span></p>
+                          <p class="text-gray-400 text-xs sm:text-sm mt-0.5">{{ formatUnitPrice(p) }} · Stock : <span [class.text-green-400]="p.stockQuantity > 0" [class.text-red-400]="p.stockQuantity === 0">{{ formatStock(p) }}</span></p>
                         </div>
                                         <div class="flex flex-wrap items-center gap-2 shrink-0">
                           @if (!p.isLocal || p.operation !== 'DELETE') {
@@ -200,19 +210,37 @@
           <label class="block text-sm text-gray-300 mb-1">Référence (optionnel)</label>
           <input formControlName="reference" class="input-field" placeholder="Ex. REF-001" />
         </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm text-gray-300 mb-1">Type de produit</label>
+            <select formControlName="productType" class="input-field">
+              @for (opt of productTypeOptions; track opt.value) {
+                <option [value]="opt.value">{{ opt.label }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-gray-300 mb-1">Unité</label>
+            <select formControlName="unit" class="input-field">
+              @for (opt of addUnitOptions; track opt.value) {
+                <option [value]="opt.value">{{ opt.label }}</option>
+              }
+            </select>
+          </div>
+        </div>
         <div>
           <label class="block text-sm text-gray-300 mb-1">Prix d'achat (FCFA) <span class="text-red-400">*</span></label>
           <input type="number" formControlName="purchasePrice" class="input-field" placeholder="0" step="0.01" min="0" />
           <p class="text-xs text-gray-400 mt-1">Prix auquel vous avez acheté le produit</p>
         </div>
         <div>
-          <label class="block text-sm text-gray-300 mb-1">Prix de vente (FCFA) <span class="text-red-400">*</span></label>
+          <label class="block text-sm text-gray-300 mb-1">{{ getAddUnitPriceLabel() }} <span class="text-red-400">*</span></label>
           <input type="number" formControlName="unitPrice" class="input-field" placeholder="0" step="0.01" min="0" />
           <p class="text-xs text-gray-400 mt-1">Prix auquel vous vendez le produit</p>
         </div>
         <div>
-          <label class="block text-sm text-gray-300 mb-1">Quantité initiale (stock)</label>
-          <input type="number" formControlName="initialQuantity" class="input-field" placeholder="0" min="0" />
+          <label class="block text-sm text-gray-300 mb-1">{{ getAddQuantityLabel() }}</label>
+          <input type="number" formControlName="initialQuantity" class="input-field" placeholder="0" min="0" step="0.01" />
           <p class="text-xs text-gray-400 mt-1">Les mouvements de stock (ajouts, sorties) seront gérés dans la page Stock</p>
         </div>
         <label class="flex items-center gap-2 text-gray-300 text-sm">

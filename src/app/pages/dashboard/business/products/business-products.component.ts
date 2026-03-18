@@ -12,7 +12,9 @@ import {
   ProductDto,
   ProductCategoryDto,
   ProductCreateRequest,
-  ProductUpdateRequest
+  ProductUpdateRequest,
+  ProductType,
+  ProductUnit
 } from '../../../../core/models/product.model';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
@@ -66,6 +68,19 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
   menuItems = getBusinessMenuItems(null);
   isReadOnly = false;
 
+  readonly productTypeOptions: { value: ProductType; label: string }[] = [
+    { value: 'UNIT', label: 'Unitaire' },
+    { value: 'WEIGHT', label: 'Au poids' }
+  ];
+
+  readonly unitOptionsByType: Record<ProductType, { value: ProductUnit; label: string }[]> = {
+    UNIT: [{ value: 'PIECE', label: 'Pièce' }],
+    WEIGHT: [
+      { value: 'KG', label: 'Kg' },
+      { value: 'G', label: 'g' }
+    ]
+  };
+
   ngOnInit(): void {
     this.user = this.authService.getUser();
     this.menuItems = getBusinessMenuItems(this.user);
@@ -105,6 +120,8 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
       name: ['', [Validators.required, Validators.minLength(2)]],
       reference: [''],
       categoryId: [''],
+      productType: ['UNIT' as ProductType, [Validators.required]],
+      unit: ['PIECE' as ProductUnit, [Validators.required]],
       unitPrice: [0, [Validators.required, Validators.min(0)]],
       purchasePrice: [0, [Validators.required, Validators.min(0)]],
       taxable: [false],
@@ -134,6 +151,14 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
         previousTaxableValue = taxable;
       }
     });
+
+    this.form.get('productType')?.valueChanges.subscribe((type: ProductType) => {
+      const allowed = this.unitOptionsByType[type] ?? this.unitOptionsByType.UNIT;
+      const current = this.form.get('unit')?.value as ProductUnit;
+      if (!allowed.some(o => o.value === current)) {
+        this.form.get('unit')?.setValue(allowed[0].value);
+      }
+    });
   }
 
   private buildEditForm(): void {
@@ -141,6 +166,8 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
       name: ['', [Validators.required, Validators.minLength(2)]],
       reference: [''],
       categoryId: [''],
+      productType: ['UNIT' as ProductType, [Validators.required]],
+      unit: ['PIECE' as ProductUnit, [Validators.required]],
       unitPrice: [0, [Validators.required, Validators.min(0)]],
       purchasePrice: [0, [Validators.required, Validators.min(0)]],
       taxable: [false]
@@ -167,6 +194,14 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
         }
       } else {
         previousTaxableValue = taxable;
+      }
+    });
+
+    this.editForm.get('productType')?.valueChanges.subscribe((type: ProductType) => {
+      const allowed = this.unitOptionsByType[type] ?? this.unitOptionsByType.UNIT;
+      const current = this.editForm.get('unit')?.value as ProductUnit;
+      if (!allowed.some(o => o.value === current)) {
+        this.editForm.get('unit')?.setValue(allowed[0].value);
       }
     });
   }
@@ -296,7 +331,17 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
   }
 
   openAdd(): void {
-    this.form.reset({ name: '', reference: '', categoryId: '', unitPrice: 0, purchasePrice: 0, taxable: false, initialQuantity: 0 });
+    this.form.reset({
+      name: '',
+      reference: '',
+      categoryId: '',
+      productType: 'UNIT',
+      unit: 'PIECE',
+      unitPrice: 0,
+      purchasePrice: 0,
+      taxable: false,
+      initialQuantity: 0
+    });
     this.showAddModal = true;
   }
 
@@ -323,6 +368,8 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
       categoryId: v.categoryId || undefined,
       unitPrice: Number(v.unitPrice),
       purchasePrice: v.purchasePrice ? Number(v.purchasePrice) : undefined,
+      productType: v.productType ?? 'UNIT',
+      unit: v.unit ?? 'PIECE',
       taxable: !!v.taxable,
       initialQuantity: Math.max(0, Number(v.initialQuantity) || 0)
     };
@@ -354,6 +401,8 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
       name: p.name,
       reference: p.reference ?? '',
       categoryId: p.categoryId ?? '',
+      productType: p.productType ?? 'UNIT',
+      unit: p.unit ?? 'PIECE',
       unitPrice: p.unitPrice,
       purchasePrice: p.purchasePrice ?? 0,
       taxable: p.taxable
@@ -374,6 +423,8 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
       categoryId: v.categoryId || undefined,
       unitPrice: Number(v.unitPrice),
       purchasePrice: v.purchasePrice ? Number(v.purchasePrice) : undefined,
+      productType: v.productType,
+      unit: v.unit,
       taxable: !!v.taxable
     };
     this.businessOps.updateProduct(this.editingId, body).subscribe({
@@ -416,6 +467,51 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
 
   formatMoney(amount: number): string {
     return `${(amount ?? 0).toLocaleString('fr-FR')} FCFA`;
+  }
+
+  formatUnit(unit: ProductUnit | undefined | null): string {
+    if (!unit) return '';
+    switch (unit) {
+      case 'PIECE':
+        return 'pc';
+      case 'KG':
+        return 'kg';
+      case 'G':
+        return 'g';
+      default:
+        return '';
+    }
+  }
+
+  formatStock(p: ProductDto): string {
+    const qty = p.stockQuantity ?? 0;
+    const unit = this.formatUnit(p.unit);
+    return unit ? `${qty} ${unit}` : `${qty}`;
+  }
+
+  formatUnitPrice(p: ProductDto): string {
+    const unit = this.formatUnit(p.unit);
+    return unit ? `${this.formatMoney(p.unitPrice)} / ${unit}` : this.formatMoney(p.unitPrice);
+  }
+
+  getAddUnitPriceLabel(): string {
+    const unit = this.formatUnit(this.form?.get('unit')?.value as ProductUnit);
+    return unit ? `Prix de vente (FCFA / ${unit})` : 'Prix de vente (FCFA)';
+  }
+
+  getAddQuantityLabel(): string {
+    const unit = this.formatUnit(this.form?.get('unit')?.value as ProductUnit);
+    return unit ? `Quantité initiale (stock) en ${unit}` : 'Quantité initiale (stock)';
+  }
+
+  get addUnitOptions(): { value: ProductUnit; label: string }[] {
+    const type = (this.form?.get('productType')?.value as ProductType) || 'UNIT';
+    return this.unitOptionsByType[type] ?? this.unitOptionsByType.UNIT;
+  }
+
+  get editUnitOptions(): { value: ProductUnit; label: string }[] {
+    const type = (this.editForm?.get('productType')?.value as ProductType) || 'UNIT';
+    return this.unitOptionsByType[type] ?? this.unitOptionsByType.UNIT;
   }
 
   getDisplayName(): string {

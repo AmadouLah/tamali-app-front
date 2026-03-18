@@ -13,7 +13,9 @@ import {
   SaleDto,
   SaleCreateRequest,
   PaymentMethod,
-  PAYMENT_METHOD_LABELS
+  PAYMENT_METHOD_LABELS,
+  ProductType,
+  ProductUnit
 } from '../../../../core/models/product.model';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
@@ -27,6 +29,8 @@ interface CartLine {
   productName: string;
   unitPrice: number;
   quantity: number;
+  productType: ProductType;
+  unit: ProductUnit;
 }
 
 @Component({
@@ -206,17 +210,22 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
 
   async addToCart(product: ProductDto): Promise<void> {
     const availableStock = this.getAvailableStockForProduct(product.id);
-    if (availableStock < 1) return;
+    if (availableStock < this.minOrderQuantity(product)) return;
     const existing = this.cart.find(l => l.productId === product.id);
     if (existing) {
+      if ((product.productType ?? 'UNIT') === 'WEIGHT') return;
       if (existing.quantity >= availableStock) return;
       existing.quantity += 1;
     } else {
+      const isUnit = (product.productType ?? 'UNIT') === 'UNIT';
+      const qty = isUnit ? 1 : Math.min(0.5, availableStock);
       this.cart.push({
         productId: product.id,
         productName: product.name,
         unitPrice: product.unitPrice,
-        quantity: 1
+        quantity: qty,
+        productType: product.productType ?? 'UNIT',
+        unit: product.unit ?? 'PIECE'
       });
     }
     // Mettre à jour le stock disponible après ajout au panier
@@ -230,6 +239,7 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
 
   async setCartQuantity(index: number, delta: number): Promise<void> {
     const line = this.cart[index];
+    if ((line.productType ?? 'UNIT') === 'WEIGHT') return;
     const product = this.products.find(p => p.id === line.productId);
     if (!product) return;
     const availableStock = this.getAvailableStockForProduct(product.id);
@@ -244,12 +254,61 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
     await this.updateAvailableStocks();
   }
 
+  async setCartWeightQuantity(index: number, raw: number): Promise<void> {
+    const line = this.cart[index];
+    if ((line.productType ?? 'UNIT') !== 'WEIGHT') return;
+    const product = this.products.find(p => p.id === line.productId);
+    if (!product) return;
+    const availableStock = this.getAvailableStockForProduct(product.id);
+    const min = this.minOrderQuantity(product);
+    const next = Number.isFinite(raw) ? raw : min;
+    if (next < min) {
+      this.cart.splice(index, 1);
+      await this.updateAvailableStocks();
+      return;
+    }
+    line.quantity = Math.min(next, availableStock);
+    await this.updateAvailableStocks();
+  }
+
   private async getAvailableStock(productId: string, currentStock: number): Promise<number> {
     return await this.dbService.getAvailableStock(productId, currentStock);
   }
 
   get cartTotal(): number {
     return this.cart.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
+  }
+
+  minOrderQuantity(p: ProductDto): number {
+    return (p.productType ?? 'UNIT') === 'UNIT' ? 1 : 0.1;
+  }
+
+  quantityStep(p: ProductDto): number {
+    return (p.productType ?? 'UNIT') === 'UNIT' ? 1 : 0.01;
+  }
+
+  formatUnit(unit: ProductUnit | undefined | null): string {
+    if (!unit) return '';
+    switch (unit) {
+      case 'PIECE':
+        return 'pc';
+      case 'KG':
+        return 'kg';
+      case 'G':
+        return 'g';
+      default:
+        return '';
+    }
+  }
+
+  formatUnitPrice(p: ProductDto): string {
+    const u = this.formatUnit(p.unit);
+    return u ? `${this.formatMoney(p.unitPrice)} / ${u}` : this.formatMoney(p.unitPrice);
+  }
+
+  formatStock(p: ProductDto, qty: number): string {
+    const u = this.formatUnit(p.unit);
+    return u ? `${qty} ${u}` : `${qty}`;
   }
 
   async validateSale(): Promise<void> {

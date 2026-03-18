@@ -59,9 +59,14 @@
                 <div class="min-w-0 flex-1">
                   <p class="font-semibold text-white truncate">{{ p.name }}</p>
                   <p class="text-gray-400 text-xs sm:text-sm mt-0.5">
-                    {{ formatMoney(p.unitPrice) }} · Stock : <span [class.text-green-400]="availableStock > 0" [class.text-red-400]="availableStock === 0">{{ availableStock }}</span>
+                    <span>{{ formatMoney(p.unitPrice) }}</span>
+                    @if (formatUnit(p.unit)) {
+                      <span> / {{ formatUnit(p.unit) }}</span>
+                    }
+                    <span> · Stock : </span>
+                    <span [class.text-green-400]="availableStock > 0" [class.text-red-400]="availableStock === 0">{{ formatStock(p, availableStock) }}</span>
                     @if (availableStock < p.stockQuantity) {
-                      <span class="text-yellow-400">({{ p.stockQuantity - availableStock }} réservé)</span>
+                      <span class="text-yellow-400">({{ formatStock(p, p.stockQuantity - availableStock) }} réservé)</span>
                     }
                   </p>
                 </div>
@@ -99,8 +104,8 @@
           <p class="text-sm text-gray-400">Entrée (réception) uniquement</p>
         }
         <div>
-          <label class="block text-sm text-gray-300 mb-1">Quantité</label>
-          <input type="number" formControlName="quantity" class="input-field" min="1" />
+          <label class="block text-sm text-gray-300 mb-1">{{ quantityLabel }}</label>
+          <input type="number" formControlName="quantity" class="input-field" [min]="quantityMin" [step]="quantityStep" />
         </div>
         <div class="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 pt-2">
           <button type="button" (click)="closeStock()" class="flex-1 py-2.5 rounded-xl border border-white/20 text-white hover:bg-white/10">Annuler</button>

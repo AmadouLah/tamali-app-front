@@ -72,7 +72,7 @@ export class BusinessStockComponent implements OnInit {
 
   private buildStockForm(): void {
     this.stockForm = this.fb.group({
-      quantity: [1, [Validators.required, Validators.min(1)]],
+      quantity: [1, [Validators.required, Validators.min(0.1)]],
       type: ['IN' as MovementType, Validators.required]
     });
   }
@@ -105,7 +105,12 @@ export class BusinessStockComponent implements OnInit {
 
   openStock(p: ProductDto): void {
     this.stockProductId = p.id;
-    this.stockForm.patchValue({ quantity: 1, type: 'IN' });
+    const isUnit = (p.productType ?? 'UNIT') === 'UNIT';
+    const defaultQty = isUnit ? 1 : 0.5;
+    const min = isUnit ? 1 : 0.1;
+    this.stockForm.get('quantity')?.setValidators([Validators.required, Validators.min(min)]);
+    this.stockForm.get('quantity')?.updateValueAndValidity({ emitEvent: false });
+    this.stockForm.patchValue({ quantity: defaultQty, type: 'IN' });
     if (this.isEntryOnly) {
       this.stockForm.get('type')?.disable();
     } else {
@@ -115,6 +120,30 @@ export class BusinessStockComponent implements OnInit {
 
   closeStock(): void {
     this.stockProductId = null;
+  }
+
+  get selectedProduct(): ProductDto | null {
+    if (!this.stockProductId) return null;
+    return this.products.find(p => p.id === this.stockProductId) ?? null;
+  }
+
+  get quantityStep(): number {
+    const p = this.selectedProduct;
+    if (!p) return 1;
+    return (p.productType ?? 'UNIT') === 'UNIT' ? 1 : 0.01;
+  }
+
+  get quantityMin(): number {
+    const p = this.selectedProduct;
+    if (!p) return 1;
+    return (p.productType ?? 'UNIT') === 'UNIT' ? 1 : 0.1;
+  }
+
+  get quantityLabel(): string {
+    const p = this.selectedProduct;
+    if (!p) return 'Quantité';
+    const u = this.formatUnit(p.unit);
+    return u ? `Quantité (${u})` : 'Quantité';
   }
 
   async submitStock(): Promise<void> {
@@ -159,6 +188,25 @@ export class BusinessStockComponent implements OnInit {
 
   formatMoney(amount: number): string {
     return `${(amount ?? 0).toLocaleString('fr-FR')} FCFA`;
+  }
+
+  formatUnit(unit: ProductDto['unit'] | undefined | null): string {
+    if (!unit) return '';
+    switch (unit) {
+      case 'PIECE':
+        return 'pc';
+      case 'KG':
+        return 'kg';
+      case 'G':
+        return 'g';
+      default:
+        return '';
+    }
+  }
+
+  formatStock(p: ProductDto, qty: number): string {
+    const u = this.formatUnit(p.unit);
+    return u ? `${qty} ${u}` : `${qty}`;
   }
 
   getDisplayName(): string {
