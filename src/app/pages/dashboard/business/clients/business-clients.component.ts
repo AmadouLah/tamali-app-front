@@ -83,6 +83,18 @@ export class BusinessClientsComponent implements OnInit {
     });
   }
 
+  editFromList(client: CustomerSummaryDto): void {
+    this.openClientDetails(client);
+    this.editing = true;
+    this.editName = client.name;
+    this.editPhone = client.phone ?? '';
+  }
+
+  deleteFromList(client: CustomerSummaryDto): void {
+    this.openClientDetails(client);
+    this.showDeleteConfirmation = true;
+  }
+
   closeDetails(): void {
     this.selectedClient = null;
     this.editing = false;

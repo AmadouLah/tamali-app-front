@@ -47,22 +47,34 @@
             } @else {
               <div class="space-y-2 max-h-[420px] overflow-y-auto">
                 @for (client of clients; track trackByClientId($index, client)) {
-                  <button
-                    type="button"
-                    (click)="openClientDetails(client)"
-                    class="w-full text-left rounded-xl border border-white/10 p-4 glass-effect-subtle hover:bg-white/10 transition-colors"
-                  >
+                  <div class="rounded-xl border border-white/10 p-4 glass-effect-subtle hover:bg-white/10 transition-colors">
                     <div class="flex items-start justify-between gap-3">
-                      <div class="min-w-0">
+                      <button type="button" (click)="openClientDetails(client)" class="min-w-0 flex-1 text-left">
                         <p class="text-white font-semibold truncate">{{ client.name }}</p>
                         <p class="text-xs text-gray-400">{{ client.phone || 'Téléphone non renseigné' }}</p>
-                      </div>
+                      </button>
                       <div class="text-right shrink-0">
                         <p class="text-sm text-purple-300 font-medium">{{ client.purchasesCount }} achat(s)</p>
                         <p class="text-xs text-gray-300">{{ formatMoney(client.totalSpent) }}</p>
                       </div>
                     </div>
-                  </button>
+                    <div class="mt-2 flex justify-end gap-2">
+                      <button
+                        type="button"
+                        (click)="editFromList(client)"
+                        class="text-xs px-2.5 py-1 rounded-lg border border-white/20 text-gray-200 hover:bg-white/10 transition-colors"
+                      >
+                        Modifier
+                      </button>
+                      <button
+                        type="button"
+                        (click)="deleteFromList(client)"
+                        class="text-xs px-2.5 py-1 rounded-lg border border-red-400/30 text-red-200 hover:bg-red-500/15 transition-colors"
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+                  </div>
                 }
               </div>
             }
@@ -76,66 +88,89 @@
             } @else if (!selectedClient) {
               <p class="text-gray-400 py-8 text-center">Sélectionnez un client pour voir ses ventes.</p>
             } @else {
-              <div class="flex items-start justify-between gap-2 mb-4">
-                <div>
-                  @if (!editing) {
-                    <h3 class="text-white text-lg font-bold">{{ selectedClient.name }}</h3>
-                    <p class="text-xs text-gray-400">{{ selectedClient.phone || 'Téléphone non renseigné' }}</p>
-                  } @else {
-                    <div class="space-y-2">
+              <div class="mb-4">
+                @if (!editing) {
+                  <div class="flex items-start justify-between gap-3 mb-3">
+                    <div class="min-w-0">
+                      <h3 class="text-white text-lg font-bold truncate">{{ selectedClient.name }}</h3>
+                      <p class="text-xs text-gray-400">{{ selectedClient.phone || 'Téléphone non renseigné' }}</p>
+                    </div>
+                    <button
+                      type="button"
+                      (click)="closeDetails()"
+                      class="text-sm px-3 py-1.5 rounded-lg border border-white/20 text-gray-200 hover:bg-white/10 transition-colors shrink-0"
+                    >
+                      Fermer
+                    </button>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      (click)="startEditing()"
+                      class="text-sm px-4 py-2 rounded-lg border border-purple-400/40 text-purple-200 hover:bg-purple-500/20 transition-colors font-medium"
+                    >
+                      Modifier
+                    </button>
+                    <button
+                      type="button"
+                      [disabled]="deleting"
+                      (click)="openDeleteConfirmation()"
+                      class="text-sm px-4 py-2 rounded-lg border border-red-400/30 text-red-200 hover:bg-red-500/15 disabled:opacity-60 transition-colors font-medium"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                } @else {
+                  <div class="rounded-lg border border-emerald-400/25 bg-emerald-500/10 px-3 py-2 mb-3">
+                    <p class="text-sm font-semibold text-emerald-200">Mode edition du client</p>
+                    <p class="text-xs text-emerald-100/80">Modifiez les champs puis enregistrez.</p>
+                  </div>
+                  <div class="space-y-3 mb-3">
+                    <div>
+                      <label class="block text-xs text-gray-300 mb-1">Nom du client</label>
                       <input
                         type="text"
                         [(ngModel)]="editName"
-                        placeholder="Nom du client"
-                        class="w-full px-3 py-2 rounded-lg glass-effect-subtle border border-white/20 text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                        placeholder="Ex: Mariam Diallo"
+                        class="w-full px-3 py-2.5 rounded-lg glass-effect-subtle border border-white/20 text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                       />
+                    </div>
+                    <div>
+                      <label class="block text-xs text-gray-300 mb-1">Telephone (optionnel)</label>
                       <input
                         type="text"
                         [(ngModel)]="editPhone"
-                        placeholder="Téléphone (optionnel)"
-                        class="w-full px-3 py-2 rounded-lg glass-effect-subtle border border-white/20 text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                        placeholder="Ex: +223 70 00 00 00"
+                        class="w-full px-3 py-2.5 rounded-lg glass-effect-subtle border border-white/20 text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                       />
                     </div>
-                  }
-                </div>
-                <button type="button" (click)="closeDetails()" class="text-xs px-2 py-1 rounded border border-white/20 text-white hover:bg-white/10">Fermer</button>
-              </div>
-
-              <div class="flex flex-wrap gap-2 mb-4">
-                @if (!editing) {
-                  <button
-                    type="button"
-                    (click)="startEditing()"
-                    class="text-xs px-3 py-1.5 rounded border border-purple-400/40 text-purple-200 hover:bg-purple-500/20"
-                  >
-                    Modifier
-                  </button>
-                } @else {
-                  <button
-                    type="button"
-                    [disabled]="saving"
-                    (click)="saveClient()"
-                    class="text-xs px-3 py-1.5 rounded border border-emerald-400/40 text-emerald-200 hover:bg-emerald-500/20 disabled:opacity-60"
-                  >
-                    {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
-                  </button>
-                  <button
-                    type="button"
-                    [disabled]="saving"
-                    (click)="cancelEditing()"
-                    class="text-xs px-3 py-1.5 rounded border border-white/20 text-white hover:bg-white/10 disabled:opacity-60"
-                  >
-                    Annuler
-                  </button>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      [disabled]="saving"
+                      (click)="saveClient()"
+                      class="text-sm px-4 py-2 rounded-lg border border-emerald-400/40 text-emerald-200 hover:bg-emerald-500/20 disabled:opacity-60 transition-colors font-semibold"
+                    >
+                      {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+                    </button>
+                    <button
+                      type="button"
+                      [disabled]="saving"
+                      (click)="cancelEditing()"
+                      class="text-sm px-4 py-2 rounded-lg border border-white/20 text-gray-200 hover:bg-white/10 disabled:opacity-60 transition-colors font-medium"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="button"
+                      (click)="closeDetails()"
+                      class="text-sm px-4 py-2 rounded-lg border border-white/20 text-gray-200 hover:bg-white/10 transition-colors"
+                    >
+                      Fermer
+                    </button>
+                  </div>
                 }
-                <button
-                  type="button"
-                  [disabled]="deleting"
-                  (click)="openDeleteConfirmation()"
-                  class="text-xs px-3 py-1.5 rounded border border-red-400/40 text-red-200 hover:bg-red-500/20 disabled:opacity-60"
-                >
-                  Supprimer
-                </button>
               </div>
 
               <div class="grid grid-cols-2 gap-2 mb-4">
