@@ -120,12 +120,12 @@ export class ReceiptComponent implements OnInit, OnDestroy {
     if (!sale || !business) return;
 
     const lines = (sale.items ?? [])
-      .map((i: any) => `- ${i.productName ?? 'Produit'} x${i.quantity} : ${(i.price ?? 0) * (i.quantity ?? 0)} FCFA`)
+      .map((i: any) => `- ${i.productName ?? 'Produit'} x${i.quantity} : ${this.formatMoney((i.price ?? 0) * (i.quantity ?? 0))}`)
       .join('\n');
     const commerceRegister = business.commerceRegisterNumber ?? (business as any).commerce_register_number;
     const regLine = commerceRegister ? `Registre de commerce: ${commerceRegister}\n` : '';
     const receiptNum = sale.receiptNumber ?? sale.id;
-const text = `${business.name ?? ''}\n${regLine}Reçu #${receiptNum}\n${sale.saleDate ?? ''}\n\n${lines}\n\nTotal: ${sale.totalAmount ?? 0} FCFA`;
+const text = `${business.name ?? ''}\n${regLine}Reçu #${receiptNum}\n${sale.saleDate ?? ''}\n\n${lines}\n\nTotal: ${this.formatMoney(sale.totalAmount ?? 0)}`;
 
     if (navigator.share) {
       try {
@@ -173,5 +173,12 @@ const text = `${business.name ?? ''}\n${regLine}Reçu #${receiptNum}\n${sale.sal
 
   goBack(): void {
     this.router.navigate(['/dashboard/business/sales']);
+  }
+
+  private formatMoney(amount: number): string {
+    return `${(amount ?? 0).toLocaleString('fr-FR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })} FCFA`;
   }
 }
