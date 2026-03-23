@@ -477,11 +477,6 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
     return unit ? `${qty} ${unit}` : `${qty}`;
   }
 
-  getProductTypeLabel(p: ProductDto): string {
-    const type = p.productType ?? ((p.unit === 'KG' || p.unit === 'G') ? 'WEIGHT' : 'UNIT');
-    return type === 'WEIGHT' ? 'Au poids' : 'Unitaire';
-  }
-
   formatUnitPrice(p: ProductDto): string {
     const unit = this.formatUnit(p.unit);
     return unit ? `${this.formatMoney(p.unitPrice)} / ${unit}` : this.formatMoney(p.unitPrice);
