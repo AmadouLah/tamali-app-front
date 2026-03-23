@@ -138,6 +138,9 @@
                           <div class="flex items-center gap-2">
                             <p class="font-semibold text-white truncate line-through opacity-60">{{ p.name }}</p>
                             <span class="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 shrink-0" title="Suppression en attente de synchronisation">Suppression en attente</span>
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-200 border border-blue-500/30 shrink-0">
+                              Type: {{ getProductTypeLabel(p) }}
+                            </span>
                           </div>
                           <p class="text-gray-400 text-xs sm:text-sm mt-0.5 opacity-60">{{ formatUnitPrice(p) }} · Stock : <span>{{ formatStock(p) }}</span></p>
                         </div>
@@ -147,6 +150,9 @@
                         <div class="min-w-0">
                           <div class="flex items-center gap-2">
                             <p class="font-semibold text-white truncate">{{ p.name }}</p>
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-200 border border-blue-500/30 shrink-0">
+                              Type: {{ getProductTypeLabel(p) }}
+                            </span>
                             @if (p.isLocal) {
                               <span class="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 shrink-0" title="En attente de synchronisation">
                                 @if (p.operation === 'PATCH') {
