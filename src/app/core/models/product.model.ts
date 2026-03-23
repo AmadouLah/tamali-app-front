@@ -5,7 +5,7 @@ export interface ProductCategoryDto {
 }
 
 export type ProductType = 'UNIT' | 'WEIGHT';
-export type ProductUnit = 'PIECE' | 'KG' | 'G';
+export type ProductUnit = 'PIECE' | 'KG' | 'G' | 'LITRE' | 'SAC' | 'METRE';
 
 export interface ProductDto {
   id: string;

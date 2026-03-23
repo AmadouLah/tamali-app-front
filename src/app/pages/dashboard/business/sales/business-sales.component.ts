@@ -315,6 +315,12 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
         return 'kg';
       case 'G':
         return 'g';
+      case 'LITRE':
+        return 'L';
+      case 'SAC':
+        return 'sac';
+      case 'METRE':
+        return 'm';
       default:
         return '';
     }

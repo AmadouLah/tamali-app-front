@@ -199,6 +199,12 @@ export class BusinessStockComponent implements OnInit {
         return 'kg';
       case 'G':
         return 'g';
+      case 'LITRE':
+        return 'L';
+      case 'SAC':
+        return 'sac';
+      case 'METRE':
+        return 'm';
       default:
         return '';
     }

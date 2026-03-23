@@ -74,7 +74,12 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
   ];
 
   readonly unitOptionsByType: Record<ProductType, { value: ProductUnit; label: string }[]> = {
-    UNIT: [{ value: 'PIECE', label: 'Pièce' }],
+    UNIT: [
+      { value: 'PIECE', label: 'Pièce' },
+      { value: 'LITRE', label: 'Litre' },
+      { value: 'SAC', label: 'Sac' },
+      { value: 'METRE', label: 'Mètre' }
+    ],
     WEIGHT: [
       { value: 'KG', label: 'Kg' },
       { value: 'G', label: 'g' }
@@ -478,6 +483,12 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
         return 'kg';
       case 'G':
         return 'g';
+      case 'LITRE':
+        return 'L';
+      case 'SAC':
+        return 'sac';
+      case 'METRE':
+        return 'm';
       default:
         return '';
     }
