@@ -215,7 +215,7 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
     if (availableStock < this.minOrderQuantity(product)) return;
     const existing = this.cart.find(l => l.productId === product.id);
     if (existing) {
-      if ((product.productType ?? 'UNIT') === 'WEIGHT') return;
+      if (this.supportsDecimalQuantity(product)) return;
       if (existing.quantity >= availableStock) return;
       existing.quantity += 1;
     } else {
@@ -248,7 +248,7 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
 
   async setCartQuantity(index: number, delta: number): Promise<void> {
     const line = this.cart[index];
-    if ((line.productType ?? 'UNIT') === 'WEIGHT') return;
+    if (this.supportsDecimalQuantityByUnit(line.unit)) return;
     const product = this.products.find(p => p.id === line.productId);
     if (!product) return;
     const availableStock = this.getAvailableStockForProduct(product.id);
@@ -265,7 +265,7 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
 
   onWeightInputChange(index: number, raw: unknown): void {
     const line = this.cart[index];
-    if (!line || (line.productType ?? 'UNIT') !== 'WEIGHT') return;
+    if (!line || !this.supportsDecimalQuantityByUnit(line.unit)) return;
     // On accepte le vide sans rien supprimer/valider immédiatement.
     if (raw === null || raw === undefined || raw === '') {
       this.weightDraft[line.productId] = '';
@@ -276,7 +276,7 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
 
   async commitWeight(index: number): Promise<void> {
     const line = this.cart[index];
-    if ((line.productType ?? 'UNIT') !== 'WEIGHT') return;
+    if (!this.supportsDecimalQuantityByUnit(line.unit)) return;
     const product = this.products.find(p => p.id === line.productId);
     if (!product) return;
     const availableStock = this.getAvailableStockForProduct(product.id);
@@ -299,11 +299,19 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
   }
 
   minOrderQuantity(p: ProductDto): number {
-    return (p.productType ?? 'UNIT') === 'UNIT' ? 1 : 0.1;
+    return this.supportsDecimalQuantity(p) ? 0.1 : 1;
   }
 
   quantityStep(p: ProductDto): number {
-    return (p.productType ?? 'UNIT') === 'UNIT' ? 1 : 0.01;
+    return this.supportsDecimalQuantity(p) ? 0.01 : 1;
+  }
+
+  private supportsDecimalQuantity(p: ProductDto): boolean {
+    return this.supportsDecimalQuantityByUnit(p.unit);
+  }
+
+  private supportsDecimalQuantityByUnit(unit: ProductUnit | undefined | null): boolean {
+    return unit === 'KG' || unit === 'G' || unit === 'LITRE' || unit === 'METRE';
   }
 
   formatUnit(unit: ProductUnit | undefined | null): string {

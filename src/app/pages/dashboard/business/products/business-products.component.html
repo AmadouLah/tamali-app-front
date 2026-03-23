@@ -109,11 +109,6 @@
                               <option [value]="cat.id">{{ cat.name }}</option>
                             }
                           </select>
-                          <select formControlName="productType" class="input-field">
-                            @for (opt of productTypeOptions; track opt.value) {
-                              <option [value]="opt.value">{{ opt.label }}</option>
-                            }
-                          </select>
                           <select formControlName="unit" class="input-field">
                             @for (opt of editUnitOptions; track opt.value) {
                               <option [value]="opt.value">{{ opt.label }}</option>
@@ -217,14 +212,6 @@
           <input formControlName="reference" class="input-field" placeholder="Ex. REF-001" />
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm text-gray-300 mb-1">Type de produit</label>
-            <select formControlName="productType" class="input-field">
-              @for (opt of productTypeOptions; track opt.value) {
-                <option [value]="opt.value">{{ opt.label }}</option>
-              }
-            </select>
-          </div>
           <div>
             <label class="block text-sm text-gray-300 mb-1">Unité</label>
             <select formControlName="unit" class="input-field">

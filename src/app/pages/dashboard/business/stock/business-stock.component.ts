@@ -105,9 +105,9 @@ export class BusinessStockComponent implements OnInit {
 
   openStock(p: ProductDto): void {
     this.stockProductId = p.id;
-    const isUnit = (p.productType ?? 'UNIT') === 'UNIT';
-    const defaultQty = isUnit ? 1 : 0.5;
-    const min = isUnit ? 1 : 0.1;
+    const decimal = this.supportsDecimalQuantity(p);
+    const defaultQty = decimal ? 0.5 : 1;
+    const min = decimal ? 0.1 : 1;
     this.stockForm.get('quantity')?.setValidators([Validators.required, Validators.min(min)]);
     this.stockForm.get('quantity')?.updateValueAndValidity({ emitEvent: false });
     this.stockForm.patchValue({ quantity: defaultQty, type: 'IN' });
@@ -130,13 +130,13 @@ export class BusinessStockComponent implements OnInit {
   get quantityStep(): number {
     const p = this.selectedProduct;
     if (!p) return 1;
-    return (p.productType ?? 'UNIT') === 'UNIT' ? 1 : 0.01;
+    return this.supportsDecimalQuantity(p) ? 0.01 : 1;
   }
 
   get quantityMin(): number {
     const p = this.selectedProduct;
     if (!p) return 1;
-    return (p.productType ?? 'UNIT') === 'UNIT' ? 1 : 0.1;
+    return this.supportsDecimalQuantity(p) ? 0.1 : 1;
   }
 
   get quantityLabel(): string {
@@ -213,6 +213,10 @@ export class BusinessStockComponent implements OnInit {
   formatStock(p: ProductDto, qty: number): string {
     const u = this.formatUnit(p.unit);
     return u ? `${qty} ${u}` : `${qty}`;
+  }
+
+  private supportsDecimalQuantity(p: ProductDto): boolean {
+    return p.unit === 'KG' || p.unit === 'G' || p.unit === 'LITRE' || p.unit === 'METRE';
   }
 
   getDisplayName(): string {

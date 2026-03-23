@@ -68,23 +68,14 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
   menuItems = getBusinessMenuItems(null);
   isReadOnly = false;
 
-  readonly productTypeOptions: { value: ProductType; label: string }[] = [
-    { value: 'UNIT', label: 'Unitaire' },
-    { value: 'WEIGHT', label: 'Au poids' }
+  readonly unitOptions: { value: ProductUnit; label: string }[] = [
+    { value: 'PIECE', label: 'Pièce' },
+    { value: 'KG', label: 'Kg' },
+    { value: 'G', label: 'g' },
+    { value: 'LITRE', label: 'Litre' },
+    { value: 'SAC', label: 'Sac' },
+    { value: 'METRE', label: 'Mètre' }
   ];
-
-  readonly unitOptionsByType: Record<ProductType, { value: ProductUnit; label: string }[]> = {
-    UNIT: [
-      { value: 'PIECE', label: 'Pièce' },
-      { value: 'LITRE', label: 'Litre' },
-      { value: 'SAC', label: 'Sac' },
-      { value: 'METRE', label: 'Mètre' }
-    ],
-    WEIGHT: [
-      { value: 'KG', label: 'Kg' },
-      { value: 'G', label: 'g' }
-    ]
-  };
 
   ngOnInit(): void {
     this.user = this.authService.getUser();
@@ -157,13 +148,6 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.form.get('productType')?.valueChanges.subscribe((type: ProductType) => {
-      const allowed = this.unitOptionsByType[type] ?? this.unitOptionsByType.UNIT;
-      const current = this.form.get('unit')?.value as ProductUnit;
-      if (!allowed.some(o => o.value === current)) {
-        this.form.get('unit')?.setValue(allowed[0].value);
-      }
-    });
   }
 
   private buildEditForm(): void {
@@ -202,13 +186,6 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.editForm.get('productType')?.valueChanges.subscribe((type: ProductType) => {
-      const allowed = this.unitOptionsByType[type] ?? this.unitOptionsByType.UNIT;
-      const current = this.editForm.get('unit')?.value as ProductUnit;
-      if (!allowed.some(o => o.value === current)) {
-        this.editForm.get('unit')?.setValue(allowed[0].value);
-      }
-    });
   }
 
   private async loadCategories(): Promise<void> {
@@ -373,7 +350,7 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
       categoryId: v.categoryId || undefined,
       unitPrice: Number(v.unitPrice),
       purchasePrice: v.purchasePrice ? Number(v.purchasePrice) : undefined,
-      productType: v.productType ?? 'UNIT',
+      productType: this.inferProductTypeFromUnit(v.unit ?? 'PIECE'),
       unit: v.unit ?? 'PIECE',
       taxable: !!v.taxable,
       initialQuantity: Math.max(0, Number(v.initialQuantity) || 0)
@@ -428,7 +405,7 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
       categoryId: v.categoryId || undefined,
       unitPrice: Number(v.unitPrice),
       purchasePrice: v.purchasePrice ? Number(v.purchasePrice) : undefined,
-      productType: v.productType,
+      productType: this.inferProductTypeFromUnit(v.unit ?? 'PIECE'),
       unit: v.unit,
       taxable: !!v.taxable
     };
@@ -521,13 +498,15 @@ export class BusinessProductsComponent implements OnInit, OnDestroy {
   }
 
   get addUnitOptions(): { value: ProductUnit; label: string }[] {
-    const type = (this.form?.get('productType')?.value as ProductType) || 'UNIT';
-    return this.unitOptionsByType[type] ?? this.unitOptionsByType.UNIT;
+    return this.unitOptions;
   }
 
   get editUnitOptions(): { value: ProductUnit; label: string }[] {
-    const type = (this.editForm?.get('productType')?.value as ProductType) || 'UNIT';
-    return this.unitOptionsByType[type] ?? this.unitOptionsByType.UNIT;
+    return this.unitOptions;
+  }
+
+  private inferProductTypeFromUnit(unit: ProductUnit): ProductType {
+    return unit === 'KG' || unit === 'G' ? 'WEIGHT' : 'UNIT';
   }
 
   getDisplayName(): string {
