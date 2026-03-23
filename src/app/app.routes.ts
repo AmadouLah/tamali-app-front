@@ -45,6 +45,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/dashboard/business/sales/business-sales.component').then(m => m.BusinessSalesComponent)
   },
   {
+    path: 'dashboard/business/clients',
+    loadComponent: () => import('./pages/dashboard/business/clients/business-clients.component').then(m => m.BusinessClientsComponent)
+  },
+  {
     path: 'dashboard/business/sales/receipt',
     loadComponent: () => import('./pages/dashboard/business/sales/receipt/receipt.component').then(m => m.ReceiptComponent)
   },

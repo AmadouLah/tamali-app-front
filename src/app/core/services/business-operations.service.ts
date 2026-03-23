@@ -7,6 +7,9 @@ import type {
   ProductCategoryDto,
   SaleDto,
   SaleCreateRequest,
+  CustomerDto,
+  CustomerSummaryDto,
+  CustomerDetailsDto,
   ProductCreateRequest,
   ProductUpdateRequest,
   StockMovementCreateRequest
@@ -99,6 +102,28 @@ export class BusinessOperationsService {
   createSale(businessId: string, body: SaleCreateRequest): Observable<SaleDto | { requestId: string }> {
     const url = this.apiConfig.getSalesUrl(businessId);
     return this.offlineHttp.post<SaleDto | { requestId: string }>(url, body);
+  }
+
+  getCustomers(businessId: string): Observable<CustomerSummaryDto[]> {
+    const url = this.apiConfig.getCustomersUrl(businessId);
+    return this.offlineHttp.get<CustomerSummaryDto[] | { message: string }>(url).pipe(
+      map(body => (Array.isArray(body) ? body : []))
+    );
+  }
+
+  searchCustomers(businessId: string, query: string): Observable<CustomerDto[]> {
+    const q = encodeURIComponent(query.trim());
+    const url = `${this.apiConfig.getCustomerSearchUrl(businessId)}?q=${q}`;
+    return this.offlineHttp.get<CustomerDto[] | { message: string }>(url).pipe(
+      map(body => (Array.isArray(body) ? body : []))
+    );
+  }
+
+  getCustomerDetails(businessId: string, customerId: string): Observable<CustomerDetailsDto | null> {
+    const url = this.apiConfig.getCustomerDetailsUrl(businessId, customerId);
+    return this.offlineHttp.get<CustomerDetailsDto | { message: string }>(url).pipe(
+      map(body => (isOfflineEmptyResponse(body) ? null : (body as CustomerDetailsDto)))
+    );
   }
 
   createProduct(businessId: string, body: ProductCreateRequest): Observable<ProductDto | { requestId: string }> {

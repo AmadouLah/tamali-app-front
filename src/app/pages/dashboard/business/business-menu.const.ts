@@ -4,6 +4,7 @@ import type { UserDto } from '../../../core/services/auth.service';
 const ALL_MENU_ITEMS: MenuItem[] = [
   { label: 'Dashboard', icon: 'grid', route: '/dashboard/business' },
   { label: 'Ventes', icon: 'shopping-cart', route: '/dashboard/business/sales' },
+  { label: 'Clients', icon: 'user', route: '/dashboard/business/clients' },
   { label: 'Catégories', icon: 'folder', route: '/dashboard/business/categories' },
   { label: 'Produits', icon: 'bar-chart', route: '/dashboard/business/products' },
   { label: 'Stock', icon: 'archive', route: '/dashboard/business/stock' },
@@ -16,6 +17,7 @@ const ALL_MENU_ITEMS: MenuItem[] = [
 const ASSOCIATE_HIDDEN_ROUTES = [
   '/dashboard/business',
   '/dashboard/business/categories',
+  '/dashboard/business/clients',
   '/dashboard/business/company',
   '/dashboard/business/account',
   '/dashboard/business/exports'

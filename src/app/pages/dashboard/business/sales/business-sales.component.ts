@@ -2,8 +2,8 @@ import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
-import { Subscription } from 'rxjs';
+import { firstValueFrom, of, Subject, Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { AuthService, UserDto } from '../../../../core/services/auth.service';
 import { BusinessOperationsService, isPendingResponse } from '../../../../core/services/business-operations.service';
 import { IndexedDbService } from '../../../../core/services/indexed-db.service';
@@ -11,6 +11,7 @@ import { SyncService } from '../../../../core/services/sync.service';
 import {
   ProductDto,
   SaleDto,
+  CustomerDto,
   SaleCreateRequest,
   PaymentMethod,
   PAYMENT_METHOD_LABELS,
@@ -55,6 +56,8 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
   private readonly syncService = inject(SyncService);
   private readonly toast = inject(ToastService);
   private syncSub?: Subscription;
+  private customerSearchSub?: Subscription;
+  private readonly customerSearch$ = new Subject<string>();
 
   user: UserDto | null = null;
   businessId: string | null = null;
@@ -65,6 +68,10 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
   /** Buffer de saisie pour les produits au poids (permet de vider le champ sans supprimer la ligne). */
   weightDraft: Record<string, string | undefined> = {};
   paymentMethod: PaymentMethod = 'CASH';
+  customerSearch = '';
+  customerSuggestions: CustomerDto[] = [];
+  selectedCustomer: CustomerDto | null = null;
+  showingCustomerSuggestions = false;
   productSearch = '';
   loading = true;
   submitting = false;
@@ -94,10 +101,52 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
       this.loadSales();
       this.loadProducts();
     });
+    this.customerSearchSub = this.customerSearch$
+      .pipe(
+        debounceTime(200),
+        distinctUntilChanged(),
+        switchMap((query) => {
+          if (!this.businessId || query.trim().length < 2 || this.selectedCustomer) return of([]);
+          return this.businessOps.searchCustomers(this.businessId, query);
+        })
+      )
+      .subscribe(list => {
+        this.customerSuggestions = list;
+        this.showingCustomerSuggestions = list.length > 0 && !this.selectedCustomer;
+      });
   }
 
   ngOnDestroy(): void {
     this.syncSub?.unsubscribe();
+    this.customerSearchSub?.unsubscribe();
+  }
+
+  onCustomerSearchInput(value: string): void {
+    this.customerSearch = value;
+    if (!value.trim()) {
+      this.customerSuggestions = [];
+      this.showingCustomerSuggestions = false;
+      this.selectedCustomer = null;
+      return;
+    }
+    if (this.selectedCustomer && this.selectedCustomer.name !== value.trim()) {
+      this.selectedCustomer = null;
+    }
+    this.customerSearch$.next(value);
+  }
+
+  selectCustomer(customer: CustomerDto): void {
+    this.selectedCustomer = customer;
+    this.customerSearch = customer.name;
+    this.customerSuggestions = [];
+    this.showingCustomerSuggestions = false;
+  }
+
+  clearCustomerSelection(): void {
+    this.selectedCustomer = null;
+    this.customerSearch = '';
+    this.customerSuggestions = [];
+    this.showingCustomerSuggestions = false;
   }
 
   private async loadProducts(): Promise<void> {
@@ -365,11 +414,14 @@ export class BusinessSalesComponent implements OnInit, OnDestroy {
     const body: SaleCreateRequest = {
       cashierId: this.user.id,
       items: this.cart.map(l => ({ productId: l.productId, quantity: l.quantity })),
-      method: this.paymentMethod
+      method: this.paymentMethod,
+      customerName: (this.selectedCustomer?.name ?? this.customerSearch).trim() || undefined,
+      customerPhone: this.selectedCustomer?.phone
     };
     this.businessOps.createSale(this.businessId, body).subscribe({
       next: async (result) => {
         this.cart = [];
+        this.clearCustomerSelection();
         if (isPendingResponse(result)) {
           this.toast.success('Vente enregistrée localement. Elle sera synchronisée à la reconnexion.');
           const requestId = result.requestId;

@@ -130,6 +130,45 @@
                   <span>Total</span>
                   <span>{{ formatMoney(cartTotal) }}</span>
                 </div>
+                <div class="relative">
+                  <label class="block text-xs text-gray-400 mb-1">Client (optionnel)</label>
+                  @if (selectedCustomer) {
+                    <div class="flex items-center justify-between gap-2 rounded-lg border border-green-400/40 bg-green-500/10 px-3 py-2">
+                      <p class="text-sm text-green-200 truncate">Client : {{ selectedCustomer.name }} ✔</p>
+                      <button
+                        type="button"
+                        (click)="clearCustomerSelection()"
+                        class="shrink-0 text-xs px-2 py-1 rounded border border-white/20 text-white hover:bg-white/10"
+                      >
+                        Retirer
+                      </button>
+                    </div>
+                  } @else {
+                    <input
+                      type="text"
+                      [ngModel]="customerSearch"
+                      (ngModelChange)="onCustomerSearchInput($event)"
+                      placeholder="Nom du client"
+                      class="w-full px-3 py-2 rounded-lg glass-effect-subtle border border-white/20 text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    />
+                    @if (showingCustomerSuggestions) {
+                      <div class="absolute z-20 mt-1 w-full rounded-lg border border-white/10 bg-slate-900/95 backdrop-blur-md shadow-lg max-h-44 overflow-y-auto">
+                        @for (customer of customerSuggestions; track customer.id) {
+                          <button
+                            type="button"
+                            (click)="selectCustomer(customer)"
+                            class="w-full text-left px-3 py-2 hover:bg-white/10 border-b last:border-b-0 border-white/5"
+                          >
+                            <p class="text-sm text-white truncate">{{ customer.name }}</p>
+                            @if (customer.phone) {
+                              <p class="text-xs text-gray-400">{{ customer.phone }}</p>
+                            }
+                          </button>
+                        }
+                      </div>
+                    }
+                  }
+                </div>
                 <div>
                   <label class="block text-xs text-gray-400 mb-1">Paiement</label>
                   <select
@@ -175,6 +214,9 @@
                     }
                   </div>
                   <p class="text-gray-400 text-xs">{{ formatDate(sale.saleDate) }}</p>
+                  @if (sale.customerName) {
+                    <p class="text-xs text-gray-300 truncate">Client : {{ sale.customerName }}</p>
+                  }
                 </div>
                 <span class="font-bold text-white text-sm sm:text-base shrink-0">{{ formatMoney(sale.totalAmount) }}</span>
                 <button

@@ -35,10 +35,37 @@ export interface SaleDto {
   id: string;
   businessId: string;
   cashierId: string;
+  customerId?: string;
+  customerName?: string;
+  customerPhone?: string;
   items: SaleItemDto[];
   totalAmount: number;
   taxAmount?: number;
   saleDate: string;
+}
+
+export interface CustomerDto {
+  id: string;
+  businessId: string;
+  name: string;
+  phone?: string;
+}
+
+export interface CustomerSummaryDto {
+  id: string;
+  name: string;
+  phone?: string;
+  purchasesCount: number;
+  totalSpent: number;
+}
+
+export interface CustomerDetailsDto {
+  id: string;
+  name: string;
+  phone?: string;
+  purchasesCount: number;
+  totalSpent: number;
+  sales: SaleDto[];
 }
 
 export type PaymentMethod = 'CASH' | 'ORANGE_MONEY' | 'CARD';
@@ -98,6 +125,7 @@ export interface SaleCreateRequest {
   cashierId: string;
   items: SaleItemRequest[];
   method: PaymentMethod;
+  customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
 }

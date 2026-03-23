@@ -256,6 +256,8 @@ export class OfflineHttpService {
               id: tempSaleId,
               businessId,
               cashierId: req.body.cashierId,
+              customerName: req.body.customerName || undefined,
+              customerPhone: req.body.customerPhone || undefined,
               items,
               totalAmount,
               taxAmount,
