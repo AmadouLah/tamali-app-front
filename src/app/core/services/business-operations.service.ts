@@ -10,6 +10,7 @@ import type {
   CustomerDto,
   CustomerSummaryDto,
   CustomerDetailsDto,
+  CustomerUpdateRequest,
   ProductCreateRequest,
   ProductUpdateRequest,
   StockMovementCreateRequest
@@ -124,6 +125,16 @@ export class BusinessOperationsService {
     return this.offlineHttp.get<CustomerDetailsDto | { message: string }>(url).pipe(
       map(body => (isOfflineEmptyResponse(body) ? null : (body as CustomerDetailsDto)))
     );
+  }
+
+  updateCustomer(businessId: string, customerId: string, body: CustomerUpdateRequest): Observable<CustomerDto> {
+    const url = this.apiConfig.getCustomerDetailsUrl(businessId, customerId);
+    return this.offlineHttp.patch<CustomerDto>(url, body);
+  }
+
+  deleteCustomer(businessId: string, customerId: string): Observable<void> {
+    const url = this.apiConfig.getCustomerDetailsUrl(businessId, customerId);
+    return this.offlineHttp.delete<void>(url);
   }
 
   createProduct(businessId: string, body: ProductCreateRequest): Observable<ProductDto | { requestId: string }> {

@@ -68,6 +68,11 @@ export interface CustomerDetailsDto {
   sales: SaleDto[];
 }
 
+export interface CustomerUpdateRequest {
+  name?: string;
+  phone?: string;
+}
+
 export type PaymentMethod = 'CASH' | 'ORANGE_MONEY' | 'CARD';
 export type MovementType = 'IN' | 'OUT' | 'SALE';
 
