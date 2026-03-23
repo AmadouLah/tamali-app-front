@@ -120,7 +120,7 @@ export class ReceiptComponent implements OnInit, OnDestroy {
     if (!sale || !business) return;
 
     const lines = (sale.items ?? [])
-      .map((i: any) => `- ${i.productName ?? 'Produit'} x${i.quantity} : ${this.formatMoney((i.price ?? 0) * (i.quantity ?? 0))}`)
+      .map((i: any) => `- ${i.productName ?? 'Produit'} x${i.quantity} : ${this.formatMoney(this.toNumber(i.price) * this.toNumber(i.quantity))}`)
       .join('\n');
     const commerceRegister = business.commerceRegisterNumber ?? (business as any).commerce_register_number;
     const regLine = commerceRegister ? `Registre de commerce: ${commerceRegister}\n` : '';
@@ -175,10 +175,24 @@ const text = `${business.name ?? ''}\n${regLine}Reçu #${receiptNum}\n${sale.sal
     this.router.navigate(['/dashboard/business/sales']);
   }
 
-  private formatMoney(amount: number): string {
-    return `${(amount ?? 0).toLocaleString('fr-FR', {
+  private formatMoney(amount: unknown): string {
+    return `${this.toNumber(amount).toLocaleString('fr-FR', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     })} FCFA`;
+  }
+
+  private toNumber(value: unknown): number {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+    if (typeof value !== 'string') return 0;
+    const cleaned = value
+      .replace(/fcfa/gi, '')
+      .replace(/\s/g, '')
+      .replace(/\u00A0/g, '')
+      .replace(/\u202F/g, '')
+      .replace(',', '.')
+      .trim();
+    const parsed = Number(cleaned);
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 }

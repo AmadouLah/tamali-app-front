@@ -35,8 +35,9 @@ export interface ReceiptData {
 @Injectable({ providedIn: 'root' })
 export class ReceiptBuilderService {
 
-  formatMoney(amount: number): string {
-    return `${(amount ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} FCFA`.replace('.', ',');
+  formatMoney(amount: unknown): string {
+    const normalized = this.toNumber(amount);
+    return `${normalized.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} FCFA`;
   }
 
   formatDate(dateStr: string): string {
@@ -53,8 +54,9 @@ export class ReceiptBuilderService {
   buildReceiptHtml(data: ReceiptData): string {
     const b = data.business;
     const s = data.sale;
-    const subtotal = s.totalAmount - (s.taxAmount ?? 0);
-    const taxAmount = s.taxAmount ?? 0;
+    const totalAmount = this.toNumber(s.totalAmount);
+    const taxAmount = this.toNumber(s.taxAmount ?? 0);
+    const subtotal = totalAmount - taxAmount;
     const subtotalLabel = taxAmount > 0 ? 'Sous-total HT' : 'Sous-total';
     const taxLabel = taxAmount > 0 ? 'TVA (18%)' : 'TVA';
 
@@ -70,8 +72,10 @@ export class ReceiptBuilderService {
 
     const itemsHtml = (s.items ?? [])
       .map(item => {
-        const lineTotal = item.price * item.quantity;
-        return `<tr><td class="col-article">${this.escapeHtml(item.productName)}</td><td class="col-qty">${item.quantity}</td><td class="col-pu">${this.formatMoney(item.price)}</td><td class="col-total">${this.formatMoney(lineTotal)}</td></tr>`;
+        const quantity = this.toNumber(item.quantity);
+        const unitPrice = this.toNumber(item.price);
+        const lineTotal = unitPrice * quantity;
+        return `<tr><td class="col-article">${this.escapeHtml(item.productName)}</td><td class="col-qty">${quantity}</td><td class="col-pu">${this.formatMoney(unitPrice)}</td><td class="col-total">${this.formatMoney(lineTotal)}</td></tr>`;
       })
       .join('') || '<tr><td colspan="4" class="receipt-empty">Aucun article</td></tr>';
 
@@ -101,10 +105,30 @@ export class ReceiptBuilderService {
   <section class="receipt-totals">
     <div class="total-row"><span class="total-label">${subtotalLabel}</span><span class="total-amount">${this.formatMoney(subtotal)}</span></div>
     <div class="total-row"><span class="total-label">${taxLabel}</span><span class="total-amount">${this.formatMoney(taxAmount)}</span></div>
-    <div class="total-row total-final"><span class="total-label">Total</span><span class="total-amount">${this.formatMoney(s.totalAmount)}</span></div>
+    <div class="total-row total-final"><span class="total-label">Total</span><span class="total-amount">${this.formatMoney(totalAmount)}</span></div>
   </section>
   <footer class="receipt-footer">Merci de votre visite !</footer>
 </div>`;
+  }
+
+  private toNumber(value: unknown): number {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+    if (typeof value !== 'string') return 0;
+
+    const raw = value.trim();
+    if (!raw) return 0;
+
+    // Compat rétro: accepte "1000000,00", "1 000 000,00", "1 000 000,00", "1000000.00", "... FCFA"
+    const cleaned = raw
+      .replace(/fcfa/gi, '')
+      .replace(/\s/g, '')
+      .replace(/\u00A0/g, '')
+      .replace(/\u202F/g, '')
+      .replace(',', '.')
+      .trim();
+
+    const parsed = Number(cleaned);
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 
   private escapeHtml(text: string): string {
