@@ -2,8 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
-import { ApiConfigService } from '../../core/services/api-config.service';
+import { ServiceRequestClientService } from '../../core/services/service-request-client.service';
 import { ToastService } from '../../core/services/toast.service';
 import { extractErrorMessage } from '../../core/utils/error.utils';
 import { GlassCardComponent } from '../../shared/components/glass-card/glass-card.component';
@@ -16,9 +15,8 @@ import { GlassCardComponent } from '../../shared/components/glass-card/glass-car
   styleUrl: './service-request.component.css'
 })
 export class ServiceRequestComponent {
-  private readonly http = inject(HttpClient);
   private readonly fb = inject(FormBuilder);
-  private readonly apiConfig = inject(ApiConfigService);
+  private readonly serviceRequests = inject(ServiceRequestClientService);
   private readonly toast = inject(ToastService);
 
   serviceRequestForm: FormGroup;
@@ -38,7 +36,7 @@ export class ServiceRequestComponent {
 
     this.loading = true;
 
-    this.http.post(this.apiConfig.getServiceRequestsUrl(), this.serviceRequestForm.value).subscribe({
+    this.serviceRequests.create(this.serviceRequestForm.value).subscribe({
       next: () => {
         this.toast.success('Demande envoyée avec succès ! Nous vous contacterons sous peu.');
         this.loading = false;

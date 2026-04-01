@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService, UserDto } from '../../../../core/services/auth.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { extractErrorMessage } from '../../../../core/utils/error.utils';
+import { ServiceRequestClientService } from '../../../../core/services/service-request-client.service';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
 import { getBusinessMenuItems } from '../business-menu.const';
@@ -29,12 +30,14 @@ export class BusinessProfileComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  private readonly serviceRequests = inject(ServiceRequestClientService);
 
   user: UserDto | null = null;
   form!: FormGroup;
   identityForm!: FormGroup;
   loading = false;
   loadingIdentity = false;
+  requestingReset = false;
   activeMenu = 'profil';
   sidebarOpen = false;
 
@@ -94,6 +97,26 @@ export class BusinessProfileComponent implements OnInit {
       error: (err) => {
         this.toast.error(extractErrorMessage(err, 'Erreur lors du changement.'));
         this.loading = false;
+      }
+    });
+  }
+
+  requestPasswordReset(): void {
+    if (this.requestingReset || !this.user?.email) return;
+    if (!confirm("Envoyer une demande de réinitialisation de mot de passe au support Tamali ?")) return;
+
+    this.requestingReset = true;
+    const email = this.user.email;
+    const objective = `Demande de réinitialisation du mot de passe pour le compte: ${email}`;
+
+    this.serviceRequests.create({ email, objective }).subscribe({
+      next: () => {
+        this.toast.success("Demande envoyée. Le support vous contactera / réinitialisera votre accès.");
+        this.requestingReset = false;
+      },
+      error: (err) => {
+        this.toast.error(extractErrorMessage(err, "Erreur lors de l'envoi de la demande."));
+        this.requestingReset = false;
       }
     });
   }
