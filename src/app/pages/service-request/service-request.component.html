@@ -37,7 +37,7 @@
 
           <div>
             <label for="objective" class="block text-sm font-medium text-gray-300 mb-2">
-              Votre objectif <span class="text-red-400">*</span>
+              Votre motif de la demande <span class="text-red-400">*</span>
             </label>
             <textarea
               id="objective"
@@ -53,7 +53,7 @@
             @if (serviceRequestForm.get('objective')?.invalid && serviceRequestForm.get('objective')?.touched) {
               <p class="mt-1 text-sm text-red-400">
                 @if (serviceRequestForm.get('objective')?.errors?.['required']) {
-                  L'objectif est requis
+                  Le motif de la demande est requis
                 } @else if (serviceRequestForm.get('objective')?.errors?.['minlength']) {
                   Minimum 10 caractères requis
                 } @else if (serviceRequestForm.get('objective')?.errors?.['maxlength']) {

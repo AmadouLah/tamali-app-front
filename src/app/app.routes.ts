@@ -85,6 +85,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/dashboard/admin/add-business-owner/add-business-owner.component').then(m => m.AddBusinessOwnerComponent)
   },
   {
+    path: 'dashboard/admin/users',
+    loadComponent: () => import('./pages/dashboard/admin/users/users.component').then(m => m.UsersComponent)
+  },
+  {
     path: 'dashboard/admin/business-sectors',
     loadComponent: () => import('./pages/dashboard/admin/business-sectors/business-sectors.component').then(m => m.BusinessSectorsComponent)
   },

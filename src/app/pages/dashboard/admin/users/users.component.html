@@ -1,0 +1,71 @@
+<div class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+  <app-admin-sidebar
+    [menuItems]="menuItems"
+    [activeMenu]="activeMenu"
+    [(mobileOpen)]="sidebarOpen">
+  </app-admin-sidebar>
+
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+    <app-glass-card className="p-5 sm:p-7">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+        <div>
+          <h1 class="text-xl sm:text-2xl font-bold text-white">Réinitialisation de mot de passe</h1>
+          <p class="text-gray-300 text-sm mt-1">
+            Réservé au SUPER_ADMIN. Aucune donnée utilisateur n’est supprimée : seul le mot de passe est remplacé.
+          </p>
+        </div>
+      </div>
+
+      <form [formGroup]="form" class="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-3 items-start">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Email utilisateur</label>
+          <input
+            type="email"
+            formControlName="email"
+            (keyup.enter)="loadUserByEmail()"
+            class="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            placeholder="ex: client@domaine.com" />
+          @if (getFieldError('email')) {
+            <p class="text-red-300 text-xs mt-1">{{ getFieldError('email') }}</p>
+          }
+        </div>
+
+        <button
+          type="button"
+          (click)="loadUserByEmail()"
+          [disabled]="loading"
+          class="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white border border-white/10 transition">
+          @if (loading) { Chargement... } @else { Vérifier }
+        </button>
+
+        <button
+          type="button"
+          (click)="resetPassword()"
+          [disabled]="loading"
+          class="px-4 py-3 rounded-xl bg-emerald-600/90 hover:bg-emerald-600 text-white border border-emerald-500/30 transition">
+          Réinitialiser
+        </button>
+      </form>
+
+      @if (userPreview) {
+        <div class="mt-6 p-4 rounded-xl bg-white/5 border border-white/10">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <p class="text-white font-semibold">{{ auth.getDisplayName(userPreview) }}</p>
+              <p class="text-gray-300 text-sm">{{ userPreview.email }}</p>
+            </div>
+            <div class="text-sm">
+              <p class="text-gray-300">Statut:
+                <span class="text-white font-semibold">{{ userPreview.enabled ? 'Actif' : 'Désactivé' }}</span>
+              </p>
+              <p class="text-gray-300">Doit changer MDP:
+                <span class="text-white font-semibold">{{ userPreview.mustChangePassword ? 'Oui' : 'Non' }}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      }
+    </app-glass-card>
+  </div>
+</div>
+

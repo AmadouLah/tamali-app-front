@@ -114,4 +114,8 @@ export class ApiConfigService {
   getSuperAdminAnnouncementsUrl(): string {
     return `${this.baseUrl}/super-admin/announcements`;
   }
+
+  getSuperAdminResetUserPasswordUrl(): string {
+    return `${this.baseUrl}/super-admin/users/reset-password`;
+  }
 }

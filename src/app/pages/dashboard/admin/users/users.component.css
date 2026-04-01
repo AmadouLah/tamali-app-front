@@ -1,0 +1,10 @@
+.container {
+  max-width: 1100px;
+}
+
+input:disabled,
+button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
