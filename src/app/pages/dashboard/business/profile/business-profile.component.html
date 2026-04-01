@@ -100,10 +100,17 @@
             <button
               type="button"
               (click)="requestPasswordReset()"
-              [disabled]="requestingReset"
+              [disabled]="requestingReset || resetCooldownRemainingMs > 0"
               class="px-4 sm:px-5 py-2 text-xs sm:text-sm border-2 border-white/30 text-white rounded-lg font-medium hover:bg-white/10 transition-colors disabled:opacity-50 w-full sm:w-auto">
-              @if (requestingReset) { Envoi... } @else { Demander une réinitialisation }
+              @if (requestingReset) { Envoi... }
+              @else if (resetCooldownRemainingMs > 0) { Renvoyer dans {{ getResetCooldownLabel() }} }
+              @else { Demander une réinitialisation }
             </button>
+            @if (resetCooldownRemainingMs > 0) {
+              <p class="mt-2 text-xs text-gray-400">
+                Pour éviter les abus, vous pourrez renvoyer une demande dans {{ getResetCooldownLabel() }}.
+              </p>
+            }
           </div>
         </app-glass-card>
       </div>

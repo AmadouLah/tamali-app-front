@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -25,7 +25,9 @@ import { UserAvatarComponent } from '../../../../shared/components/user-avatar/u
   templateUrl: './business-profile.component.html',
   styleUrl: './business-profile.component.css'
 })
-export class BusinessProfileComponent implements OnInit {
+export class BusinessProfileComponent implements OnInit, OnDestroy {
+  private static readonly RESET_REQUEST_COOLDOWN_MS = 5 * 60 * 1000;
+
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
@@ -38,6 +40,8 @@ export class BusinessProfileComponent implements OnInit {
   loading = false;
   loadingIdentity = false;
   requestingReset = false;
+  resetCooldownRemainingMs = 0;
+  private cooldownTimer?: number;
   activeMenu = 'profil';
   sidebarOpen = false;
 
@@ -61,6 +65,15 @@ export class BusinessProfileComponent implements OnInit {
       firstname: [(this.user?.firstname ?? '').trim()],
       lastname: [(this.user?.lastname ?? '').trim()]
     });
+
+    this.syncResetCooldownFromStorage();
+  }
+
+  ngOnDestroy(): void {
+    if (this.cooldownTimer) {
+      window.clearInterval(this.cooldownTimer);
+      this.cooldownTimer = undefined;
+    }
   }
 
   saveIdentity(): void {
@@ -102,7 +115,7 @@ export class BusinessProfileComponent implements OnInit {
   }
 
   requestPasswordReset(): void {
-    if (this.requestingReset || !this.user?.email) return;
+    if (this.requestingReset || this.resetCooldownRemainingMs > 0 || !this.user?.email) return;
     if (!confirm("Envoyer une demande de réinitialisation de mot de passe au support Tamali ?")) return;
 
     this.requestingReset = true;
@@ -113,12 +126,90 @@ export class BusinessProfileComponent implements OnInit {
       next: () => {
         this.toast.success("Demande envoyée. Le support vous contactera / réinitialisera votre accès.");
         this.requestingReset = false;
+        this.startResetCooldown(email);
       },
       error: (err) => {
         this.toast.error(extractErrorMessage(err, "Erreur lors de l'envoi de la demande."));
         this.requestingReset = false;
       }
     });
+  }
+
+  getResetCooldownLabel(): string {
+    const totalSeconds = Math.ceil(this.resetCooldownRemainingMs / 1000);
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }
+
+  private syncResetCooldownFromStorage(): void {
+    const email = this.user?.email;
+    if (!email) return;
+
+    const lastAtMs = this.getLastResetRequestAtMs(email);
+    if (!lastAtMs) return;
+
+    const remaining = (lastAtMs + BusinessProfileComponent.RESET_REQUEST_COOLDOWN_MS) - Date.now();
+    if (remaining > 0) {
+      this.resetCooldownRemainingMs = remaining;
+      this.ensureCooldownTimer(email);
+    } else {
+      this.resetCooldownRemainingMs = 0;
+      this.clearLastResetRequestAt(email);
+    }
+  }
+
+  private startResetCooldown(email: string): void {
+    this.setLastResetRequestAtMs(email, Date.now());
+    this.resetCooldownRemainingMs = BusinessProfileComponent.RESET_REQUEST_COOLDOWN_MS;
+    this.ensureCooldownTimer(email);
+  }
+
+  private ensureCooldownTimer(email: string): void {
+    if (this.cooldownTimer) return;
+    this.cooldownTimer = window.setInterval(() => {
+      const lastAtMs = this.getLastResetRequestAtMs(email);
+      if (!lastAtMs) {
+        this.resetCooldownRemainingMs = 0;
+        this.clearCooldownTimer();
+        return;
+      }
+
+      const remaining = (lastAtMs + BusinessProfileComponent.RESET_REQUEST_COOLDOWN_MS) - Date.now();
+      if (remaining <= 0) {
+        this.resetCooldownRemainingMs = 0;
+        this.clearLastResetRequestAt(email);
+        this.clearCooldownTimer();
+      } else {
+        this.resetCooldownRemainingMs = remaining;
+      }
+    }, 1000);
+  }
+
+  private clearCooldownTimer(): void {
+    if (this.cooldownTimer) {
+      window.clearInterval(this.cooldownTimer);
+      this.cooldownTimer = undefined;
+    }
+  }
+
+  private getLastResetRequestAtMs(email: string): number | null {
+    const raw = localStorage.getItem(this.getResetCooldownStorageKey(email));
+    if (!raw) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
+
+  private setLastResetRequestAtMs(email: string, valueMs: number): void {
+    localStorage.setItem(this.getResetCooldownStorageKey(email), String(valueMs));
+  }
+
+  private clearLastResetRequestAt(email: string): void {
+    localStorage.removeItem(this.getResetCooldownStorageKey(email));
+  }
+
+  private getResetCooldownStorageKey(email: string): string {
+    return `pwd_reset_request_last_at:${email.toLowerCase().trim()}`;
   }
 
   getDisplayName(): string {
