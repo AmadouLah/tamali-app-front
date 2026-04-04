@@ -60,3 +60,20 @@ export interface ServiceRequestDto {
   processed: boolean;
   createdAt: string;
 }
+
+export type InstantNotificationScope = 'ALL' | 'ROLE' | 'USERS';
+
+export type NotificationRoleType = 'SUPER_ADMIN' | 'BUSINESS_OWNER' | 'BUSINESS_ASSOCIATE';
+
+export interface NotificationUserOptionDto {
+  id: string;
+  email: string;
+  displayName: string;
+  roleType: string;
+}
+
+export interface InstantNotificationSendResultDto {
+  sseRecipients: number;
+  pushTargets: number;
+  pushDelivered: number;
+}

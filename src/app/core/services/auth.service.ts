@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { ApiConfigService } from './api-config.service';
+import { InstantNotificationStreamService } from './instant-notification-stream.service';
+import { WebPushRegistrationService } from './web-push-registration.service';
 
 export interface CheckEmailRequest {
   email: string;
@@ -55,6 +57,8 @@ export interface AuthResponse {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly apiConfig = inject(ApiConfigService);
+  private readonly instantNotificationStream = inject(InstantNotificationStreamService);
+  private readonly webPushRegistration = inject(WebPushRegistrationService);
   private readonly tokenKey = 'auth_token';
   private readonly userKey = 'auth_user';
 
@@ -75,6 +79,8 @@ export class AuthService {
       tap(response => {
         this.setToken(response.token);
         this.setUser(response.user);
+        this.instantNotificationStream.startIfAuthenticated();
+        this.webPushRegistration.tryRegister();
       })
     );
   }
@@ -82,10 +88,11 @@ export class AuthService {
   directLogin(email: string, password: string): Observable<AuthResponse | UserDto> {
     return this.http.post<AuthResponse | UserDto>(`${this.apiConfig.getAuthUrl()}/direct-login`, { email, password }).pipe(
       tap(response => {
-        // Si c'est un AuthResponse, sauvegarder le token et l'utilisateur
         if ('token' in response) {
           this.setToken(response.token);
           this.setUser(response.user);
+          this.instantNotificationStream.startIfAuthenticated();
+          this.webPushRegistration.tryRegister();
         }
       })
     );
@@ -235,6 +242,8 @@ export class AuthService {
   }
 
   logout(): void {
+    this.instantNotificationStream.stop();
+    this.webPushRegistration.resetCachedVapidKey();
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.userKey);
   }

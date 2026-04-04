@@ -118,4 +118,24 @@ export class ApiConfigService {
   getSuperAdminResetUserPasswordUrl(): string {
     return `${this.baseUrl}/super-admin/users/reset-password`;
   }
+
+  getNotificationsStreamUrl(): string {
+    return `${this.baseUrl}/notifications/stream`;
+  }
+
+  getSuperAdminInstantNotificationUrl(): string {
+    return `${this.baseUrl}/super-admin/notifications/instant`;
+  }
+
+  getSuperAdminNotificationUserOptionsUrl(): string {
+    return `${this.baseUrl}/super-admin/users/notification-options`;
+  }
+
+  getPushVapidPublicKeyUrl(): string {
+    return `${this.baseUrl}/notifications/push/vapid-public-key`;
+  }
+
+  getPushSubscribeUrl(): string {
+    return `${this.baseUrl}/notifications/push/subscribe`;
+  }
 }
