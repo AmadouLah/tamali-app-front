@@ -1,16 +1,16 @@
 import { Injectable, inject } from '@angular/core';
+import { showTamaliInstantSystemNotification } from '../utils/instant-system-notification.util';
 import { ApiConfigService } from './api-config.service';
-import { ToastService } from './toast.service';
 
 interface InstantPayload {
   message?: string;
   sentAt?: string;
+  notificationId?: string;
 }
 
 @Injectable({ providedIn: 'root' })
 export class InstantNotificationStreamService {
   private readonly apiConfig = inject(ApiConfigService);
-  private readonly toast = inject(ToastService);
 
   private abort: AbortController | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -113,18 +113,7 @@ export class InstantNotificationStreamService {
       }
       const msg = payload.message?.trim();
       if (!msg) continue;
-      this.toast.info(msg, 8000);
-      this.maybeSystemNotification(msg);
-    }
-  }
-
-  private maybeSystemNotification(body: string): void {
-    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
-    if (typeof document !== 'undefined' && !document.hidden) return;
-    try {
-      new Notification('Tamali', { body, icon: '/favicon.ico' });
-    } catch {
-      /* ignore */
+      showTamaliInstantSystemNotification(msg, payload.notificationId);
     }
   }
 }
