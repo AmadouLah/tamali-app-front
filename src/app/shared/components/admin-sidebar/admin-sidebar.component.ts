@@ -39,6 +39,8 @@ export class AdminSidebarComponent implements OnInit {
       this.activeMenu = 'réinitialiser mdp';
     } else if (route.includes('admin/announcements')) {
       this.activeMenu = 'annonces';
+    } else if (route.includes('instant-notifications')) {
+      this.activeMenu = 'notifications instantanées';
     } else if (route.includes('business-sectors')) {
       this.activeMenu = 'secteurs d\'activité';
     } else if (route.includes('business/company')) {

@@ -1,0 +1,120 @@
+<div class="admin-dashboard-container min-h-screen relative overflow-x-hidden" data-theme="liquidGlace">
+  <div class="liquid-gradient fixed inset-0 -z-10"></div>
+  <div class="fixed inset-0 -z-10 bg-gradient-to-br from-slate-900/90 via-purple-900/80 to-slate-900/90"></div>
+  <div class="geometric-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
+
+  <app-admin-sidebar
+    [menuItems]="menuItems"
+    [activeMenu]="activeMenu"
+    [mobileOpen]="sidebarOpen"
+    (mobileOpenChange)="sidebarOpen = $event"
+    (menuClick)="activeMenu = $event"
+  ></app-admin-sidebar>
+
+  <div class="dashboard-main">
+    <header class="glass-effect-strong border-b border-white/20 dashboard-header sticky top-0 z-30">
+      <button
+        type="button"
+        class="lg:hidden shrink-0 p-2 rounded-lg glass-effect-subtle border border-white/20 text-white hover:bg-white/10 transition-colors"
+        (click)="sidebarOpen = !sidebarOpen"
+        aria-label="Ouvrir le menu"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </button>
+      <div class="min-w-0 flex-1">
+        <h1 class="text-xl md:text-2xl font-bold text-white truncate">Notifications instantanées</h1>
+        <p class="text-gray-300 text-sm mt-0.5 hidden sm:block">SSE + Web Push (app fermée possible selon l’appareil)</p>
+      </div>
+    </header>
+
+    <main class="dashboard-content">
+      <div class="max-w-3xl mx-auto">
+        <app-glass-card variant="strong" class="p-4 sm:p-5">
+          <p class="text-gray-400 text-sm mb-4">
+            Les sessions ouvertes reçoivent un toast (SSE). Les appareils ayant accepté les notifications et enregistré le Web Push reçoivent aussi une notification système, y compris PWA installée avec l’app fermée (selon le navigateur / iOS 16.4+ en icône écran d’accueil). Le backend doit avoir les clés VAPID configurées.
+          </p>
+          <label class="block text-xs font-medium text-gray-300 mb-1">Message</label>
+          <textarea
+            [(ngModel)]="notifyMessage"
+            rows="3"
+            maxlength="2000"
+            class="w-full rounded-lg bg-white/5 border border-white/20 text-white text-sm px-3 py-2 mb-4 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+            placeholder="Texte de la notification…"
+          ></textarea>
+          <p class="text-xs text-gray-500 mb-4">{{ notifyMessage.length }}/2000</p>
+
+          <span class="block text-xs font-medium text-gray-300 mb-2">Destinataires</span>
+          <div class="flex flex-col gap-2 mb-4">
+            <label class="flex items-center gap-2 text-sm text-white cursor-pointer">
+              <input type="radio" name="notifyScope" value="ALL" [(ngModel)]="notifyScope" (ngModelChange)="onNotifyScopeChange()" class="accent-purple-500" />
+              Tout le monde (sessions connectées)
+            </label>
+            <label class="flex items-center gap-2 text-sm text-white cursor-pointer">
+              <input type="radio" name="notifyScope" value="ROLE" [(ngModel)]="notifyScope" (ngModelChange)="onNotifyScopeChange()" class="accent-purple-500" />
+              Un rôle précis
+            </label>
+            <label class="flex items-center gap-2 text-sm text-white cursor-pointer">
+              <input type="radio" name="notifyScope" value="USERS" [(ngModel)]="notifyScope" (ngModelChange)="onNotifyScopeChange()" class="accent-purple-500" />
+              Utilisateurs choisis
+            </label>
+          </div>
+
+          @if (notifyScope === 'ROLE') {
+            <div class="mb-4">
+              <label class="block text-xs font-medium text-gray-300 mb-1">Rôle</label>
+              <select [(ngModel)]="notifyRole" class="w-full max-w-xs rounded-lg bg-white/5 border border-white/20 text-white text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500/50">
+                @for (r of notifyRoleOptions; track r) {
+                  <option [value]="r">{{ r }}</option>
+                }
+              </select>
+            </div>
+          }
+
+          @if (notifyScope === 'USERS') {
+            <div class="mb-4">
+              @if (loadingNotifyUsers) {
+                <p class="text-gray-400 text-sm">Chargement des utilisateurs…</p>
+              } @else {
+                <label class="block text-xs font-medium text-gray-300 mb-1">Rechercher</label>
+                <input
+                  type="search"
+                  [(ngModel)]="notifyUserFilter"
+                  class="w-full rounded-lg bg-white/5 border border-white/20 text-white text-sm px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  placeholder="Email, nom ou rôle…"
+                />
+                <div class="max-h-48 overflow-y-auto rounded-lg border border-white/10 divide-y divide-white/5">
+                  @for (u of filteredNotificationUsers; track u.id) {
+                    <label class="flex items-center gap-3 px-3 py-2 hover:bg-white/5 cursor-pointer text-sm">
+                      <input type="checkbox" [checked]="isNotifyUserSelected(u.id)" (change)="toggleNotifyUser(u.id)" class="accent-purple-500 shrink-0" />
+                      <span class="text-white truncate">{{ u.displayName }}</span>
+                      <span class="text-gray-400 truncate text-xs">{{ u.email }}</span>
+                      <span class="text-gray-500 text-xs shrink-0 ml-auto">{{ u.roleType }}</span>
+                    </label>
+                  }
+                  @if (filteredNotificationUsers.length === 0) {
+                    <p class="p-3 text-gray-500 text-sm">Aucun résultat</p>
+                  }
+                </div>
+              }
+            </div>
+          }
+
+          <button
+            type="button"
+            (click)="sendInstantNotification()"
+            [disabled]="sendingNotify"
+            class="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {{ sendingNotify ? 'Envoi…' : 'Envoyer la notification' }}
+          </button>
+        </app-glass-card>
+      </div>
+    </main>
+  </div>
+</div>

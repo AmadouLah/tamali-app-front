@@ -99,5 +99,10 @@ export const routes: Routes = [
   {
     path: 'dashboard/admin/announcements',
     loadComponent: () => import('./pages/dashboard/admin/announcements/announcements.component').then(m => m.AnnouncementsComponent)
+  },
+  {
+    path: 'dashboard/admin/instant-notifications',
+    loadComponent: () =>
+      import('./pages/dashboard/admin/instant-notifications/instant-notifications.component').then(m => m.InstantNotificationsComponent)
   }
 ];
