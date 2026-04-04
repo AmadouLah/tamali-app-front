@@ -76,4 +76,6 @@ export interface InstantNotificationSendResultDto {
   sseRecipients: number;
   pushTargets: number;
   pushDelivered: number;
+  /** false si le serveur n’a pas de paire VAPID (ex. variables manquantes sur Render). */
+  webPushConfigured?: boolean;
 }

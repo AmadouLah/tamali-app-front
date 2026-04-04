@@ -96,6 +96,17 @@ export class InstantNotificationsComponent implements OnInit {
     return this.selectedNotifyUserIds.includes(id);
   }
 
+  private formatInstantNotifyResult(res: InstantNotificationSendResultDto): string {
+    const sse = `${res.sseRecipients} session(s) en direct (SSE)`;
+    if (res.webPushConfigured === false) {
+      return `Notification : ${sse} ; Web Push désactivé côté serveur (définissez WEBPUSH_VAPID_PUBLIC_KEY et WEBPUSH_VAPID_PRIVATE_KEY sur l’hébergeur).`;
+    }
+    if (res.pushTargets === 0) {
+      return `Notification : ${sse} ; Web Push : 0 appareil enregistré (chaque utilisateur doit ouvrir l’app en production, accepter les notifications, puis se reconnecter ou rafraîchir).`;
+    }
+    return `Notification : ${sse} ; Web Push ${res.pushDelivered}/${res.pushTargets} livraison(s).`;
+  }
+
   sendInstantNotification(): void {
     const message = this.notifyMessage.trim();
     if (!message) {
@@ -115,9 +126,7 @@ export class InstantNotificationsComponent implements OnInit {
     this.http.post<InstantNotificationSendResultDto>(this.apiConfig.getSuperAdminInstantNotificationUrl(), body).subscribe({
       next: res => {
         this.sendingNotify = false;
-        this.toast.success(
-          `Notification : ${res.sseRecipients} session(s) en direct (SSE) ; Web Push ${res.pushDelivered}/${res.pushTargets} livraison(s).`
-        );
+        this.toast.success(this.formatInstantNotifyResult(res));
         this.notifyMessage = '';
       },
       error: err => {
