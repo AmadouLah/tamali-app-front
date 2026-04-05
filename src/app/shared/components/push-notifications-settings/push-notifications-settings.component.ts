@@ -14,10 +14,10 @@ export class PushNotificationsSettingsComponent implements OnInit {
   private readonly push = inject(WebPushRegistrationService);
   private readonly toast = inject(ToastService);
 
-  loading = true;
+  loading = false;
   busy = false;
   toggleOn = false;
-  state: 'unsupported' | 'denied' | 'inactive' | 'active' | null = null;
+  state: 'unsupported' | 'denied' | 'inactive' | 'active' = 'inactive';
   serverConfigured = false;
 
   async ngOnInit(): Promise<void> {
@@ -31,6 +31,10 @@ export class PushNotificationsSettingsComponent implements OnInit {
       this.state = s.kind;
       this.serverConfigured = s.serverPushConfigured;
       this.toggleOn = s.kind === 'active';
+    } catch {
+      this.state = 'inactive';
+      this.serverConfigured = false;
+      this.toggleOn = false;
     } finally {
       this.loading = false;
     }
@@ -40,9 +44,7 @@ export class PushNotificationsSettingsComponent implements OnInit {
     if (this.loading || this.busy || this.state === 'unsupported' || this.state === 'denied') return;
     const wantOn = !this.toggleOn;
     if (wantOn && !this.serverConfigured) {
-      this.toast.error(
-        'Les notifications push ne sont pas disponibles pour le moment (configuration serveur).'
-      );
+      this.toast.error('Les notifications ne sont pas disponibles pour le moment. Merci de réessayer plus tard.');
       return;
     }
     this.busy = true;
@@ -50,15 +52,13 @@ export class PushNotificationsSettingsComponent implements OnInit {
       if (wantOn) {
         const ok = await this.push.enableFromSettings();
         if (ok) {
-          this.toast.success('Notifications activées sur cet appareil.');
+          this.toast.success('Notifications activées pour cet appareil.');
         } else {
-          this.toast.error(
-            'Activation impossible. Vérifiez la connexion, utilisez le site en HTTPS (production) et réessayez.'
-          );
+          this.toast.error('Activation impossible. Vérifiez votre connexion internet et réessayez.');
         }
       } else {
         await this.push.disableFromSettings();
-        this.toast.success('Notifications désactivées sur cet appareil.');
+        this.toast.success('Notifications désactivées pour cet appareil.');
       }
     } finally {
       await this.refresh();

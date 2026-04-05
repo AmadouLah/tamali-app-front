@@ -1,38 +1,39 @@
 <app-glass-card variant="strong" class="dashboard-card">
-  <h2 class="text-lg sm:text-xl font-bold text-white mb-2 sm:mb-3">Notifications</h2>
+  <div class="flex flex-wrap items-baseline justify-between gap-2 mb-2 sm:mb-3">
+    <h2 class="text-lg sm:text-xl font-bold text-white">Notifications</h2>
+    @if (loading) {
+      <span class="text-xs text-gray-400 font-normal">Mise à jour…</span>
+    }
+  </div>
   <p class="text-gray-300 text-xs sm:text-sm mb-4 sm:mb-6">
-    Recevez les alertes Tamali (messages instantanés) sur cet appareil, même lorsque l’application n’est pas ouverte.
-    Fonctionne sur le site en production (HTTPS), avec un navigateur compatible.
+    Soyez informé des messages importants de Tamali sur cet appareil, y compris lorsque l’application est en arrière-plan.
   </p>
 
-  @if (loading) {
-    <p class="text-gray-400 text-sm">Chargement…</p>
-  } @else if (state === 'unsupported') {
+  @if (state === 'unsupported') {
     <p class="text-gray-300 text-sm">
-      Les notifications ne sont pas disponibles dans ce contexte (ex. mode développement ou navigateur incompatible).
-      Utilisez le site déployé sur votre téléphone ou ordinateur.
+      Cette fonctionnalité n’est pas disponible dans votre environnement actuel. Si vous utilisez un navigateur récent sur
+      téléphone ou ordinateur, veuillez réessayer ultérieurement ou contacter le support en cas de difficulté.
     </p>
   } @else if (state === 'denied') {
     <p class="text-gray-300 text-sm">
-      Les notifications sont bloquées pour ce site dans votre navigateur. Ouvrez les paramètres du site (icône à gauche de
-      l’URL) pour autoriser les notifications, puis revenez ici.
+      Tamali n’est pas autorisé à afficher des notifications. Pour modifier ce réglage, ouvrez les paramètres de votre
+      navigateur ou de votre appareil, puis autorisez les notifications pour Tamali.
     </p>
   } @else {
-    @if (!serverConfigured) {
-      <p class="text-amber-200/90 text-sm mb-4 border border-amber-500/30 rounded-lg px-3 py-2 glass-effect-subtle">
-        Le serveur ne publie pas encore de clé d’envoi : les notifications ne peuvent pas être activées tant que la
-        configuration n’est pas complétée.
+    @if (!serverConfigured && !toggleOn) {
+      <p class="text-amber-100/95 text-sm mb-4 border border-amber-500/35 rounded-lg px-3 py-2 glass-effect-subtle">
+        Le service de notifications est momentanément indisponible. Merci de réessayer plus tard.
       </p>
     }
 
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div class="min-w-0 flex-1">
-        <div class="text-white font-medium text-sm sm:text-base">Notifications push Tamali</div>
+        <div class="text-white font-medium text-sm sm:text-base">Messages sur cet appareil</div>
         <p class="text-gray-400 text-xs sm:text-sm mt-1">
           @if (toggleOn) {
-            Cet appareil est inscrit pour recevoir les envois.
+            Les notifications sont activées pour ce compte sur cet appareil.
           } @else {
-            Inactif sur cet appareil — activez pour vous inscrire.
+            Les notifications sont désactivées. Activez l’option pour les recevoir ici.
           }
         </p>
       </div>
@@ -40,7 +41,7 @@
         type="button"
         role="switch"
         [attr.aria-checked]="toggleOn"
-        [disabled]="busy || !serverConfigured"
+        [disabled]="busy || loading || (!serverConfigured && !toggleOn)"
         (click)="onToggleClick()"
         class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border border-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-40 disabled:cursor-not-allowed"
         [class.bg-purple-600]="toggleOn"

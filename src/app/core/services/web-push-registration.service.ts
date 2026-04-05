@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { SwPush } from '@angular/service-worker';
 import { firstValueFrom, from, of } from 'rxjs';
-import { switchMap, take } from 'rxjs/operators';
+import { catchError, switchMap, take, timeout } from 'rxjs/operators';
 import { ApiConfigService } from './api-config.service';
 
 export interface PushSettingsState {
@@ -19,6 +19,8 @@ export class WebPushRegistrationService {
 
   private static readonly RETRY_MS = 3000;
   private static readonly MAX_ATTEMPTS = 5;
+  /** SwPush.subscription peut ne jamais émettre ; sans borne, firstValueFrom bloque indéfiniment. */
+  private static readonly RX_FIRST_MS = 5000;
 
   private vapidPublicKey: string | null = null;
 
@@ -49,7 +51,7 @@ export class WebPushRegistrationService {
 
   /** Désactivation : retire l’abonnement côté serveur et côté navigateur. */
   async disableFromSettings(): Promise<void> {
-    const sub = await firstValueFrom(this.swPush.subscription.pipe(take(1))).catch(() => null);
+    const sub = await this.readPushSubscriptionSnapshot();
     const endpoint = sub?.endpoint;
     if (endpoint) {
       try {
@@ -74,14 +76,29 @@ export class WebPushRegistrationService {
     if (Notification.permission === 'denied') {
       return { kind: 'denied', serverPushConfigured: await this.fetchServerPushConfigured() };
     }
-    const sub = await firstValueFrom(this.swPush.subscription.pipe(take(1))).catch(() => null);
+    const [sub, serverPushConfigured] = await Promise.all([
+      this.readPushSubscriptionSnapshot(),
+      this.fetchServerPushConfigured()
+    ]);
     if (sub) {
       return { kind: 'active', serverPushConfigured: true };
     }
-    return {
-      kind: 'inactive',
-      serverPushConfigured: await this.fetchServerPushConfigured()
-    };
+    return { kind: 'inactive', serverPushConfigured };
+  }
+
+  private async readPushSubscriptionSnapshot(): Promise<PushSubscription | null> {
+    if (!this.swPush.isEnabled) return null;
+    try {
+      return await firstValueFrom(
+        this.swPush.subscription.pipe(
+          timeout(WebPushRegistrationService.RX_FIRST_MS),
+          take(1),
+          catchError(() => of(null))
+        )
+      );
+    } catch {
+      return null;
+    }
   }
 
   private isEligibleForPush(): boolean {
@@ -149,7 +166,11 @@ export class WebPushRegistrationService {
   private async fetchServerPushConfigured(): Promise<boolean> {
     try {
       const r = await firstValueFrom(
-        this.http.get<{ publicKey: string }>(this.api.getPushVapidPublicKeyUrl()).pipe(take(1))
+        this.http.get<{ publicKey: string }>(this.api.getPushVapidPublicKeyUrl()).pipe(
+          timeout(WebPushRegistrationService.RX_FIRST_MS),
+          take(1),
+          catchError(() => of({ publicKey: '' }))
+        )
       );
       return !!(r.publicKey?.trim());
     } catch {
