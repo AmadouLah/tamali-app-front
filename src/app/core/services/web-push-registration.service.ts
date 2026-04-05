@@ -17,6 +17,9 @@ export class WebPushRegistrationService {
   private readonly http = inject(HttpClient);
   private readonly api = inject(ApiConfigService);
 
+  /** Par navigateur : désactivation explicite dans les paramètres — évite que tryRegister() réabonne au prochain chargement. */
+  static readonly PUSH_OPT_OUT_STORAGE_KEY = 'tamali_push_notifications_opt_out';
+
   private static readonly RETRY_MS = 3000;
   private static readonly MAX_ATTEMPTS = 5;
   /** SwPush.subscription peut ne jamais émettre ; sans borne, firstValueFrom bloque indéfiniment. */
@@ -25,8 +28,28 @@ export class WebPushRegistrationService {
   private vapidPublicKey: string | null = null;
 
   tryRegister(): void {
+    if (this.userRefusedPushInSettings()) return;
     if (!this.isEligibleForPush()) return;
     void this.runRegistration(0);
+  }
+
+  /** True si l’utilisateur connecté a désactivé les notifications dans les paramètres (ce navigateur). */
+  userRefusedPushInSettings(): boolean {
+    if (typeof localStorage === 'undefined') return false;
+    const uid = this.readStoredAuthUserId();
+    if (!uid) return false;
+    const v = localStorage.getItem(WebPushRegistrationService.PUSH_OPT_OUT_STORAGE_KEY);
+    return v === uid || v === '1';
+  }
+
+  /**
+   * Abonnement navigateur actif et pas en opt-out : le Web Push affichera la notif OS ;
+   * le flux SSE ne doit pas dupliquer avec {@code new Notification()}.
+   */
+  async instantNotificationWillUseWebPushChannel(): Promise<boolean> {
+    if (this.userRefusedPushInSettings()) return false;
+    if (!this.swPush.isEnabled) return false;
+    return (await this.readPushSubscriptionSnapshot()) != null;
   }
 
   resetCachedVapidKey(): void {
@@ -36,6 +59,7 @@ export class WebPushRegistrationService {
   /** Activation explicite (paramètres utilisateur) : demande la permission navigateur puis enregistre l’abonnement. */
   async enableFromSettings(): Promise<boolean> {
     if (typeof window === 'undefined' || !this.swPush.isEnabled || !('Notification' in window)) return false;
+    localStorage.removeItem(WebPushRegistrationService.PUSH_OPT_OUT_STORAGE_KEY);
     if (!localStorage.getItem('auth_token')) return false;
     if (Notification.permission === 'denied') return false;
     if (Notification.permission === 'default') {
@@ -51,6 +75,10 @@ export class WebPushRegistrationService {
 
   /** Désactivation : retire l’abonnement côté serveur et côté navigateur. */
   async disableFromSettings(): Promise<void> {
+    const uid = this.readStoredAuthUserId();
+    if (uid) {
+      localStorage.setItem(WebPushRegistrationService.PUSH_OPT_OUT_STORAGE_KEY, uid);
+    }
     const sub = await this.readPushSubscriptionSnapshot();
     const endpoint = sub?.endpoint;
     if (endpoint) {
@@ -80,6 +108,9 @@ export class WebPushRegistrationService {
       this.readPushSubscriptionSnapshot(),
       this.fetchServerPushConfigured()
     ]);
+    if (this.userRefusedPushInSettings()) {
+      return { kind: 'inactive', serverPushConfigured };
+    }
     if (sub) {
       return { kind: 'active', serverPushConfigured: true };
     }
@@ -106,10 +137,11 @@ export class WebPushRegistrationService {
     if (!this.swPush.isEnabled) return false;
     if (!('serviceWorker' in navigator) || !('Notification' in window)) return false;
     if (Notification.permission === 'denied') return false;
-    return !!(localStorage.getItem('auth_token') && localStorage.getItem('auth_user'));
+    return !!(localStorage.getItem('auth_token') && this.readStoredAuthUserId());
   }
 
   private async runRegistration(attempt: number): Promise<void> {
+    if (this.userRefusedPushInSettings()) return;
     const ok = await this.attemptSubscribeOnce();
     if (ok) return;
     if (Notification.permission === 'denied') return;
@@ -118,6 +150,7 @@ export class WebPushRegistrationService {
   }
 
   private async attemptSubscribeOnce(): Promise<boolean> {
+    if (this.userRefusedPushInSettings()) return false;
     if (!this.isEligibleForPush()) return false;
     try {
       await navigator.serviceWorker.ready;
@@ -160,6 +193,19 @@ export class WebPushRegistrationService {
       return k ?? '';
     } catch {
       return '';
+    }
+  }
+
+  private readStoredAuthUserId(): string | null {
+    if (typeof localStorage === 'undefined') return null;
+    try {
+      const raw = localStorage.getItem('auth_user');
+      if (!raw) return null;
+      const u = JSON.parse(raw) as { id?: string };
+      const id = u?.id?.trim();
+      return id || null;
+    } catch {
+      return null;
     }
   }
 

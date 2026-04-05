@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { showTamaliInstantSystemNotification } from '../utils/instant-system-notification.util';
 import { ApiConfigService } from './api-config.service';
+import { WebPushRegistrationService } from './web-push-registration.service';
 
 interface InstantPayload {
   message?: string;
@@ -11,6 +12,7 @@ interface InstantPayload {
 @Injectable({ providedIn: 'root' })
 export class InstantNotificationStreamService {
   private readonly apiConfig = inject(ApiConfigService);
+  private readonly webPushRegistration = inject(WebPushRegistrationService);
 
   private abort: AbortController | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -126,7 +128,14 @@ export class InstantNotificationStreamService {
       }
       const msg = payload.message?.trim();
       if (!msg) continue;
-      showTamaliInstantSystemNotification(msg, payload.notificationId);
+      void this.showSseInstantWithoutDuplicatingPush(msg, payload.notificationId);
     }
+  }
+
+  private async showSseInstantWithoutDuplicatingPush(message: string, notificationId?: string): Promise<void> {
+    if (await this.webPushRegistration.instantNotificationWillUseWebPushChannel()) {
+      return;
+    }
+    showTamaliInstantSystemNotification(message, notificationId);
   }
 }
