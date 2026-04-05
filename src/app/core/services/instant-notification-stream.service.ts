@@ -39,10 +39,15 @@ export class InstantNotificationStreamService {
     const role = user.roles?.[0]?.type ?? '';
 
     fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      credentials: 'omit',
+      cache: 'no-store',
       headers: {
         Authorization: `Bearer ${token}`,
         'X-User-Id': user.id,
-        'X-User-Role': role
+        'X-User-Role': role,
+        Accept: 'text/event-stream'
       },
       signal: ac.signal
     })
