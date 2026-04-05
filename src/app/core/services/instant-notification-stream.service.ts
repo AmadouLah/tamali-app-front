@@ -35,7 +35,8 @@ export class InstantNotificationStreamService {
     this.abort = new AbortController();
     const ac = this.abort;
 
-    const url = this.apiConfig.getNotificationsStreamUrl();
+    // Contourne le service worker : sinon le flux SSE cross-origin peut échouer (net::ERR_FAILED).
+    const url = this.streamUrlBypassingServiceWorker();
     const role = user.roles?.[0]?.type ?? '';
 
     fetch(url, {
@@ -90,6 +91,13 @@ export class InstantNotificationStreamService {
     }
     this.abort?.abort();
     this.abort = null;
+  }
+
+  /** Voir https://angular.dev/guide/service-worker-devops#bypassing-the-service-worker */
+  private streamUrlBypassingServiceWorker(): string {
+    const base = this.apiConfig.getNotificationsStreamUrl();
+    const sep = base.includes('?') ? '&' : '?';
+    return `${base}${sep}ngsw-bypass=1`;
   }
 
   private scheduleReconnect(generation: number): void {
