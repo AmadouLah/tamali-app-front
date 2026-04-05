@@ -10,11 +10,21 @@ import { extractErrorMessage } from '../../../../core/utils/error.utils';
 import { GlassCardComponent } from '../../../../shared/components/glass-card/glass-card.component';
 import { AdminSidebarComponent, MenuItem } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
 import { ADMIN_MENU_ITEMS } from '../admin-menu.const';
+import { SettingsSectionTabsComponent } from '../../../../shared/components/settings-section-tabs/settings-section-tabs.component';
+import { PushNotificationsSettingsComponent } from '../../../../shared/components/push-notifications-settings/push-notifications-settings.component';
 
 @Component({
   selector: 'app-account',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, GlassCardComponent, AdminSidebarComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterModule,
+    GlassCardComponent,
+    AdminSidebarComponent,
+    SettingsSectionTabsComponent,
+    PushNotificationsSettingsComponent
+  ],
   templateUrl: './account.component.html',
   styleUrl: './account.component.css'
 })
@@ -34,6 +44,11 @@ export class AccountComponent implements OnInit {
   showDeleteConfirm = false;
   activeMenu: string = 'mon compte';
   sidebarOpen = false;
+  accountSection: 'general' | 'notifications' = 'general';
+  readonly accountSectionTabs = [
+    { id: 'general', label: 'Général' },
+    { id: 'notifications', label: 'Notifications' }
+  ];
 
   menuItems: MenuItem[] = ADMIN_MENU_ITEMS;
 
@@ -126,5 +141,9 @@ export class AccountComponent implements OnInit {
     const first = this.user.firstname?.charAt(0).toUpperCase() || '';
     const last = this.user.lastname?.charAt(0).toUpperCase() || '';
     return (first + last) || this.user.email?.charAt(0).toUpperCase() || '?';
+  }
+
+  onAccountSectionTab(id: string): void {
+    if (id === 'general' || id === 'notifications') this.accountSection = id;
   }
 }

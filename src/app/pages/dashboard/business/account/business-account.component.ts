@@ -11,6 +11,8 @@ import { GlassCardComponent } from '../../../../shared/components/glass-card/gla
 import { AdminSidebarComponent } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
 import { getBusinessMenuItems } from '../business-menu.const';
 import { UserAvatarComponent } from '../../../../shared/components/user-avatar/user-avatar.component';
+import { SettingsSectionTabsComponent } from '../../../../shared/components/settings-section-tabs/settings-section-tabs.component';
+import { PushNotificationsSettingsComponent } from '../../../../shared/components/push-notifications-settings/push-notifications-settings.component';
 
 interface BusinessDto {
   id: string;
@@ -20,7 +22,16 @@ interface BusinessDto {
 @Component({
   selector: 'app-business-account',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, GlassCardComponent, AdminSidebarComponent, UserAvatarComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterModule,
+    GlassCardComponent,
+    AdminSidebarComponent,
+    UserAvatarComponent,
+    SettingsSectionTabsComponent,
+    PushNotificationsSettingsComponent
+  ],
   templateUrl: './business-account.component.html',
   styleUrl: './business-account.component.css'
 })
@@ -38,6 +49,11 @@ export class BusinessAccountComponent implements OnInit {
   loading = false;
   activeMenu = 'paramètres';
   sidebarOpen = false;
+  settingsSection: 'profil' | 'notifications' = 'profil';
+  readonly settingsSectionTabs = [
+    { id: 'profil', label: 'Profil' },
+    { id: 'notifications', label: 'Notifications' }
+  ];
 
   menuItems = getBusinessMenuItems(null);
 
@@ -99,5 +115,9 @@ export class BusinessAccountComponent implements OnInit {
 
   setActiveMenu(menu: string): void {
     this.activeMenu = menu;
+  }
+
+  onSettingsTab(id: string): void {
+    if (id === 'profil' || id === 'notifications') this.settingsSection = id;
   }
 }

@@ -5,6 +5,12 @@ import { firstValueFrom, from, of } from 'rxjs';
 import { switchMap, take } from 'rxjs/operators';
 import { ApiConfigService } from './api-config.service';
 
+export interface PushSettingsState {
+  kind: 'unsupported' | 'denied' | 'inactive' | 'active';
+  /** false si l’API ne publie pas de clé VAPID (ex. variables manquantes sur le serveur). */
+  serverPushConfigured: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class WebPushRegistrationService {
   private readonly swPush = inject(SwPush);
@@ -25,6 +31,59 @@ export class WebPushRegistrationService {
     this.vapidPublicKey = null;
   }
 
+  /** Activation explicite (paramètres utilisateur) : demande la permission navigateur puis enregistre l’abonnement. */
+  async enableFromSettings(): Promise<boolean> {
+    if (typeof window === 'undefined' || !this.swPush.isEnabled || !('Notification' in window)) return false;
+    if (!localStorage.getItem('auth_token')) return false;
+    if (Notification.permission === 'denied') return false;
+    if (Notification.permission === 'default') {
+      const p = await Notification.requestPermission();
+      if (p !== 'granted') return false;
+    }
+    for (let i = 0; i < 4; i++) {
+      if (await this.attemptSubscribeOnce()) return true;
+      await new Promise(r => setTimeout(r, WebPushRegistrationService.RETRY_MS));
+    }
+    return false;
+  }
+
+  /** Désactivation : retire l’abonnement côté serveur et côté navigateur. */
+  async disableFromSettings(): Promise<void> {
+    const sub = await firstValueFrom(this.swPush.subscription.pipe(take(1))).catch(() => null);
+    const endpoint = sub?.endpoint;
+    if (endpoint) {
+      try {
+        await firstValueFrom(
+          this.http.delete<void>(this.api.getPushSubscribeUrl(), { body: { endpoint } })
+        );
+      } catch {
+        /* on poursuit la désinscription navigateur */
+      }
+    }
+    try {
+      await this.swPush.unsubscribe();
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async getPushSettingsState(): Promise<PushSettingsState> {
+    if (typeof window === 'undefined' || !this.swPush.isEnabled || !('Notification' in window)) {
+      return { kind: 'unsupported', serverPushConfigured: false };
+    }
+    if (Notification.permission === 'denied') {
+      return { kind: 'denied', serverPushConfigured: await this.fetchServerPushConfigured() };
+    }
+    const sub = await firstValueFrom(this.swPush.subscription.pipe(take(1))).catch(() => null);
+    if (sub) {
+      return { kind: 'active', serverPushConfigured: true };
+    }
+    return {
+      kind: 'inactive',
+      serverPushConfigured: await this.fetchServerPushConfigured()
+    };
+  }
+
   private isEligibleForPush(): boolean {
     if (typeof window === 'undefined') return false;
     if (!this.swPush.isEnabled) return false;
@@ -34,20 +93,23 @@ export class WebPushRegistrationService {
   }
 
   private async runRegistration(attempt: number): Promise<void> {
+    const ok = await this.attemptSubscribeOnce();
+    if (ok) return;
+    if (Notification.permission === 'denied') return;
     if (!this.isEligibleForPush()) return;
+    this.scheduleRetry(attempt);
+  }
+
+  private async attemptSubscribeOnce(): Promise<boolean> {
+    if (!this.isEligibleForPush()) return false;
     try {
       await navigator.serviceWorker.ready;
     } catch {
-      return;
+      return false;
     }
-    if (!this.isEligibleForPush()) return;
-
+    if (!this.isEligibleForPush()) return false;
     const pk = await this.loadVapidPublicKey();
-    if (!pk) {
-      this.scheduleRetry(attempt);
-      return;
-    }
-
+    if (!pk) return false;
     try {
       const sub = await firstValueFrom(
         this.swPush.subscription.pipe(
@@ -58,9 +120,9 @@ export class WebPushRegistrationService {
         )
       );
       await firstValueFrom(this.http.post(this.api.getPushSubscribeUrl(), sub.toJSON()));
+      return true;
     } catch {
-      if (Notification.permission === 'denied') return;
-      this.scheduleRetry(attempt);
+      return false;
     }
   }
 
@@ -81,6 +143,17 @@ export class WebPushRegistrationService {
       return k ?? '';
     } catch {
       return '';
+    }
+  }
+
+  private async fetchServerPushConfigured(): Promise<boolean> {
+    try {
+      const r = await firstValueFrom(
+        this.http.get<{ publicKey: string }>(this.api.getPushVapidPublicKeyUrl()).pipe(take(1))
+      );
+      return !!(r.publicKey?.trim());
+    } catch {
+      return false;
     }
   }
 }

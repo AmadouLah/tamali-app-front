@@ -1,0 +1,57 @@
+<app-glass-card variant="strong" class="dashboard-card">
+  <h2 class="text-lg sm:text-xl font-bold text-white mb-2 sm:mb-3">Notifications</h2>
+  <p class="text-gray-300 text-xs sm:text-sm mb-4 sm:mb-6">
+    Recevez les alertes Tamali (messages instantanés) sur cet appareil, même lorsque l’application n’est pas ouverte.
+    Fonctionne sur le site en production (HTTPS), avec un navigateur compatible.
+  </p>
+
+  @if (loading) {
+    <p class="text-gray-400 text-sm">Chargement…</p>
+  } @else if (state === 'unsupported') {
+    <p class="text-gray-300 text-sm">
+      Les notifications ne sont pas disponibles dans ce contexte (ex. mode développement ou navigateur incompatible).
+      Utilisez le site déployé sur votre téléphone ou ordinateur.
+    </p>
+  } @else if (state === 'denied') {
+    <p class="text-gray-300 text-sm">
+      Les notifications sont bloquées pour ce site dans votre navigateur. Ouvrez les paramètres du site (icône à gauche de
+      l’URL) pour autoriser les notifications, puis revenez ici.
+    </p>
+  } @else {
+    @if (!serverConfigured) {
+      <p class="text-amber-200/90 text-sm mb-4 border border-amber-500/30 rounded-lg px-3 py-2 glass-effect-subtle">
+        Le serveur ne publie pas encore de clé d’envoi : les notifications ne peuvent pas être activées tant que la
+        configuration n’est pas complétée.
+      </p>
+    }
+
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div class="min-w-0 flex-1">
+        <div class="text-white font-medium text-sm sm:text-base">Notifications push Tamali</div>
+        <p class="text-gray-400 text-xs sm:text-sm mt-1">
+          @if (toggleOn) {
+            Cet appareil est inscrit pour recevoir les envois.
+          } @else {
+            Inactif sur cet appareil — activez pour vous inscrire.
+          }
+        </p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        [attr.aria-checked]="toggleOn"
+        [disabled]="busy || !serverConfigured"
+        (click)="onToggleClick()"
+        class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border border-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-40 disabled:cursor-not-allowed"
+        [class.bg-purple-600]="toggleOn"
+        [class.bg-slate-700]="!toggleOn"
+      >
+        <span
+          class="pointer-events-none inline-block h-5 w-5 mt-0.5 rounded-full bg-white shadow transition-transform"
+          [class.translate-x-6]="toggleOn"
+          [class.translate-x-1]="!toggleOn"
+        ></span>
+      </button>
+    </div>
+  }
+</app-glass-card>

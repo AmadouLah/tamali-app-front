@@ -10,6 +10,8 @@ import { GlassCardComponent } from '../../../../shared/components/glass-card/gla
 import { AdminSidebarComponent } from '../../../../shared/components/admin-sidebar/admin-sidebar.component';
 import { getBusinessMenuItems } from '../business-menu.const';
 import { UserAvatarComponent } from '../../../../shared/components/user-avatar/user-avatar.component';
+import { SettingsSectionTabsComponent } from '../../../../shared/components/settings-section-tabs/settings-section-tabs.component';
+import { PushNotificationsSettingsComponent } from '../../../../shared/components/push-notifications-settings/push-notifications-settings.component';
 
 @Component({
   selector: 'app-business-profile',
@@ -20,7 +22,9 @@ import { UserAvatarComponent } from '../../../../shared/components/user-avatar/u
     RouterModule,
     GlassCardComponent,
     AdminSidebarComponent,
-    UserAvatarComponent
+    UserAvatarComponent,
+    SettingsSectionTabsComponent,
+    PushNotificationsSettingsComponent
   ],
   templateUrl: './business-profile.component.html',
   styleUrl: './business-profile.component.css'
@@ -44,6 +48,11 @@ export class BusinessProfileComponent implements OnInit, OnDestroy {
   private cooldownTimer?: number;
   activeMenu = 'profil';
   sidebarOpen = false;
+  profileSection: 'compte' | 'notifications' = 'compte';
+  readonly profileSectionTabs = [
+    { id: 'compte', label: 'Compte' },
+    { id: 'notifications', label: 'Notifications' }
+  ];
 
   menuItems = getBusinessMenuItems(null);
 
@@ -218,5 +227,9 @@ export class BusinessProfileComponent implements OnInit, OnDestroy {
 
   setActiveMenu(menu: string): void {
     this.activeMenu = menu;
+  }
+
+  onProfileSectionTab(id: string): void {
+    if (id === 'compte' || id === 'notifications') this.profileSection = id;
   }
 }
